@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v2.31</title>
+    <title>Sunburst Editor Pro v3.8 (Button Restored)</title>
     <style>
         :root {
-            --primary: #007bff;
-            --primary-hover: #0056b3;
+            --primary: #4361ee;
+            --primary-hover: #3a0ca3;
             --bg: #f4f6f8;
             --border: #e0e0e0;
-            --header-bg: #f1f3f4;
+            --header-bg: #f8f9fa;
             --sidebar-bg: #ffffff;
             --input-bg: #ffffff;
             --input-border: #ced4da;
-            --text-main: #343a40;
+            --text-main: #212529;
             --text-muted: #6c757d;
+            --danger: #ef233c;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             display: flex;
             height: 100vh;
@@ -29,185 +30,226 @@
 
         /* --- SIDEBAR STRUCTURE --- */
         #sidebar {
-            width: 400px; /* Reduced width slightly for better proportion */
-            min-width: 380px;
+            width: 460px;
+            min-width: 440px;
             background: var(--sidebar-bg);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            box-shadow: 4px 0 12px rgba(0,0,0,0.05);
+            box-shadow: 4px 0 20px rgba(0,0,0,0.04);
             z-index: 10;
+            height: 100vh; /* Full height */
         }
 
         /* --- TABS --- */
-        .tabs { display: flex; background: #fff; border-bottom: 1px solid var(--border); padding: 0; }
+        .tabs { 
+            display: flex; 
+            background: #fff; 
+            border-bottom: 1px solid var(--border); 
+            padding: 0; 
+            flex-shrink: 0; /* Prevent shrinking */
+        }
         .tab-btn {
-            flex: 1; padding: 16px 0; border: none; background: transparent; cursor: pointer;
+            flex: 1; padding: 18px 0; border: none; background: transparent; cursor: pointer;
             font-weight: 600; color: var(--text-muted); border-bottom: 3px solid transparent; 
-            font-size: 13px; transition: all 0.2s ease;
+            font-size: 13px; transition: all 0.2s ease; letter-spacing: 0.3px; text-transform: uppercase;
         }
         .tab-btn:hover { color: var(--primary); background: #f8f9fa; }
-        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: rgba(0,123,255,0.03); }
-        .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; position: relative; background: #f8f9fa; }
-        .tab-content.active { display: flex; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: rgba(67, 97, 238, 0.04); }
+        
+        #btn-json { display: none; }
 
-        /* --- GRID STYLES (Existing) --- */
-        #tab-grid { padding: 0; background: white; }
+        /* FIXED TAB CONTENT SCROLLING */
+        .tab-content { 
+            display: none; 
+            flex-direction: column; 
+            flex-grow: 1; /* Takes available space */
+            overflow-y: auto; /* Internal scrolling */
+            position: relative; 
+            background: #fff;
+            padding-bottom: 20px;
+        }
+        .tab-content.active { display: flex !important; }
+
+        /* --- SIDEBAR BOTTOM FOOTER (NEW) --- */
+        #sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: white;
+            flex-shrink: 0; /* Stays fixed at bottom */
+            z-index: 20;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.03);
+        }
+        .update-btn-main {
+            width: 100%; padding: 14px; background: var(--primary); color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3); transition: transform 0.1s, box-shadow 0.1s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .update-btn-main:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4); }
+        .update-btn-main:active { transform: translateY(0); }
+
+        /* --- GRID STYLES --- */
+        #tab-grid { padding: 0; background: white; height: 100%; }
+        
         .grid-header {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr 85px 50px 30px;
-            background: var(--header-bg); border-bottom: 1px solid #ccc;
-            font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+            grid-template-columns: 1fr 1fr 1fr 1fr 90px 60px 35px;
+            background: #f1f3f5; border-bottom: 1px solid #dee2e6;
+            font-size: 11px; font-weight: 700; color: #495057; text-transform: uppercase;
+            letter-spacing: 0.5px;
             position: sticky; top: 0; z-index: 5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        .grid-header span { padding: 12px 4px; border-right: 1px solid #e0e0e0; text-align: center; }
+        .grid-header span { padding: 12px 8px; border-right: 1px solid #e9ecef; text-align: left; }
+        .grid-header span:last-child { border-right: none; }
+
+        #rows-container { flex-grow: 1; } /* Allow rows to expand */
 
         .data-row {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr 85px 50px 30px;
-            border-bottom: 1px solid var(--border);
+            grid-template-columns: 1fr 1fr 1fr 1fr 90px 60px 35px;
+            border-bottom: 1px solid #f1f3f5;
+            transition: background 0.15s;
         }
-        .data-row:nth-child(even) { background-color: #fafafa; }
+        .data-row:hover { background-color: #f8f9fa; }
+        .data-row:hover .del-cell { opacity: 1; color: #adb5bd; }
+
         .data-row input[type="text"].lvl-input {
-            width: 100%; border: none; background: transparent; padding: 10px 6px;
-            font-size: 12px; outline: none; border-right: 1px solid var(--border); box-sizing: border-box;
+            width: 100%; border: none; background: transparent; padding: 12px 8px;
+            font-size: 12px; outline: none; border-right: 1px solid #f1f3f5; 
+            box-sizing: border-box; color: #333; transition: all 0.2s; border-radius: 0;
         }
-        .data-row input:focus { background: #fff; box-shadow: inset 0 0 0 2px var(--primary); z-index: 2; }
-        .data-row input.val-input { width: 100%; border: none; background: transparent; padding: 10px 6px; text-align: right; font-family: 'Consolas', monospace; color: var(--primary); font-weight: 600; font-size: 12px; border-right: 1px solid var(--border); outline: none; }
+        .data-row input.val-input { 
+            width: 100%; border: none; background: transparent; padding: 12px 8px; 
+            text-align: right; font-family: 'Consolas', monospace; color: var(--primary); 
+            font-weight: 600; font-size: 12px; border-right: 1px solid #f1f3f5; 
+            outline: none; transition: all 0.2s; border-radius: 0;
+        }
+        .data-row input:focus { background: white; box-shadow: inset 0 -2px 0 var(--primary); z-index: 2; }
 
-        .color-wrapper { display: flex; align-items: center; border-right: 1px solid var(--border); background: #fff; padding: 2px; }
-        input[type="color"] { border: none; width: 24px; height: 24px; cursor: pointer; background: none; padding: 0; margin-right: 4px; }
-        input.hex-input { width: 100%; border: none; font-family: 'Consolas', monospace; font-size: 11px; color: #444; text-transform: uppercase; outline: none; background: transparent; }
+        .color-wrapper { display: flex; align-items: center; border-right: 1px solid #f1f3f5; padding: 4px 6px; background: transparent; }
+        input[type="color"] { border: none; width: 20px; height: 20px; cursor: pointer; background: none; padding: 0; border-radius: 4px; overflow: hidden; margin-right: 6px; }
+        input.hex-input { width: 100%; border: none; font-family: 'Consolas', monospace; font-size: 10px; color: #666; text-transform: uppercase; outline: none; background: transparent; }
 
-        .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ccc; font-size: 16px; transition: 0.2s; }
-        .del-cell:hover { color: #dc3545; background: #fff0f0; }
-        .add-row-container { padding: 15px; background: white; border-top: 1px solid var(--border); }
+        .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #e9ecef; font-size: 18px; transition: 0.2s; opacity: 0; }
+        .del-cell:hover { color: var(--danger) !important; background: #fff5f5; }
+
+        /* Grid Controls Area */
+        .grid-controls { 
+            padding: 20px; background: white; border-top: 1px solid var(--border); 
+            display: flex; flex-direction: column; gap: 15px; 
+        }
         .btn-add {
-            background: white; color: var(--primary); border: 1px dashed var(--primary);
-            padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: 600; font-size: 13px; transition: 0.2s;
+            background: #eef2ff; color: var(--primary); border: 1px solid transparent;
+            padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; 
+            font-weight: 700; font-size: 13px; transition: 0.2s; display: flex; 
+            align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-add:hover { background: #f0f7ff; border-style: solid; box-shadow: 0 2px 5px rgba(0,123,255,0.1); }
+        .btn-add:hover { background: #e0e7ff; border-color: #c7d2fe; transform: translateY(-1px); }
 
-        /* --- NEW SETTINGS STYLES --- */
-        #tab-settings { padding: 20px; gap: 20px; padding-bottom: 80px; }
+        /* Import Section */
+        .import-section { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff; transition: box-shadow 0.2s; }
+        .import-section:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .import-header { padding: 12px 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #555; user-select: none; transition: all 0.2s; }
+        .import-header:hover { background: #fff; color: var(--primary); }
+        .import-body { padding: 15px; display: none; border-top: 1px solid #e0e0e0; background: #fcfcfc; }
+        .import-body.open { display: block; }
+        .import-body textarea { width: 100%; min-height: 100px; border: 1px solid #ced4da; padding: 12px; font-family: 'Consolas', monospace; font-size: 11px; margin-bottom: 12px; border-radius: 6px; background: #fff; color: #333; line-height: 1.5; box-sizing: border-box; }
+        .import-body textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1); outline: none; }
+        .import-help { font-size: 11px; color: #666; margin-bottom: 10px; background: #e3f2fd; padding: 8px 12px; border-radius: 4px; border-left: 3px solid #2196f3; }
+        .btn-parse { width: 100%; padding: 10px; background: #495057; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
+        .btn-parse:hover { background: #343a40; }
+
+        /* --- SETTINGS TAB STYLES --- */
+        #tab-settings { padding: 25px 20px; gap: 20px; background: #f8f9fa; }
         #tab-json { padding: 20px; }
 
-        /* Cards for Settings Groups */
-        .settings-card {
-            background: white;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-        .settings-card h3 {
-            margin: 0 0 15px 0;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--primary);
-            border-bottom: 1px solid #f0f0f0;
-            padding-bottom: 8px;
-            font-weight: 700;
-        }
-
-        /* Form Controls */
-        .control-row { margin-bottom: 12px; }
-        .control-row:last-child { margin-bottom: 0; }
-        .control-label {
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 12px; font-weight: 600; color: var(--text-main); margin-bottom: 6px;
-        }
-        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .settings-card { background: white; border-radius: 12px; border: 1px solid #e9ecef; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .settings-card h3 { margin: 0 0 18px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); border-bottom: 1px solid #f1f3f5; padding-bottom: 10px; font-weight: 800; }
+        .control-row { margin-bottom: 15px; }
+        .control-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: #343a40; margin-bottom: 8px; }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         
-        /* Inputs & Selects */
-        input[type="text"], input[type="number"], select {
-            width: 100%; padding: 8px 10px; border: 1px solid var(--input-border);
-            border-radius: 6px; font-size: 13px; color: var(--text-main); background: var(--input-bg);
-            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
-            border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
-        }
-        textarea {
-            width: 100%; height: 100%; padding: 15px; border: 1px solid var(--border);
-            border-radius: 6px; resize: none; background: #fafafa; font-family: 'Consolas', monospace;
-            box-sizing: border-box; font-size: 12px;
-        }
+        .settings-card input[type="text"], .settings-card input[type="number"], .settings-card select { width: 100%; padding: 10px 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px; color: #495057; background: #fff; box-sizing: border-box; transition: all 0.2s; }
+        .settings-card input:focus, .settings-card select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15); }
 
-        /* Range Slider Styling */
-        input[type=range] {
-            -webkit-appearance: none; width: 100%; background: transparent; margin: 8px 0;
-        }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 8px 0; }
         input[type=range]:focus { outline: none; }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 6px; cursor: pointer; background: #e9ecef; border-radius: 3px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            height: 16px; width: 16px; border-radius: 50%; background: var(--primary); cursor: pointer;
-            -webkit-appearance: none; margin-top: -5px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.1s;
-        }
-        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
-        .range-val { font-size: 11px; color: var(--primary); font-weight: 600; background: #e7f1ff; padding: 2px 6px; border-radius: 4px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #e9ecef; border-radius: 3px; }
+        input[type=range]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; margin-top: -5px; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform 0.1s; }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        .range-val { font-size: 11px; color: var(--primary); font-weight: 700; background: #eef2ff; padding: 2px 8px; border-radius: 10px; }
 
-        /* Custom Checkbox/Toggle */
-        .toggle-wrapper {
-            display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 10px;
-            border-radius: 6px; border: 1px solid var(--border); cursor: pointer;
-        }
-        .toggle-wrapper input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
-        
-        /* Color Picker Wrapper */
+        .toggle-wrapper { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #e9ecef; cursor: pointer; }
+        .toggle-wrapper input[type="checkbox"] { accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer; }
         .color-picker-group { display: flex; align-items: center; gap: 8px; }
-        .color-btn {
-            width: 32px; height: 32px; padding: 0; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; overflow: hidden;
-        }
+        .color-btn { width: 36px; height: 36px; padding: 0; border: 1px solid #ced4da; border-radius: 8px; cursor: pointer; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .color-btn input { width: 150%; height: 150%; margin: -25%; cursor: pointer; }
-
-        /* Sub-sections */
-        .sub-panel { background: #fcfcfc; border: 1px dashed #ddd; border-radius: 6px; padding: 10px; margin-top: 10px; }
+        
+        .sub-panel { background: #fcfcfc; border: 1px dashed #ddd; border-radius: 6px; padding: 12px; margin-top: 10px; }
         .sub-panel-title { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 8px; display: block; }
 
-        /* --- MAIN VIEW --- */
+        /* --- MAIN VIEW & MENU --- */
         #main {
-            flex-grow: 1; background: var(--bg); display: flex; justify-content: center; align-items: center; position: relative;
-            background-image: radial-gradient(#dee2e6 1px, transparent 1px); background-size: 20px 20px;
-            padding: 40px; overflow: auto;
-        }
-        #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-        #chart svg {
-            max-width: 100%; max-height: 100%; width: auto; height: auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1); background: white; display: block; border-radius: 4px;
+            flex-grow: 1; background: var(--bg); position: relative;
+            background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px); background-size: 24px 24px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            overflow: hidden;
         }
         
+        /* MENU BUTTON CONTAINER */
+        #menu-container {
+            position: absolute; top: 20px; right: 20px; z-index: 100;
+        }
+
+        #menu-btn {
+            background: white; border: 1px solid #ced4da; color: #495057;
+            width: 44px; height: 44px; border-radius: 12px;
+            font-size: 20px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #menu-btn:hover { background: #f8f9fa; transform: scale(1.05); color: var(--primary); }
+        
+        /* DROPDOWN MENU */
+        #main-menu {
+            display: none; position: absolute; right: 0; top: 55px;
+            background-color: white; min-width: 200px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-radius: 12px; border: 1px solid #e9ecef;
+            overflow: hidden; z-index: 101; padding: 6px 0;
+            animation: fadeIn 0.15s ease-out;
+        }
+        #main-menu.show { display: block; }
+
+        .menu-item {
+            padding: 12px 20px; text-decoration: none; display: flex; align-items: center; gap: 12px;
+            color: #495057; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.1s;
+        }
+        .menu-item:hover { background-color: #f1f3f5; color: var(--primary); }
+        .menu-separator { height: 1px; background: #e9ecef; margin: 6px 0; }
+        .menu-item.danger { color: #e03131; }
+        .menu-item.danger:hover { background-color: #fff5f5; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+        #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; }
+        #chart svg {
+            max-width: 100%; max-height: 100%; width: auto; height: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; display: block; border-radius: 16px;
+        }
+        
+        .pointer-line { fill: none; stroke-linecap: round; pointer-events: none; }
         text.draggable { cursor: move; }
         text.draggable:hover { font-weight: 900; }
 
         .tooltip {
-            position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 8px 12px;
-            border-radius: 4px; font-size: 12px; pointer-events: none; opacity: 0;
+            position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 10px 14px;
+            border-radius: 6px; font-size: 13px; pointer-events: none; opacity: 0;
             transition: opacity 0.15s; margin-top: -10px; transform: translate(-50%, -100%); z-index: 100;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-family: 'Segoe UI', sans-serif;
         }
-
-        /* --- ACTION BAR --- */
-        #action-bar { padding: 20px; border-top: 1px solid var(--border); background: white; display: flex; flex-direction: column; gap: 12px; }
-        .update-btn {
-            width: 100%; padding: 14px; background: var(--primary); color: white; border: none;
-            border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
-            box-shadow: 0 4px 10px rgba(0,123,255,0.3); transition: transform 0.1s, box-shadow 0.1s;
-        }
-        .update-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 12px rgba(0,123,255,0.35); }
-        .update-btn:active { transform: translateY(0); }
-        
-        .download-label { font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 5px; }
-        .download-group { display: flex; gap: 10px; }
-        .dl-btn {
-            flex: 1; padding: 10px; border: 1px solid #ced4da; background: white; border-radius: 6px;
-            cursor: pointer; font-size: 12px; font-weight: 600; color: #495057; transition: 0.2s;
-        }
-        .dl-btn:hover { background: #f1f3f5; border-color: #adb5bd; color: #212529; }
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -215,9 +257,9 @@
 
 <div id="sidebar">
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('grid')">Input Grid</button>
-        <button class="tab-btn" onclick="switchTab('json')">JSON Source</button>
-        <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+        <button class="tab-btn active" id="btn-grid" onclick="switchTab('grid')">Data Editor</button>
+        <button class="tab-btn" id="btn-settings" onclick="switchTab('settings')">Settings</button>
+        <button class="tab-btn" id="btn-json" onclick="switchTab('json')">JSON Source</button>
     </div>
 
     <div id="tab-grid" class="tab-content active">
@@ -225,15 +267,28 @@
             <span>Level 1</span><span>Level 2</span><span>Level 3</span><span>Level 4</span><span title="Hex Code">Color</span><span style="text-align: right;">Value</span><span></span>
         </div>
         <div id="rows-container"></div>
-        <div class="add-row-container">
-            <button class="btn-add" onclick="addGridRow()">+ Add New Row</button>
+        <div class="grid-controls">
+            <button class="btn-add" onclick="addGridRow()">
+                <span style="font-size:18px; line-height:1;">+</span> Add New Row
+            </button>
+            
+            <div class="import-section">
+                <div class="import-header" onclick="toggleImport()">
+                    <span>📂 Bulk Import (Excel / CSV)</span>
+                    <span id="import-arrow">▼</span>
+                </div>
+                <div class="import-body" id="import-body">
+                    <div class="import-help"><strong>Format:</strong> Level1, Level2, Level3, Level4, Value (Tab or Comma separated)</div>
+                    <textarea id="csvInput" placeholder="Region	Country	City		100&#10;Marketing	Social	Facebook		500"></textarea>
+                    <button class="btn-parse" onclick="parseCSV()">Parse & Overwrite Grid</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <div id="tab-json" class="tab-content"><textarea id="jsonInput"></textarea></div>
 
     <div id="tab-settings" class="tab-content">
-        
         <div class="settings-card">
             <h3>Canvas Dimensions</h3>
             <div class="control-row">
@@ -241,24 +296,19 @@
                 <input type="text" id="chartTitle" placeholder="My Sunburst Chart" oninput="renderCurrent()">
             </div>
             <div class="control-grid">
-                <div>
-                    <label class="control-label">Width (px)</label>
-                    <input type="number" id="chartWidth" value="1000" placeholder="Width" onchange="renderCurrent()">
-                </div>
-                <div>
-                    <label class="control-label">Height (px)</label>
-                    <input type="number" id="chartHeight" value="1000" placeholder="Height" onchange="renderCurrent()">
-                </div>
+                <div><label class="control-label">Width (px)</label><input type="number" id="chartWidth" value="1000" onchange="renderCurrent()"></div>
+                <div><label class="control-label">Height (px)</label><input type="number" id="chartHeight" value="1000" onchange="renderCurrent()"></div>
             </div>
         </div>
 
         <div class="settings-card">
-            <h3>Appearance & Theme</h3>
+            <h3>Appearance</h3>
             <div class="control-row">
                 <label class="control-label">Color Theme</label>
                 <select id="colorTheme" onchange="applyThemeReset()">
+                    <option value="vivid" selected>✨ Vivid (Modern)</option>
                     <option value="ocean">Ocean</option>
-                    <option value="sunset" selected>Sunset</option>
+                    <option value="sunset">Sunset</option>
                     <option value="forest">Forest</option>
                     <option value="corporate">Corporate</option>
                     <option value="neon">Neon</option>
@@ -266,198 +316,139 @@
                     <option value="schemeCategory10">Standard 10</option>
                 </select>
             </div>
-            <div class="control-row">
-                <label class="control-label">Visual Style</label>
-                <select id="visualStyle" onchange="renderCurrent()">
-                    <option value="flat" selected>Flat (Standard)</option>
-                    <option value="bevel">3D Bevel (Raised)</option>
-                    <option value="shadow">Drop Shadow</option>
-                    <option value="glow">Outer Glow</option>
-                </select>
+            <div class="control-grid">
+                <div><label class="control-label">Visual Style</label><select id="visualStyle" onchange="renderCurrent()"><option value="flat" selected>Flat</option><option value="bevel">3D Bevel</option><option value="shadow">Drop Shadow</option><option value="glow">Outer Glow</option></select></div>
+                <div><label class="control-label">Texture</label><select id="textureOverlay" onchange="renderCurrent()"><option value="none" selected>None</option><option value="lines">Stripes</option><option value="dots">Dots</option><option value="grid">Grid</option></select></div>
             </div>
-            
             <div class="sub-panel">
-                <span class="sub-panel-title">Layer Opacity</span>
+                <span class="sub-panel-title">Opacity</span>
                 <div class="control-grid">
-                    <div>
-                        <label class="control-label" style="font-weight:normal;">L1 (Inner)</label>
-                        <input type="range" id="opL1" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()">
-                    </div>
-                    <div>
-                        <label class="control-label" style="font-weight:normal;">L2</label>
-                        <input type="range" id="opL2" min="0.1" max="1" step="0.1" value="0.9" oninput="renderCurrent()">
-                    </div>
-                    <div>
-                        <label class="control-label" style="font-weight:normal;">L3</label>
-                        <input type="range" id="opL3" min="0.1" max="1" step="0.1" value="0.8" oninput="renderCurrent()">
-                    </div>
-                    <div>
-                        <label class="control-label" style="font-weight:normal;">L4 (Outer)</label>
-                        <input type="range" id="opL4" min="0.1" max="1" step="0.1" value="0.7" oninput="renderCurrent()">
-                    </div>
+                    <div><label class="control-label" style="font-weight:normal;">L1</label><input type="range" id="opL1" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()"></div>
+                    <div><label class="control-label" style="font-weight:normal;">L2</label><input type="range" id="opL2" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()"></div>
+                    <div><label class="control-label" style="font-weight:normal;">L3</label><input type="range" id="opL3" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()"></div>
+                    <div><label class="control-label" style="font-weight:normal;">L4</label><input type="range" id="opL4" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()"></div>
                 </div>
             </div>
-            
             <div class="control-row" style="margin-top: 15px;">
                 <label class="control-label">Background</label>
                 <div class="toggle-wrapper">
-                    <input type="checkbox" id="bgTransparent" checked onchange="toggleBgColor()"> 
-                    <span style="font-size:12px; flex:1;">Transparent</span>
-                    <div class="color-btn">
-                        <input type="color" id="bgColor" value="#ffffff" disabled oninput="renderCurrent()">
-                    </div>
+                    <input type="checkbox" id="bgTransparent" checked onchange="toggleBgColor()"> <span style="font-size:12px; flex:1;">Transparent</span>
+                    <div class="color-btn"><input type="color" id="bgColor" value="#ffffff" disabled oninput="renderCurrent()"></div>
                 </div>
             </div>
+        </div>
+
+        <div class="settings-card" style="border-left: 3px solid var(--primary);">
+            <h3>Shape & Borders</h3>
+            <div class="control-grid">
+                <div><label class="control-label">Stroke</label><div class="color-picker-group"><div class="color-btn" style="width:100%"><input type="color" id="strokeColor" value="#ffffff" oninput="renderCurrent()"></div></div></div>
+                <div><label class="control-label">Width <span id="val-sw" class="range-val">2px</span></label><input type="range" id="strokeWidth" min="0" max="10" value="2" step="0.5" oninput="updateRangeLabel('sw', this.value, 'px'); renderCurrent()"></div>
+            </div>
+            <div class="control-row" style="margin-top:10px;"><label class="control-label">Roundness <span id="val-cr" class="range-val">4px</span></label><input type="range" id="cornerRadius" min="0" max="20" value="4" oninput="updateRangeLabel('cr', this.value, 'px'); renderCurrent()"></div>
+        </div>
+
+        <div class="settings-card">
+            <h3>Format & Layout</h3>
+            <div class="control-row"><label class="control-label">Sort</label><select id="sortOrder" onchange="renderCurrent()"><option value="value" selected>Size (Desc)</option><option value="name">A-Z</option></select></div>
+            <div class="control-grid">
+                <div><label class="control-label">Prefix</label><input type="text" id="valPrefix" placeholder="$" oninput="renderCurrent()"></div>
+                <div><label class="control-label">Suffix</label><input type="text" id="valSuffix" placeholder="%" oninput="renderCurrent()"></div>
+            </div>
+            <div class="control-row" style="margin-top:15px;"><label class="control-label">Legend</label><select id="showLegend" onchange="renderCurrent()"><option value="none">None</option><option value="right">Right</option><option value="bottom">Bottom</option></select></div>
         </div>
 
         <div class="settings-card">
             <h3>Typography</h3>
             <div class="control-grid">
-                <div>
-                    <label class="control-label">Font Family</label>
-                    <select id="fontFamily" onchange="renderCurrent()">
-                        <option value="sans-serif">Sans-Serif</option>
-                        <option value="Arial">Arial</option>
-                        <option value="'Segoe UI', sans-serif">Segoe UI</option>
-                        <option value="Times">Times</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="control-label">Weight</label>
-                    <select id="fontWeight" onchange="renderCurrent()">
-                        <option value="normal">Normal</option>
-                        <option value="bold">Bold</option>
-                    </select>
-                </div>
+                <div><label class="control-label">Font</label><select id="fontFamily" onchange="renderCurrent()"><option value="'Segoe UI', sans-serif">Segoe UI</option><option value="Roboto, sans-serif">Roboto</option><option value="Arial, sans-serif">Arial</option></select></div>
+                <div><label class="control-label">Weight</label><select id="fontWeight" onchange="renderCurrent()"><option value="normal">Normal</option><option value="bold" selected>Bold</option><option value="900">Black</option></select></div>
             </div>
-            <div class="control-grid" style="margin-top: 10px;">
-                <div>
-                    <label class="control-label">Style</label>
-                    <select id="fontStyle" onchange="renderCurrent()">
-                        <option value="normal">Normal</option>
-                        <option value="italic">Italic</option>
-                    </select>
-                </div>
-                <div>
-                     <label class="control-label">Label Color</label>
-                     <div class="color-picker-group">
-                        <div class="color-btn" style="flex:1">
-                            <input type="color" id="labelColor" value="#ffffff" oninput="renderCurrent()">
-                        </div>
-                     </div>
-                </div>
+            <div class="control-grid" style="margin-top:10px;">
+                <div><label class="control-label">Style</label><select id="fontStyle" onchange="renderCurrent()"><option value="normal">Normal</option><option value="italic">Italic</option></select></div>
+                <div><label class="control-label">Color</label><div class="color-btn" style="width:100%"><input type="color" id="labelColor" value="#333333" oninput="renderCurrent()"></div></div>
             </div>
-            <div class="control-row" style="margin-top: 10px;">
-                 <label class="control-label">Size <span id="val-fs" class="range-val">12px</span></label>
-                 <input type="range" id="fontSize" min="8" max="30" value="12" oninput="document.getElementById('val-fs').innerText = this.value+'px'; renderCurrent()">
-            </div>
+            <div class="control-row" style="margin-top:10px;"><label class="control-label">Size <span id="val-fs" class="range-val">12px</span></label><input type="range" id="fontSize" min="8" max="40" value="12" oninput="document.getElementById('val-fs').innerText = this.value+'px'; renderCurrent()"></div>
         </div>
 
         <div class="settings-card">
-            <h3>Layout & Labels</h3>
+            <h3>Labels</h3>
             <div class="control-grid">
-                <div>
-                    <label class="control-label">Content</label>
-                    <select id="labelContent" onchange="renderCurrent()">
-                        <option value="name">Name Only</option>
-                        <option value="value">Value Only</option>
-                        <option value="percent" selected>Percentage</option>
-                        <option value="name_percent">Name + %</option>
-                        <option value="name_value">Name + Val</option>
-                        <option value="all">All</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="control-label">Center Hole</label>
-                    <select id="centerContent" onchange="renderCurrent()">
-                        <option value="total" selected>Total Value</option>
-                        <option value="name">Root Name</option>
-                        <option value="both">Name + Total</option>
-                        <option value="none">Empty</option>
-                    </select>
-                </div>
+                <div><label class="control-label">Content</label><select id="labelContent" onchange="renderCurrent()"><option value="name">Name</option><option value="value">Value</option><option value="percent">Percent</option><option value="all" selected>All</option></select></div>
+                <div><label class="control-label">Center</label><select id="centerContent" onchange="renderCurrent()"><option value="total" selected>Total</option><option value="name">Root</option><option value="both">Both</option><option value="none">None</option></select></div>
             </div>
-
-            <div class="control-row" style="margin-top:10px;">
-                <label class="control-label">Text Orientation</label>
-                <select id="labelOrientation" onchange="renderCurrent()">
-                    <option value="auto" selected>Auto (Radial)</option>
-                    <option value="horizontal">Horizontal (Straight)</option>
-                    <option value="tangential">Tangential</option>
-                </select>
-            </div>
-
-            <div class="control-row">
-                <label class="control-label">Rotation <span id="val-rot" class="range-val">0°</span></label>
-                <input type="range" id="labelRotation" min="-180" max="180" value="0" oninput="updateRangeLabel('rot', this.value, '°'); renderCurrent()">
-            </div>
-
+            <div class="control-row" style="margin-top:10px;"><label class="control-label">Orientation</label><select id="labelOrientation" onchange="renderCurrent()"><option value="auto" selected>Auto (Radial)</option><option value="horizontal">Horizontal</option><option value="tangential">Tangential</option></select></div>
+            <div class="control-row"><label class="control-label">Rotation <span id="val-rot" class="range-val">0°</span></label><input type="range" id="labelRotation" min="-180" max="180" value="0" oninput="updateRangeLabel('rot', this.value, '°'); renderCurrent()"></div>
+            
             <div class="sub-panel">
                 <span class="sub-panel-title">Positioning</span>
-                <div class="control-row">
-                    <select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()">
-                        <option value="inside">Inside Slices</option>
-                        <option value="outside" selected>Outside (Leaves Only)</option>
-                    </select>
-                </div>
+                <div class="control-row"><select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()"><option value="inside">Inside</option><option value="outside">Outside (Pointers)</option></select></div>
                 <div id="labelOffsetControl" style="margin-top:10px;">
-                    <label class="control-label" style="font-weight: normal;">Outside Distance <span id="val-dist" class="range-val">10px</span></label>
-                    <input type="range" id="labelDist" min="0" max="100" value="10" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
+                    <label class="control-label" style="font-weight: normal;">Distance <span id="val-dist" class="range-val">25px</span></label>
+                    <input type="range" id="labelDist" min="0" max="100" value="25" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
+                    <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
+                        <label class="control-label">Pointer Line</label>
+                        <div class="control-grid">
+                            <div><div class="color-btn" style="width:100%; height:25px;"><input type="color" id="pointerColor" value="#888888" oninput="renderCurrent()"></div></div>
+                            <div><input type="number" id="pointerWidth" value="1" min="0.5" max="5" step="0.5" onchange="renderCurrent()" style="padding:4px;"></div>
+                        </div>
+                    </div>
                 </div>
-                 <div class="control-row" style="margin-top:10px;">
-                    <label class="control-label">Show Labels</label>
-                    <select id="showLabels" onchange="renderCurrent()">
-                        <option value="auto">Auto (Hide small)</option>
-                        <option value="all">Always Show All</option>
-                        <option value="none">Hide All</option>
-                    </select>
-                </div>
+                <div class="control-row" style="margin-top:10px;"><label class="control-label">Visibility</label><select id="showLabels" onchange="renderCurrent()"><option value="auto">Auto</option><option value="all">Show All</option><option value="none">Hide All</option></select></div>
             </div>
-
-            <div class="control-row" style="margin-top:15px;">
-                <label class="control-label">Chart Margin <span id="val-pad" class="range-val">50px</span></label>
-                <input type="range" id="chartPadding" min="0" max="300" value="50" oninput="updateRangeLabel('pad', this.value, 'px'); renderCurrent()">
-            </div>
+            <div class="control-row" style="margin-top:15px;"><label class="control-label">Margin <span id="val-pad" class="range-val">50px</span></label><input type="range" id="chartPadding" min="0" max="300" value="50" oninput="updateRangeLabel('pad', this.value, 'px'); renderCurrent()"></div>
             <div class="control-grid">
-                <div>
-                     <label class="control-label" style="font-weight:normal;">Slice Gap <span id="val-gap" class="range-val">2px</span></label>
-                     <input type="range" id="sliceGap" min="0" max="20" value="2" oninput="updateRangeLabel('gap', this.value, 'px'); renderCurrent()">
-                </div>
-                <div>
-                     <label class="control-label" style="font-weight:normal;">Ring Padding <span id="val-ring" class="range-val">2px</span></label>
-                     <input type="range" id="ringGap" min="0" max="20" value="2" oninput="updateRangeLabel('ring', this.value, 'px'); renderCurrent()">
-                </div>
+                <div><label class="control-label" style="font-weight:normal;">Slice Gap <span id="val-gap" class="range-val">0px</span></label><input type="range" id="sliceGap" min="0" max="20" value="0" oninput="updateRangeLabel('gap', this.value, 'px'); renderCurrent()"></div>
+                <div><label class="control-label" style="font-weight:normal;">Ring Pad <span id="val-ring" class="range-val">0px</span></label><input type="range" id="ringGap" min="0" max="20" value="0" oninput="updateRangeLabel('ring', this.value, 'px'); renderCurrent()"></div>
             </div>
         </div>
 
+        <div class="settings-card" style="border-left: 3px solid #6c757d;">
+            <h3>Advanced</h3>
+            <div class="control-row"><label class="control-label" style="font-weight:normal; cursor:pointer;"><input type="checkbox" id="showJsonTab" onchange="toggleJsonTab()"> &nbsp; Show JSON Tab</label></div>
+        </div>
     </div>
 
-    <div id="action-bar">
-        <button class="update-btn" onclick="syncAndRender()">Update Chart Preview</button>
-        <div class="download-label">Export Options</div>
-        <div class="download-group">
-            <button class="dl-btn" onclick="downloadImage('svg')">SVG</button>
-            <button class="dl-btn" onclick="downloadImage('png')">PNG</button>
-            <button class="dl-btn" onclick="downloadImage('jpeg')">JPEG</button>
-        </div>
+    <div id="sidebar-footer">
+        <button class="update-btn-main" onclick="syncAndRender()">
+            <span style="font-size:16px;">⟳</span> Update Chart Preview
+        </button>
     </div>
 </div>
 
 <div id="main">
+    <div id="menu-container">
+        <button id="menu-btn" onclick="toggleMenu()" title="Export & Project Options">☰</button>
+        <div id="main-menu">
+            <div class="menu-item" onclick="exportProject()">💾 Save Project</div>
+            <div class="menu-item" onclick="document.getElementById('importFile').click()">📂 Load Project</div>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importProject(this)">
+            <div class="menu-separator"></div>
+            <div class="menu-item" onclick="downloadImage('svg')">📷 Export SVG</div>
+            <div class="menu-item" onclick="downloadImage('png')">📷 Export PNG</div>
+            <div class="menu-item" onclick="downloadImage('jpeg')">📷 Export JPEG</div>
+            <div class="menu-separator"></div>
+            <div class="menu-item danger" onclick="clearStorage()">⚠️ Reset Data</div>
+        </div>
+    </div>
+
     <div id="chart"></div>
     <div id="tooltip" class="tooltip"></div>
 </div>
 
 <script>
+    const STORAGE_KEY = 'sunburst_editor_v3.8_final';
     let activeTab = 'grid';
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
         { l1: "Marketing", l2: "Social", l3: "IG", l4: "", color: "#29aef6", val: 300 },
         { l1: "Sales", l2: "Direct", l3: "", l4: "", color: "#ff9800", val: 400 },
-        { l1: "Sales", l2: "Channel", l3: "", l4: "", color: "#ff9800", val: 200 }
+        { l1: "Sales", l2: "Channel", l3: "", l4: "", color: "#ff9800", val: 200 },
+        { l1: "IT", l2: "Hardware", l3: "", l4: "", color: "#00e676", val: 150 },
+        { l1: "IT", l2: "Software", l3: "", l4: "", color: "#00e676", val: 250 }
     ];
 
     const THEMES = {
+        vivid: ["#FF595E", "#FFCA3A", "#8AC926", "#1982C4", "#6A4C93", "#F15BB5", "#FEE440", "#00BBF9", "#00F5D4"],
         ocean: ["#0077b6", "#0096c7", "#48cae4", "#90e0ef", "#023e8a", "#00b4d8"],
         sunset: ["#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93", "#ff924c"],
         forest: ["#2d6a4f", "#40916c", "#52b788", "#74c69d", "#b7e4c7", "#1b4332"],
@@ -466,18 +457,153 @@
         berry: ["#5e548e", "#9f86c0", "#be95c4", "#e0b1cb", "#231942", "#7209b7"]
     };
 
-    function init() { toggleLabelControls(); renderGridRows(); syncGridToJson(); }
+    function getSettings() {
+        const settings = {};
+        const ids = ['chartWidth', 'chartHeight', 'chartTitle', 'colorTheme', 'visualStyle', 'textureOverlay',
+                     'opL1', 'opL2', 'opL3', 'opL4', 'bgColor', 'strokeColor', 'strokeWidth', 'cornerRadius',
+                     'fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'labelColor',
+                     'labelContent', 'centerContent', 'labelOrientation', 'labelRotation',
+                     'labelPosition', 'labelDist', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
+                     'sortOrder', 'valPrefix', 'valSuffix', 'showLegend', 'pointerColor', 'pointerWidth'];
+
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) settings[id] = el.value;
+        });
+        settings['bgTransparent'] = document.getElementById('bgTransparent').checked;
+        settings['showJsonTab'] = document.getElementById('showJsonTab').checked;
+        return settings;
+    }
+
+    function saveState() {
+        const payload = { gridData: gridData, settings: getSettings() };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function applySettings(settings) {
+        if(!settings) return;
+        Object.keys(settings).forEach(key => {
+            const el = document.getElementById(key);
+            if(el) {
+                if(key === 'bgTransparent' || key === 'showJsonTab') el.checked = settings[key];
+                else el.value = settings[key];
+            }
+        });
+        toggleJsonTab();
+        updateRangeLabel('fs', document.getElementById('fontSize').value, 'px');
+        updateRangeLabel('rot', document.getElementById('labelRotation').value, '°');
+        updateRangeLabel('dist', document.getElementById('labelDist').value, 'px');
+        updateRangeLabel('pad', document.getElementById('chartPadding').value, 'px');
+        updateRangeLabel('gap', document.getElementById('sliceGap').value, 'px');
+        updateRangeLabel('ring', document.getElementById('ringGap').value, 'px');
+        updateRangeLabel('sw', document.getElementById('strokeWidth').value, 'px');
+        updateRangeLabel('cr', document.getElementById('cornerRadius').value, 'px');
+    }
+
+    function loadState() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return;
+        try {
+            const data = JSON.parse(raw);
+            if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
+            if(data.settings) applySettings(data.settings);
+        } catch(e) { console.log("Error loading state", e); }
+    }
+
+    function toggleJsonTab() {
+        const show = document.getElementById('showJsonTab').checked;
+        document.getElementById('btn-json').style.display = show ? 'block' : 'none';
+        if(!show && activeTab === 'json') switchTab('grid');
+    }
+
+    function toggleMenu() {
+        const menu = document.getElementById('main-menu');
+        menu.classList.toggle('show');
+    }
+
+    document.addEventListener('click', function(e) {
+        const container = document.getElementById('menu-container');
+        if (!container.contains(e.target)) {
+            document.getElementById('main-menu').classList.remove('show');
+        }
+    });
+
+    function exportProject() {
+        const payload = { gridData: gridData, settings: getSettings() };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "sunburst_project.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
+    function importProject(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
+                if(data.settings) applySettings(data.settings);
+                renderGridRows();
+                syncAndRender();
+                alert("Project loaded successfully!");
+            } catch(err) {
+                alert("Error loading project file: " + err);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function clearStorage() {
+        if(confirm("Reset all settings and data to default?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    function init() { 
+        loadState();
+        toggleLabelControls(); 
+        renderGridRows(); 
+        syncGridToJson(); 
+        toggleBgColor(); 
+        toggleJsonTab();
+    }
 
     function switchTab(t) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelector(`.tab-btn[onclick="switchTab('${t}')"]`).classList.add('active');
-        document.getElementById(`tab-${t}`).classList.add('active');
+        const btn = document.getElementById(`btn-${t}`);
+        if(btn) btn.classList.add('active');
+        
+        // Explicitly handle class toggling for display logic
+        const content = document.getElementById(`tab-${t}`);
+        content.classList.add('active');
+        
         if (activeTab === 'grid' && t === 'json') syncGridToJson();
         activeTab = t;
     }
+    
+    function toggleImport() {
+        const body = document.getElementById('import-body');
+        const arrow = document.getElementById('import-arrow');
+        if(body.classList.contains('open')) {
+            body.classList.remove('open');
+            arrow.innerText = '▼';
+        } else {
+            body.classList.add('open');
+            arrow.innerText = '▲';
+        }
+    }
 
-    function updateRangeLabel(id, val, suffix) { document.getElementById(`val-${id}`).innerText = val + suffix; }
+    function updateRangeLabel(id, val, suffix) { 
+        const el = document.getElementById(`val-${id}`);
+        if(el) el.innerText = val + suffix; 
+    }
     
     function toggleLabelControls() {
         const pos = document.getElementById('labelPosition').value;
@@ -498,6 +624,41 @@
             w.querySelector('.hex-input').value = "#000000";
         });
         syncAndRender();
+    }
+
+    function parseCSV() {
+        const txt = document.getElementById('csvInput').value.trim();
+        if(!txt) return;
+        const rows = txt.split(/\r?\n/);
+        const newData = [];
+        
+        rows.forEach(r => {
+            let cols = r.split(/\t/);
+            if(cols.length < 2) cols = r.split(/,/);
+            if(cols.length) {
+                const l1 = cols[0] ? cols[0].trim() : "";
+                const l2 = cols[1] ? cols[1].trim() : "";
+                const l3 = cols[2] ? cols[2].trim() : "";
+                const l4 = cols[3] ? cols[3].trim() : "";
+                let val = 0;
+                if(cols.length >= 5 && !isNaN(cols[4])) val = parseFloat(cols[4]);
+                else if(cols.length > 0) {
+                     const last = cols[cols.length-1].trim();
+                     if(!isNaN(last)) val = parseFloat(last);
+                }
+                if(l1) newData.push({l1, l2, l3, l4, color: "#000000", val});
+            }
+        });
+
+        if(newData.length > 0) {
+            gridData = newData;
+            renderGridRows();
+            syncAndRender();
+            alert(`Imported ${newData.length} rows successfully!`);
+            toggleImport(); 
+        } else {
+            alert("Could not parse CSV. Check format.");
+        }
     }
 
     function renderGridRows() {
@@ -526,9 +687,10 @@
         const col = prev ? prev.color : "#000000";
         gridData.push({l1: l1, l2:"", l3:"", l4:"", color: col, val:0}); 
         renderGridRows(); 
+        saveState();
     }
-    function removeGridRow(i) { gridData.splice(i, 1); renderGridRows(); }
-    function updateGridData(i, k, v) { gridData[i][k] = v; }
+    function removeGridRow(i) { gridData.splice(i, 1); renderGridRows(); saveState(); }
+    function updateGridData(i, k, v) { gridData[i][k] = v; saveState(); }
 
     function handleColorChange(idx, val, source) {
         if (source === 'text' && !/^#[0-9A-F]{6}$/i.test(val)) return;
@@ -536,19 +698,6 @@
         const row = document.getElementById('rows-container').children[idx];
         if(source === 'picker') row.querySelector('.hex-input').value = val;
         if(source === 'text') row.querySelector('input[type="color"]').value = val;
-        const currentL1 = gridData[idx].l1;
-        if (currentL1) {
-            gridData.forEach((r, i) => {
-                if (r.l1 === currentL1) {
-                    r.color = val;
-                    const rNode = document.getElementById('rows-container').children[i];
-                    if (rNode) {
-                        rNode.querySelector('input[type="color"]').value = val;
-                        rNode.querySelector('.hex-input').value = val;
-                    }
-                }
-            });
-        }
         syncAndRender();
     }
 
@@ -579,6 +728,7 @@
     }
     
     function syncAndRender() {
+        saveState(); 
         if(activeTab === 'grid') syncGridToJson();
         else try { renderChart(JSON.parse(document.getElementById('jsonInput').value)); } catch(e) { alert("Invalid JSON"); }
     }
@@ -598,6 +748,11 @@
         const themeVal = document.getElementById('colorTheme').value;
         const visualStyle = document.getElementById('visualStyle').value;
         
+        const textureOverlay = document.getElementById('textureOverlay').value;
+        const strokeColor = document.getElementById('strokeColor').value;
+        const strokeWidth = parseFloat(document.getElementById('strokeWidth').value);
+        const cornerRadius = parseFloat(document.getElementById('cornerRadius').value);
+
         const labelPosEl = document.getElementById('labelPosition');
         const labelPosition = labelPosEl ? labelPosEl.value : 'inside';
         const labelRotEl = document.getElementById('labelRotation');
@@ -613,10 +768,16 @@
         const labelContent = document.getElementById('labelContent').value;
         const centerContent = document.getElementById('centerContent').value;
         
+        const pointerColor = document.getElementById('pointerColor').value;
+        const pointerWidth = document.getElementById('pointerWidth').value;
+        const sortOrder = document.getElementById('sortOrder').value;
+        const valPrefix = document.getElementById('valPrefix').value;
+        const valSuffix = document.getElementById('valSuffix').value;
+        const showLegend = document.getElementById('showLegend').value;
+        
         const bgTrans = document.getElementById('bgTransparent').checked;
         const bgColor = document.getElementById('bgColor').value;
 
-        // NEW: GET INDIVIDUAL OPACITY SETTINGS
         const opL1 = parseFloat(document.getElementById('opL1').value) || 1;
         const opL2 = parseFloat(document.getElementById('opL2').value) || 1;
         const opL3 = parseFloat(document.getElementById('opL3').value) || 1;
@@ -630,10 +791,20 @@
         if(!bgTrans) svg.style("background-color", bgColor);
 
         const defs = svg.append("defs");
+        
+        const patLines = defs.append("pattern").attr("id", "pat-lines").attr("width", 8).attr("height", 8).attr("patternUnits", "userSpaceOnUse").attr("patternTransform", "rotate(45)");
+        patLines.append("rect").attr("width",4).attr("height",8).attr("transform","translate(0,0)").attr("fill", "rgba(255,255,255,0.15)");
+        
+        const patDots = defs.append("pattern").attr("id", "pat-dots").attr("width", 6).attr("height", 6).attr("patternUnits", "userSpaceOnUse");
+        patDots.append("circle").attr("cx", 3).attr("cy", 3).attr("r", 1.5).attr("fill", "rgba(255,255,255,0.2)");
+
+        const patGrid = defs.append("pattern").attr("id", "pat-grid").attr("width", 8).attr("height", 8).attr("patternUnits", "userSpaceOnUse");
+        patGrid.append("path").attr("d", "M 8 0 L 0 0 0 8").attr("fill", "none").attr("stroke", "rgba(255,255,255,0.2)").attr("stroke-width", 1);
+
         const shadow = defs.append("filter").attr("id", "drop-shadow").attr("height", "130%");
-        shadow.append("feGaussianBlur").attr("in", "SourceAlpha").attr("stdDeviation", 3);
-        shadow.append("feOffset").attr("dx", 2).attr("dy", 2).attr("result", "offsetblur");
-        shadow.append("feFlood").attr("flood-color", "rgba(0,0,0,0.3)");
+        shadow.append("feGaussianBlur").attr("in", "SourceAlpha").attr("stdDeviation", 4);
+        shadow.append("feOffset").attr("dx", 3).attr("dy", 3).attr("result", "offsetblur");
+        shadow.append("feFlood").attr("flood-color", "rgba(0,0,0,0.2)");
         shadow.append("feComposite").attr("in2", "offsetblur").attr("operator", "in");
         const merge = shadow.append("feMerge");
         merge.append("feMergeNode");
@@ -661,40 +832,53 @@
         if(visualStyle === 'bevel') filterUrl = "url(#bevel-filter)";
         if(visualStyle === 'glow') filterUrl = "url(#glow-filter)";
 
-        const titleH = title ? 50 : 0;
+        const titleH = title ? 60 : 0;
+        let legendW = 0;
+        let legendH = 0;
+        if(showLegend === 'right') legendW = 150;
+        if(showLegend === 'bottom') legendH = 100;
+
         if(title) {
             svg.append("text")
-               .attr("x", width/2).attr("y", 40)
+               .attr("x", (width - legendW)/2).attr("y", 45)
                .attr("text-anchor", "middle")
-               .style("font-size", "24px").style("font-weight", "bold").style("fill", "#333").text(title);
+               .style("font-size", "28px").style("font-weight", "800").style("fill", "#212529").text(title);
         }
 
-        const g = svg.append("g").attr("transform", `translate(${width/2}, ${(height/2) + (titleH/2)})`);
+        const chartCenterX = (width - legendW) / 2;
+        const chartCenterY = (height - legendH) / 2 + (titleH/2);
+        const g = svg.append("g").attr("transform", `translate(${chartCenterX}, ${chartCenterY})`);
 
-        const effW = Math.max(10, width - (padding * 2));
-        const effH = Math.max(10, height - titleH - (padding * 2));
+        const effW = Math.max(10, width - legendW - (padding * 2));
+        const effH = Math.max(10, height - legendH - titleH - (padding * 2));
         const r = Math.min(effW, effH) / 2;
 
         let colorScale;
         if(THEMES[themeVal]) colorScale = d3.scaleOrdinal(THEMES[themeVal]);
         else colorScale = d3.scaleOrdinal(d3[themeVal]);
 
-        const root = d3.partition().size([2*Math.PI, r])(
-            d3.hierarchy(data).sum(d=>d.value).sort((a,b)=>b.value-a.value)
-        );
+        const hierarchy = d3.hierarchy(data).sum(d=>d.value);
+        if(sortOrder === 'value') hierarchy.sort((a,b)=>b.value-a.value);
+        else hierarchy.sort((a,b)=> d3.ascending(a.data.name, b.data.name));
+
+        const root = d3.partition().size([2*Math.PI, r])(hierarchy);
 
         const arc = d3.arc().startAngle(d=>d.x0).endAngle(d=>d.x1)
             .padAngle(sliceGap * 0.005).padRadius(r/2)
-            .innerRadius(d=>d.y0).outerRadius(d => Math.max(d.y0, d.y1 - ringGap));
+            .innerRadius(d=>d.y0).outerRadius(d => Math.max(d.y0, d.y1 - ringGap))
+            .cornerRadius(cornerRadius);
 
-        g.selectAll("path").data(root.descendants().filter(d=>d.depth && d.value > 0)).join("path")
+        const slices = g.selectAll("path").data(root.descendants().filter(d=>d.depth && d.value > 0)).join("g");
+        
+        slices.append("path")
             .attr("fill", d => {
                 if(d.data.color && d.data.color !== "#000000") return d.data.color;
                 let anc = d.parent; while(anc) { if(anc.data.color && anc.data.color !== "#000000") return anc.data.color; anc = anc.parent; }
                 let l1 = d; while(l1.depth > 1) l1 = l1.parent;
                 return colorScale(l1.data.name);
             })
-            // APPLY INDIVIDUAL OPACITY
+            .attr("stroke", strokeColor)
+            .attr("stroke-width", strokeWidth)
             .attr("opacity", d => {
                 if (d.depth === 1) return opL1;
                 if (d.depth === 2) return opL2;
@@ -705,17 +889,64 @@
             .attr("d", arc)
             .style("filter", filterUrl)
             .on("mouseover", (e,d)=>{
-                d3.select("#tooltip").style("opacity",1).html(`<strong>${d.data.name}</strong><br>${d.value} (${root.value>0 ? ((d.value/root.value)*100).toFixed(1) : 0}%)`)
+                const pVal = d.value.toLocaleString();
+                const pPct = root.value>0 ? ((d.value/root.value)*100).toFixed(1) : 0;
+                d3.select("#tooltip").style("opacity",1).html(`<strong>${d.data.name}</strong><br>${valPrefix}${pVal}${valSuffix} (${pPct}%)`)
                   .style("left", e.pageX+"px").style("top", e.pageY+"px");
             }).on("mouseout", ()=>d3.select("#tooltip").style("opacity",0));
 
+        if(textureOverlay !== 'none') {
+            slices.append("path")
+                .attr("d", arc)
+                .attr("fill", `url(#pat-${textureOverlay})`)
+                .style("pointer-events", "none")
+                .attr("opacity", d => {
+                     if (d.depth === 1) return opL1;
+                     if (d.depth === 2) return opL2;
+                     if (d.depth === 3) return opL3;
+                     if (d.depth >= 4) return opL4;
+                     return 1;
+                });
+        }
+
         if(showLabels !== 'none') {
+            const labelNodes = root.descendants().filter(d => d.depth && d.value > 0 && (showLabels==='all' || (d.y0+d.y1)/2*(d.x1-d.x0)>10));
+            
+            if(labelPosition === 'outside') {
+                g.append("g").attr("class", "pointers-layer")
+                    .selectAll("line")
+                    .data(labelNodes.filter(d => !d.children)) 
+                    .join("line")
+                    .attr("class", "pointer-line")
+                    .style("stroke", pointerColor)
+                    .style("stroke-width", pointerWidth)
+                    .attr("x1", d => {
+                         const angle = (d.x0 + d.x1) / 2;
+                         const outerR = Math.max(d.y0, d.y1 - ringGap);
+                         return Math.cos(angle - Math.PI/2) * outerR;
+                    })
+                    .attr("y1", d => {
+                         const angle = (d.x0 + d.x1) / 2;
+                         const outerR = Math.max(d.y0, d.y1 - ringGap);
+                         return Math.sin(angle - Math.PI/2) * outerR;
+                    })
+                    .attr("x2", d => {
+                         const angle = (d.x0 + d.x1) / 2;
+                         const targetR = r + labelDist - 5;
+                         return Math.cos(angle - Math.PI/2) * targetR;
+                    })
+                    .attr("y2", d => {
+                         const angle = (d.x0 + d.x1) / 2;
+                         const targetR = r + labelDist - 5;
+                         return Math.sin(angle - Math.PI/2) * targetR;
+                    });
+            }
+
             const labels = g.append("g").attr("class", "labels-layer")
                 .selectAll("text")
-                .data(root.descendants().filter(d => d.depth && d.value > 0 && (showLabels==='all' || (d.y0+d.y1)/2*(d.x1-d.x0)>10)))
+                .data(labelNodes)
                 .join("text")
                 .attr("class", "draggable")
-                .attr("text-anchor", "middle")
                 .attr("dy", "0.35em")
                 .style("font-size", fontSize)
                 .style("font-weight", d => (labelPosition === 'outside' && !d.children) ? "bold" : fontWeight)
@@ -723,12 +954,13 @@
                 .style("fill", labelColor)
                 .style("text-shadow", d => (labelPosition === 'outside' && !d.children) ? "none" : "0 0 3px rgba(0,0,0,0.6)")
                 .text(d => {
+                    let valStr = `${valPrefix}${d.value}${valSuffix}`;
                     let pct = root.value>0 ? ((d.value / root.value) * 100).toFixed(1)+"%" : "0%";
                     if (labelContent === 'percent') return pct;
                     if (labelContent === 'name_percent') return `${d.data.name} (${pct})`;
-                    if (labelContent === 'name_value') return `${d.data.name} (${d.value})`;
-                    if (labelContent === 'all') return `${d.data.name}: ${d.value} (${pct})`;
-                    if (labelContent === 'value') return d.value;
+                    if (labelContent === 'name_value') return `${d.data.name} (${valStr})`;
+                    if (labelContent === 'all') return `${d.data.name}: ${valStr} (${pct})`;
+                    if (labelContent === 'value') return valStr;
                     return d.data.name;
                 });
 
@@ -742,10 +974,20 @@
                 
                 let rotate = 0;
                 const degrees = (angle * 180 / Math.PI) - 90;
+                let anchor = "middle";
 
                 if (labelPosition === 'outside' && !d.children) {
-                      rotate = (angle > Math.PI) ? degrees + 180 : degrees;
-                      if(orientation === 'horizontal') rotate = 0;
+                      if (orientation === 'auto') {
+                           rotate = degrees;
+                           if (rotate > 90) rotate += 180; 
+                           if (rotate < -90) rotate += 180;
+                      } else if (orientation === 'horizontal') {
+                           rotate = 0;
+                           if (angle > Math.PI) anchor = "end"; 
+                           else anchor = "start"; 
+                           if(anchor === "start") d3.select(this).attr("dx", "5px");
+                           if(anchor === "end") d3.select(this).attr("dx", "-5px");
+                      }
                 } else {
                     if(orientation === 'auto') {
                         rotate = degrees;
@@ -759,7 +1001,9 @@
                 }
                 
                 rotate += rotationOffset;
-                d3.select(this).attr("transform", `translate(${cx},${cy}) rotate(${rotate})`);
+                d3.select(this)
+                  .attr("transform", `translate(${cx},${cy}) rotate(${rotate})`)
+                  .attr("text-anchor", anchor);
             });
 
             labels.call(d3.drag()
@@ -780,11 +1024,35 @@
         if(centerContent !== 'none') {
             const cg = g.append("g").attr("text-anchor","middle").style("fill","#333");
             const tot = Math.round(root.value);
-            if(centerContent === 'total') cg.append("text").text(tot).attr("dy", "0.3em").style("font-size", "26px").style("font-weight", "bold");
-            else if(centerContent === 'name') cg.append("text").text(root.data.name).attr("dy", "0.3em").style("font-size", "20px").style("font-weight", "bold");
+            const totStr = `${valPrefix}${tot}${valSuffix}`;
+            if(centerContent === 'total') cg.append("text").text(totStr).attr("dy", "0.3em").style("font-size", "32px").style("font-weight", "800");
+            else if(centerContent === 'name') cg.append("text").text(root.data.name).attr("dy", "0.3em").style("font-size", "22px").style("font-weight", "bold");
             else {
                 cg.append("text").text(root.data.name).attr("dy", "-0.3em").style("font-size", "14px").style("fill", "#666");
-                cg.append("text").text(tot).attr("dy", "1.0em").style("font-size", "22px").style("font-weight", "bold");
+                cg.append("text").text(totStr).attr("dy", "1.0em").style("font-size", "24px").style("font-weight", "bold");
+            }
+        }
+
+        if(showLegend !== 'none') {
+            const legG = svg.append("g");
+            const items = root.children || []; 
+            if(showLegend === 'right') {
+                legG.attr("transform", `translate(${width - 140}, 50)`);
+                items.forEach((d, i) => {
+                   const lg = legG.append("g").attr("transform", `translate(0, ${i * 25})`);
+                   lg.append("rect").attr("width", 15).attr("height", 15).attr("fill", d.data.color && d.data.color!=="#000000" ? d.data.color : colorScale(d.data.name)).attr("rx",3);
+                   lg.append("text").attr("x", 20).attr("y", 12).text(d.data.name).style("font-size", "12px").style("font-weight", "600").style("fill", "#444");
+                });
+            } else if (showLegend === 'bottom') {
+                legG.attr("transform", `translate(20, ${height - 60})`);
+                let xOffset = 0;
+                items.forEach((d, i) => {
+                   const lg = legG.append("g").attr("transform", `translate(${xOffset}, 0)`);
+                   lg.append("rect").attr("width", 15).attr("height", 15).attr("fill", d.data.color && d.data.color!=="#000000" ? d.data.color : colorScale(d.data.name)).attr("rx",3);
+                   const txt = lg.append("text").attr("x", 20).attr("y", 12).text(d.data.name).style("font-size", "12px").style("font-weight", "600").style("fill", "#444");
+                   const w = txt.node().getComputedTextLength();
+                   xOffset += (w + 40);
+                });
             }
         }
     }
