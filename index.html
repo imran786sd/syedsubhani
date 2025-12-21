@@ -11,6 +11,11 @@
             --bg: #f4f6f8;
             --border: #e0e0e0;
             --header-bg: #f1f3f4;
+            --sidebar-bg: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #ced4da;
+            --text-main: #343a40;
+            --text-muted: #6c757d;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -18,13 +23,15 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
-            color: #333;
+            color: var(--text-main);
+            background: var(--bg);
         }
 
-        /* --- SIDEBAR --- */
+        /* --- SIDEBAR STRUCTURE --- */
         #sidebar {
-            width: 620px;
-            background: white;
+            width: 400px; /* Reduced width slightly for better proportion */
+            min-width: 380px;
+            background: var(--sidebar-bg);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
@@ -33,26 +40,27 @@
         }
 
         /* --- TABS --- */
-        .tabs { display: flex; background: #fff; border-bottom: 1px solid var(--border); padding: 0 10px; }
+        .tabs { display: flex; background: #fff; border-bottom: 1px solid var(--border); padding: 0; }
         .tab-btn {
-            flex: 1; padding: 15px 0; border: none; background: transparent; cursor: pointer;
-            font-weight: 600; color: #5f6368; border-bottom: 3px solid transparent; font-size: 13px; transition: color 0.2s;
+            flex: 1; padding: 16px 0; border: none; background: transparent; cursor: pointer;
+            font-weight: 600; color: var(--text-muted); border-bottom: 3px solid transparent; 
+            font-size: 13px; transition: all 0.2s ease;
         }
         .tab-btn:hover { color: var(--primary); background: #f8f9fa; }
-        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-        .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; position: relative; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: rgba(0,123,255,0.03); }
+        .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; position: relative; background: #f8f9fa; }
         .tab-content.active { display: flex; }
 
-        /* --- GRID --- */
-        #tab-grid { padding: 0; }
+        /* --- GRID STYLES (Existing) --- */
+        #tab-grid { padding: 0; background: white; }
         .grid-header {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr 1fr 85px 50px 30px;
             background: var(--header-bg); border-bottom: 1px solid #ccc;
-            font-size: 10px; font-weight: 700; color: #5f6368; text-transform: uppercase;
+            font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
             position: sticky; top: 0; z-index: 5;
         }
-        .grid-header span { padding: 10px 4px; border-right: 1px solid #e0e0e0; text-align: center; }
+        .grid-header span { padding: 12px 4px; border-right: 1px solid #e0e0e0; text-align: center; }
 
         .data-row {
             display: grid;
@@ -61,63 +69,145 @@
         }
         .data-row:nth-child(even) { background-color: #fafafa; }
         .data-row input[type="text"].lvl-input {
-            width: 100%; border: none; background: transparent; padding: 8px 4px;
+            width: 100%; border: none; background: transparent; padding: 10px 6px;
             font-size: 12px; outline: none; border-right: 1px solid var(--border); box-sizing: border-box;
         }
         .data-row input:focus { background: #fff; box-shadow: inset 0 0 0 2px var(--primary); z-index: 2; }
-        .data-row input.val-input { width: 100%; border: none; background: transparent; padding: 8px 4px; text-align: right; font-family: 'Consolas', monospace; color: var(--primary); font-weight: 600; font-size: 12px; border-right: 1px solid var(--border); outline: none; }
+        .data-row input.val-input { width: 100%; border: none; background: transparent; padding: 10px 6px; text-align: right; font-family: 'Consolas', monospace; color: var(--primary); font-weight: 600; font-size: 12px; border-right: 1px solid var(--border); outline: none; }
 
         .color-wrapper { display: flex; align-items: center; border-right: 1px solid var(--border); background: #fff; padding: 2px; }
         input[type="color"] { border: none; width: 24px; height: 24px; cursor: pointer; background: none; padding: 0; margin-right: 4px; }
         input.hex-input { width: 100%; border: none; font-family: 'Consolas', monospace; font-size: 11px; color: #444; text-transform: uppercase; outline: none; background: transparent; }
 
-        .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ccc; font-size: 16px; }
+        .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ccc; font-size: 16px; transition: 0.2s; }
         .del-cell:hover { color: #dc3545; background: #fff0f0; }
-        .add-row-container { padding: 10px; background: white; border-top: 1px solid var(--border); }
+        .add-row-container { padding: 15px; background: white; border-top: 1px solid var(--border); }
         .btn-add {
             background: white; color: var(--primary); border: 1px dashed var(--primary);
-            padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: 600; font-size: 13px;
+            padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: 600; font-size: 13px; transition: 0.2s;
         }
-        .btn-add:hover { background: #f0f7ff; border-style: solid; }
+        .btn-add:hover { background: #f0f7ff; border-style: solid; box-shadow: 0 2px 5px rgba(0,123,255,0.1); }
 
-        /* --- SETTINGS --- */
-        #tab-settings, #tab-json { padding: 20px; }
-        .setting-group { margin-bottom: 20px; }
-        .setting-group label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.85rem; color: #444; }
-        .row-group { display: flex; gap: 10px; }
-        .row-group > div { flex: 1; }
-        select, input[type="text"].setting-input, input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        textarea { width: 100%; height: 100%; padding: 15px; border: 1px solid var(--border); border-radius: 6px; resize: none; background: #fafafa; font-family: monospace; box-sizing: border-box; }
-        input[type=range] { width: 100%; margin: 5px 0; }
-        .range-val { float: right; font-size: 11px; color: #666; font-weight: normal; }
+        /* --- NEW SETTINGS STYLES --- */
+        #tab-settings { padding: 20px; gap: 20px; padding-bottom: 80px; }
+        #tab-json { padding: 20px; }
+
+        /* Cards for Settings Groups */
+        .settings-card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .settings-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--primary);
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 8px;
+            font-weight: 700;
+        }
+
+        /* Form Controls */
+        .control-row { margin-bottom: 12px; }
+        .control-row:last-child { margin-bottom: 0; }
+        .control-label {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; font-weight: 600; color: var(--text-main); margin-bottom: 6px;
+        }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        /* Inputs & Selects */
+        input[type="text"], input[type="number"], select {
+            width: 100%; padding: 8px 10px; border: 1px solid var(--input-border);
+            border-radius: 6px; font-size: 13px; color: var(--text-main); background: var(--input-bg);
+            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        textarea {
+            width: 100%; height: 100%; padding: 15px; border: 1px solid var(--border);
+            border-radius: 6px; resize: none; background: #fafafa; font-family: 'Consolas', monospace;
+            box-sizing: border-box; font-size: 12px;
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; margin: 8px 0;
+        }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer; background: #e9ecef; border-radius: 3px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 16px; width: 16px; border-radius: 50%; background: var(--primary); cursor: pointer;
+            -webkit-appearance: none; margin-top: -5px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+        .range-val { font-size: 11px; color: var(--primary); font-weight: 600; background: #e7f1ff; padding: 2px 6px; border-radius: 4px; }
+
+        /* Custom Checkbox/Toggle */
+        .toggle-wrapper {
+            display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 10px;
+            border-radius: 6px; border: 1px solid var(--border); cursor: pointer;
+        }
+        .toggle-wrapper input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+        
+        /* Color Picker Wrapper */
+        .color-picker-group { display: flex; align-items: center; gap: 8px; }
+        .color-btn {
+            width: 32px; height: 32px; padding: 0; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; overflow: hidden;
+        }
+        .color-btn input { width: 150%; height: 150%; margin: -25%; cursor: pointer; }
+
+        /* Sub-sections */
+        .sub-panel { background: #fcfcfc; border: 1px dashed #ddd; border-radius: 6px; padding: 10px; margin-top: 10px; }
+        .sub-panel-title { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 8px; display: block; }
 
         /* --- MAIN VIEW --- */
         #main {
             flex-grow: 1; background: var(--bg); display: flex; justify-content: center; align-items: center; position: relative;
             background-image: radial-gradient(#dee2e6 1px, transparent 1px); background-size: 20px 20px;
-            padding: 20px; overflow: auto;
+            padding: 40px; overflow: auto;
         }
         #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         #chart svg {
             max-width: 100%; max-height: 100%; width: auto; height: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white; display: block;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1); background: white; display: block; border-radius: 4px;
         }
         
         text.draggable { cursor: move; }
         text.draggable:hover { font-weight: 900; }
 
         .tooltip {
-            position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.15s; margin-top: -10px; transform: translate(-50%, -100%); z-index: 100;
+            position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 8px 12px;
+            border-radius: 4px; font-size: 12px; pointer-events: none; opacity: 0;
+            transition: opacity 0.15s; margin-top: -10px; transform: translate(-50%, -100%); z-index: 100;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         /* --- ACTION BAR --- */
-        #action-bar { padding: 15px; border-top: 1px solid var(--border); background: white; display: flex; flex-direction: column; gap: 10px; }
-        .update-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
-        .update-btn:hover { background: var(--primary-hover); }
-        .download-label { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; margin-top: 5px; }
-        .download-group { display: flex; gap: 8px; }
-        .dl-btn { flex: 1; padding: 8px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; color: #444; transition: 0.2s; }
-        .dl-btn:hover { background: #f0f0f0; border-color: #999; }
+        #action-bar { padding: 20px; border-top: 1px solid var(--border); background: white; display: flex; flex-direction: column; gap: 12px; }
+        .update-btn {
+            width: 100%; padding: 14px; background: var(--primary); color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0,123,255,0.3); transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .update-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 12px rgba(0,123,255,0.35); }
+        .update-btn:active { transform: translateY(0); }
+        
+        .download-label { font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 5px; }
+        .download-group { display: flex; gap: 10px; }
+        .dl-btn {
+            flex: 1; padding: 10px; border: 1px solid #ced4da; background: white; border-radius: 6px;
+            cursor: pointer; font-size: 12px; font-weight: 600; color: #495057; transition: 0.2s;
+        }
+        .dl-btn:hover { background: #f1f3f5; border-color: #adb5bd; color: #212529; }
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -143,57 +233,88 @@
     <div id="tab-json" class="tab-content"><textarea id="jsonInput"></textarea></div>
 
     <div id="tab-settings" class="tab-content">
-        <div class="setting-group">
-            <label>Output Size (px)</label>
-            <div class="row-group">
-                <div><input type="number" id="chartWidth" value="1000" placeholder="Width" onchange="renderCurrent()"></div>
-                <div><input type="number" id="chartHeight" value="1000" placeholder="Height" onchange="renderCurrent()"></div>
+        
+        <div class="settings-card">
+            <h3>Canvas Dimensions</h3>
+            <div class="control-row">
+                <label class="control-label">Chart Title</label>
+                <input type="text" id="chartTitle" placeholder="My Sunburst Chart" oninput="renderCurrent()">
+            </div>
+            <div class="control-grid">
+                <div>
+                    <label class="control-label">Width (px)</label>
+                    <input type="number" id="chartWidth" value="1000" placeholder="Width" onchange="renderCurrent()">
+                </div>
+                <div>
+                    <label class="control-label">Height (px)</label>
+                    <input type="number" id="chartHeight" value="1000" placeholder="Height" onchange="renderCurrent()">
+                </div>
             </div>
         </div>
 
-        <div class="setting-group">
-            <label>Color Theme (Resets Custom Colors)</label>
-            <select id="colorTheme" onchange="applyThemeReset()">
-                <option value="ocean">Ocean</option>
-                <option value="sunset" selected>Sunset</option>
-                <option value="forest">Forest</option>
-                <option value="corporate">Corporate</option>
-                <option value="neon">Neon</option>
-                <option value="berry">Berry</option>
-                <option value="schemeCategory10">Standard 10</option>
-            </select>
+        <div class="settings-card">
+            <h3>Appearance & Theme</h3>
+            <div class="control-row">
+                <label class="control-label">Color Theme</label>
+                <select id="colorTheme" onchange="applyThemeReset()">
+                    <option value="ocean">Ocean</option>
+                    <option value="sunset" selected>Sunset</option>
+                    <option value="forest">Forest</option>
+                    <option value="corporate">Corporate</option>
+                    <option value="neon">Neon</option>
+                    <option value="berry">Berry</option>
+                    <option value="schemeCategory10">Standard 10</option>
+                </select>
+            </div>
+            <div class="control-row">
+                <label class="control-label">Visual Style</label>
+                <select id="visualStyle" onchange="renderCurrent()">
+                    <option value="flat" selected>Flat (Standard)</option>
+                    <option value="bevel">3D Bevel (Raised)</option>
+                    <option value="shadow">Drop Shadow</option>
+                    <option value="glow">Outer Glow</option>
+                </select>
+            </div>
             
-            <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
-                <label style="font-weight:600; font-size:12px; color:#444;">Per-Ring Opacity Control</label>
-                
-                <div style="display:flex; gap:10px; margin-top:5px;">
-                    <div style="flex:1">
-                        <label style="font-size:10px; color:#666;">Level 1 (Inner)</label>
+            <div class="sub-panel">
+                <span class="sub-panel-title">Layer Opacity</span>
+                <div class="control-grid">
+                    <div>
+                        <label class="control-label" style="font-weight:normal;">L1 (Inner)</label>
                         <input type="range" id="opL1" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()">
                     </div>
-                    <div style="flex:1">
-                        <label style="font-size:10px; color:#666;">Level 2</label>
+                    <div>
+                        <label class="control-label" style="font-weight:normal;">L2</label>
                         <input type="range" id="opL2" min="0.1" max="1" step="0.1" value="0.9" oninput="renderCurrent()">
                     </div>
-                </div>
-                <div style="display:flex; gap:10px; margin-top:5px;">
-                    <div style="flex:1">
-                        <label style="font-size:10px; color:#666;">Level 3</label>
+                    <div>
+                        <label class="control-label" style="font-weight:normal;">L3</label>
                         <input type="range" id="opL3" min="0.1" max="1" step="0.1" value="0.8" oninput="renderCurrent()">
                     </div>
-                    <div style="flex:1">
-                        <label style="font-size:10px; color:#666;">Level 4 (Outer)</label>
+                    <div>
+                        <label class="control-label" style="font-weight:normal;">L4 (Outer)</label>
                         <input type="range" id="opL4" min="0.1" max="1" step="0.1" value="0.7" oninput="renderCurrent()">
                     </div>
                 </div>
             </div>
+            
+            <div class="control-row" style="margin-top: 15px;">
+                <label class="control-label">Background</label>
+                <div class="toggle-wrapper">
+                    <input type="checkbox" id="bgTransparent" checked onchange="toggleBgColor()"> 
+                    <span style="font-size:12px; flex:1;">Transparent</span>
+                    <div class="color-btn">
+                        <input type="color" id="bgColor" value="#ffffff" disabled oninput="renderCurrent()">
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="setting-group">
-            <label>Typography & Label Color</label>
-            <div class="row-group">
+        <div class="settings-card">
+            <h3>Typography</h3>
+            <div class="control-grid">
                 <div>
-                    <label style="font-weight:normal; font-size:11px;">Font</label>
+                    <label class="control-label">Font Family</label>
                     <select id="fontFamily" onchange="renderCurrent()">
                         <option value="sans-serif">Sans-Serif</option>
                         <option value="Arial">Arial</option>
@@ -202,126 +323,113 @@
                     </select>
                 </div>
                 <div>
-                    <label style="font-weight:normal; font-size:11px;">Size <span id="val-fs">12px</span></label>
-                    <input type="range" id="fontSize" min="8" max="30" value="12" oninput="document.getElementById('val-fs').innerText = this.value+'px'; renderCurrent()">
-                </div>
-            </div>
-            
-            <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; background:#f9f9f9; padding:8px; border:1px solid #eee;">
-                <label style="font-weight:normal; font-size:12px; margin:0;">Label Text Color</label>
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <input type="color" id="labelColor" value="#ffffff" oninput="renderCurrent()" style="width:30px; height:25px; border:none; padding:0; cursor:pointer;">
-                </div>
-            </div>
-
-            <div class="row-group" style="margin-top:10px;">
-                <div>
-                    <label style="font-weight:normal; font-size:11px;">Weight</label>
+                    <label class="control-label">Weight</label>
                     <select id="fontWeight" onchange="renderCurrent()">
                         <option value="normal">Normal</option>
                         <option value="bold">Bold</option>
                     </select>
                 </div>
+            </div>
+            <div class="control-grid" style="margin-top: 10px;">
                 <div>
-                    <label style="font-weight:normal; font-size:11px;">Style</label>
+                    <label class="control-label">Style</label>
                     <select id="fontStyle" onchange="renderCurrent()">
                         <option value="normal">Normal</option>
                         <option value="italic">Italic</option>
                     </select>
                 </div>
+                <div>
+                     <label class="control-label">Label Color</label>
+                     <div class="color-picker-group">
+                        <div class="color-btn" style="flex:1">
+                            <input type="color" id="labelColor" value="#ffffff" oninput="renderCurrent()">
+                        </div>
+                     </div>
+                </div>
+            </div>
+            <div class="control-row" style="margin-top: 10px;">
+                 <label class="control-label">Size <span id="val-fs" class="range-val">12px</span></label>
+                 <input type="range" id="fontSize" min="8" max="30" value="12" oninput="document.getElementById('val-fs').innerText = this.value+'px'; renderCurrent()">
             </div>
         </div>
 
-        <div class="setting-group">
-            <label>Visual Style</label>
-            <select id="visualStyle" onchange="renderCurrent()">
-                <option value="flat" selected>Flat (Standard)</option>
-                <option value="bevel">3D Bevel (Raised)</option>
-                <option value="shadow">Drop Shadow</option>
-                <option value="glow">Outer Glow</option>
-            </select>
-        </div>
+        <div class="settings-card">
+            <h3>Layout & Labels</h3>
+            <div class="control-grid">
+                <div>
+                    <label class="control-label">Content</label>
+                    <select id="labelContent" onchange="renderCurrent()">
+                        <option value="name">Name Only</option>
+                        <option value="value">Value Only</option>
+                        <option value="percent" selected>Percentage</option>
+                        <option value="name_percent">Name + %</option>
+                        <option value="name_value">Name + Val</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="control-label">Center Hole</label>
+                    <select id="centerContent" onchange="renderCurrent()">
+                        <option value="total" selected>Total Value</option>
+                        <option value="name">Root Name</option>
+                        <option value="both">Name + Total</option>
+                        <option value="none">Empty</option>
+                    </select>
+                </div>
+            </div>
 
-        <div class="setting-group">
-            <label>Labels Positioning</label>
-            <select id="labelOrientation" onchange="renderCurrent()">
-                <option value="auto" selected>Auto (Radial)</option>
-                <option value="horizontal">Horizontal (Straight)</option>
-                <option value="tangential">Tangential (Perpendicular)</option>
-            </select>
-            <label style="font-weight:normal; font-size:11px; margin-top:8px;">Rotation <span id="val-rot" class="range-val">0°</span></label>
-            <input type="range" id="labelRotation" min="-180" max="180" value="0" oninput="updateRangeLabel('rot', this.value, '°'); renderCurrent()">
-            
-            <div style="margin-top:10px; border-top:1px dashed #ccc; padding-top:10px;">
-                <label style="font-weight:normal; font-size:11px;">Position Strategy</label>
-                <select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()">
-                    <option value="inside">Inside Slices</option>
-                    <option value="outside" selected>Outside (Leaves Only)</option>
+            <div class="control-row" style="margin-top:10px;">
+                <label class="control-label">Text Orientation</label>
+                <select id="labelOrientation" onchange="renderCurrent()">
+                    <option value="auto" selected>Auto (Radial)</option>
+                    <option value="horizontal">Horizontal (Straight)</option>
+                    <option value="tangential">Tangential</option>
                 </select>
             </div>
-            <div id="labelOffsetControl" style="margin-top:10px;">
-                <label style="font-weight: normal; font-size: 12px;">Distance (Outside) <span id="val-dist" class="range-val">10px</span></label>
-                <input type="range" id="labelDist" min="0" max="100" value="10" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
+
+            <div class="control-row">
+                <label class="control-label">Rotation <span id="val-rot" class="range-val">0°</span></label>
+                <input type="range" id="labelRotation" min="-180" max="180" value="0" oninput="updateRangeLabel('rot', this.value, '°'); renderCurrent()">
+            </div>
+
+            <div class="sub-panel">
+                <span class="sub-panel-title">Positioning</span>
+                <div class="control-row">
+                    <select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()">
+                        <option value="inside">Inside Slices</option>
+                        <option value="outside" selected>Outside (Leaves Only)</option>
+                    </select>
+                </div>
+                <div id="labelOffsetControl" style="margin-top:10px;">
+                    <label class="control-label" style="font-weight: normal;">Outside Distance <span id="val-dist" class="range-val">10px</span></label>
+                    <input type="range" id="labelDist" min="0" max="100" value="10" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
+                </div>
+                 <div class="control-row" style="margin-top:10px;">
+                    <label class="control-label">Show Labels</label>
+                    <select id="showLabels" onchange="renderCurrent()">
+                        <option value="auto">Auto (Hide small)</option>
+                        <option value="all">Always Show All</option>
+                        <option value="none">Hide All</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-row" style="margin-top:15px;">
+                <label class="control-label">Chart Margin <span id="val-pad" class="range-val">50px</span></label>
+                <input type="range" id="chartPadding" min="0" max="300" value="50" oninput="updateRangeLabel('pad', this.value, 'px'); renderCurrent()">
+            </div>
+            <div class="control-grid">
+                <div>
+                     <label class="control-label" style="font-weight:normal;">Slice Gap <span id="val-gap" class="range-val">2px</span></label>
+                     <input type="range" id="sliceGap" min="0" max="20" value="2" oninput="updateRangeLabel('gap', this.value, 'px'); renderCurrent()">
+                </div>
+                <div>
+                     <label class="control-label" style="font-weight:normal;">Ring Padding <span id="val-ring" class="range-val">2px</span></label>
+                     <input type="range" id="ringGap" min="0" max="20" value="2" oninput="updateRangeLabel('ring', this.value, 'px'); renderCurrent()">
+                </div>
             </div>
         </div>
 
-        <div class="setting-group">
-            <label>Background</label>
-            <div style="display:flex; align-items:center; gap:10px; background:#f9f9f9; padding:8px; border-radius:4px; border:1px solid #ddd;">
-                <label style="font-weight:normal; font-size:12px; display:flex; align-items:center; cursor:pointer;">
-                    <input type="checkbox" id="bgTransparent" checked onchange="toggleBgColor()"> 
-                    &nbsp;Transparent
-                </label>
-                <div style="width:1px; height:20px; background:#ccc;"></div>
-                <input type="color" id="bgColor" value="#ffffff" disabled oninput="renderCurrent()" style="width:40px; height:25px; padding:0; border:none; cursor:pointer;">
-            </div>
-        </div>
-
-        <div class="setting-group">
-            <label>Spacing</label>
-            <label style="font-weight: normal; font-size: 12px;">Chart Margin <span id="val-pad" class="range-val">50px</span></label>
-            <input type="range" id="chartPadding" min="0" max="300" value="50" oninput="updateRangeLabel('pad', this.value, 'px'); renderCurrent()">
-            <label style="font-weight: normal; font-size: 12px; margin-top:5px;">Slice Gap <span id="val-gap" class="range-val">2px</span></label>
-            <input type="range" id="sliceGap" min="0" max="20" value="2" oninput="updateRangeLabel('gap', this.value, 'px'); renderCurrent()">
-            <label style="font-weight: normal; font-size: 12px; margin-top:5px;">Ring Padding <span id="val-ring" class="range-val">2px</span></label>
-            <input type="range" id="ringGap" min="0" max="20" value="2" oninput="updateRangeLabel('ring', this.value, 'px'); renderCurrent()">
-        </div>
-
-        <div class="setting-group">
-            <label>Chart Title</label>
-            <input type="text" class="setting-input" id="chartTitle" placeholder="My Sunburst Chart" oninput="renderCurrent()">
-        </div>
-
-        <div class="setting-group">
-            <label>Label Content</label>
-            <select id="labelContent" onchange="renderCurrent()">
-                <option value="name">Name Only</option>
-                <option value="value">Value Only</option>
-                <option value="percent" selected>Percentage Only</option>
-                <option value="name_percent">Name + Percentage</option>
-                <option value="name_value">Name + Value</option>
-                <option value="all">All</option>
-            </select>
-        </div>
-
-        <div class="setting-group">
-            <label>Label Visibility</label>
-            <select id="showLabels" onchange="renderCurrent()">
-                <option value="auto">Auto (Hide small)</option>
-                <option value="all">Always Show All</option>
-                <option value="none">Hide All</option>
-            </select>
-        </div>
-
-        <div class="setting-group">
-            <label>Center Content</label>
-            <select id="centerContent" onchange="renderCurrent()">
-                <option value="total" selected>Total Value</option>
-                <option value="name">Root Name</option>
-                <option value="both">Name + Total</option>
-                <option value="none">Empty Hole</option>
-            </select>
-        </div>
     </div>
 
     <div id="action-bar">
@@ -636,8 +744,8 @@
                 const degrees = (angle * 180 / Math.PI) - 90;
 
                 if (labelPosition === 'outside' && !d.children) {
-                     rotate = (angle > Math.PI) ? degrees + 180 : degrees;
-                     if(orientation === 'horizontal') rotate = 0;
+                      rotate = (angle > Math.PI) ? degrees + 180 : degrees;
+                      if(orientation === 'horizontal') rotate = 0;
                 } else {
                     if(orientation === 'auto') {
                         rotate = degrees;
