@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pyramid & Funnel Editor Pro (Fixed)</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --primary: #e67e22; 
+            --primary-hover: #d35400;
+            --bg: #f4f6f8;
+            --border: #e0e0e0;
+            --sidebar-bg: #ffffff;
+            --text-main: #212529;
+            --danger: #ef233c;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; display: flex; height: 100vh; overflow: hidden;
+            color: var(--text-main); background: var(--bg);
+        }
+
+        /* --- SIDEBAR --- */
+        #sidebar {
+            width: 450px; min-width: 440px; background: var(--sidebar-bg);
+            border-right: 1px solid var(--border); display: flex; flex-direction: column;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.04); z-index: 10; height: 100vh;
+        }
+
+        /* --- TABS --- */
+        .tabs { display: flex; background: #fff; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .tab-btn {
+            flex: 1; padding: 18px 0; border: none; background: transparent; cursor: pointer;
+            font-weight: 600; color: #6c757d; border-bottom: 3px solid transparent;
+            font-size: 13px; transition: all 0.2s; letter-spacing: 0.3px; text-transform: uppercase;
+        }
+        .tab-btn:hover { color: var(--primary); background: #f8f9fa; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: rgba(230, 126, 34, 0.08); }
+        
+        #btn-json { display: none; }
+        .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; background: #fff; padding-bottom: 20px; }
+        .tab-content.active { display: flex !important; }
+
+        /* --- GRID --- */
+        .grid-header {
+            display: grid; grid-template-columns: 2fr 90px 80px 35px;
+            background: #f1f3f5; border-bottom: 1px solid #dee2e6;
+            font-size: 11px; font-weight: 700; color: #495057; text-transform: uppercase;
+            letter-spacing: 0.5px; position: sticky; top: 0; z-index: 5;
+        }
+        .grid-header span { padding: 12px 8px; border-right: 1px solid #e9ecef; }
+        .data-row {
+            display: grid; grid-template-columns: 2fr 90px 80px 35px;
+            border-bottom: 1px solid #f1f3f5; transition: background 0.15s;
+        }
+        .data-row:hover { background-color: #f8f9fa; }
+        .data-row:hover .del-cell { opacity: 1; }
+        
+        .data-row input { width: 100%; border: none; background: transparent; padding: 12px 8px; font-size: 12px; outline: none; border-right: 1px solid #f1f3f5; box-sizing: border-box; }
+        .data-row input.val-input { text-align: right; font-family: 'Consolas', monospace; color: var(--primary); font-weight: 600; }
+        .data-row input:focus { background: white; box-shadow: inset 0 -2px 0 var(--primary); }
+
+        .color-wrapper { display: flex; align-items: center; border-right: 1px solid #f1f3f5; padding: 4px 6px; }
+        input[type="color"] { border: none; width: 20px; height: 20px; cursor: pointer; padding: 0; margin-right: 6px; border-radius: 4px; }
+        input.hex-input { font-family: 'Consolas', monospace; font-size: 10px; color: #666; text-transform: uppercase; padding: 0 !important; }
+
+        .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #adb5bd; font-size: 18px; opacity: 0; transition: 0.2s; }
+        .del-cell:hover { color: var(--danger); background: #fff5f5; }
+
+        .grid-controls { padding: 20px; background: white; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 15px; }
+        .btn-add { background: #fff3e0; color: var(--primary); border: 1px solid transparent; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-add:hover { background: #ffe0b2; }
+
+        /* Import Section */
+        .import-section { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff; }
+        .import-header { padding: 12px 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #555; }
+        .import-body { padding: 15px; display: none; border-top: 1px solid #e0e0e0; }
+        .import-body.open { display: block; }
+        .import-body textarea { width: 100%; min-height: 80px; border: 1px solid #ced4da; padding: 10px; font-family: 'Consolas', monospace; font-size: 11px; margin-bottom: 10px; box-sizing: border-box; }
+        .btn-parse { width: 100%; padding: 8px; background: #495057; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+        /* --- SETTINGS --- */
+        #tab-settings { padding: 25px 20px; gap: 20px; background: #f8f9fa; }
+        #tab-json { padding: 20px; } .settings-card { background: white; border-radius: 12px; border: 1px solid #e9ecef; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .settings-card h3 { margin: 0 0 15px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); border-bottom: 1px solid #f1f3f5; padding-bottom: 8px; font-weight: 800; }
+        
+        .control-row { margin-bottom: 12px; }
+        .control-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #343a40; margin-bottom: 6px; }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
+        input[type="range"] { width: 100%; margin: 8px 0; accent-color: var(--primary); cursor: pointer; }
+        .range-val { font-size: 11px; color: var(--primary); font-weight: 700; background: #fff3e0; padding: 2px 6px; border-radius: 10px; }
+        .checkbox-wrapper { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+        input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+
+        /* --- MAIN VIEW --- */
+        #main { flex-grow: 1; background: var(--bg); position: relative; background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px); background-size: 24px 24px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        
+        #menu-container { position: absolute; top: 20px; right: 20px; z-index: 100; }
+        #menu-btn { background: white; border: 1px solid #ced4da; width: 44px; height: 44px; border-radius: 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        #menu-btn:hover { transform: scale(1.05); color: var(--primary); }
+        #main-menu { display: none; position: absolute; right: 0; top: 55px; background: white; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 12px; overflow: hidden; z-index: 101; padding: 6px 0; }
+        #main-menu.show { display: block; animation: fadeIn 0.15s ease-out; }
+        .menu-item { padding: 10px 20px; display: block; color: #495057; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.1s; }
+        .menu-item:hover { background: #f1f3f5; color: var(--primary); }
+        .menu-separator { height: 1px; background: #e9ecef; margin: 4px 0; }
+
+        #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; }
+        svg { max-width: 100%; max-height: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; border-radius: 16px; display: block; }
+
+        .tooltip { position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; transform: translate(-50%, -100%); margin-top: -10px; }
+        
+        /* Footer Update Button */
+        #sidebar-footer { padding: 20px; border-top: 1px solid var(--border); background: white; z-index: 20; }
+        .update-btn-main { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3); transition: transform 0.1s; }
+        .update-btn-main:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        .layer path { transition: opacity 0.2s; cursor: pointer; }
+        .layer:hover path { opacity: 0.85; }
+        text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-grid" onclick="switchTab('grid')">Data Editor</button>
+        <button class="tab-btn" id="btn-settings" onclick="switchTab('settings')">Settings</button>
+        <button class="tab-btn" id="btn-json" onclick="switchTab('json')">JSON Source</button>
+    </div>
+
+    <div id="tab-grid" class="tab-content active">
+        <div class="grid-header">
+            <span>Stage / Level</span><span title="Hex Code">Color</span><span style="text-align: right;">Value</span><span></span>
+        </div>
+        <div id="rows-container"></div>
+        <div class="grid-controls">
+            <button class="btn-add" onclick="addGridRow()">+ Add Stage</button>
+            <div class="import-section">
+                <div class="import-header" onclick="toggleImport()">
+                    <span>📂 Import CSV Data</span><span id="import-arrow">▼</span>
+                </div>
+                <div class="import-body" id="import-body">
+                    <textarea id="csvInput" placeholder="Stage, Value&#10;Awareness, 1000&#10;Interest, 500"></textarea>
+                    <button class="btn-parse" onclick="parseCSV()">Parse & Overwrite</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-json" class="tab-content"><textarea id="jsonInput" style="width:100%; height:100%; border:none; padding:15px; font-family:monospace; box-sizing:border-box; outline:none;"></textarea></div>
+
+    <div id="tab-settings" class="tab-content">
+        <div class="settings-card">
+            <h3>Structure</h3>
+            <div class="control-row">
+                <label class="control-label">Chart Title</label>
+                <input type="text" id="chartTitle" value="Conversion Funnel" oninput="renderCurrent()">
+            </div>
+            <div class="control-grid">
+                <div><label class="control-label">Width</label><input type="number" id="chartWidth" value="800" onchange="renderCurrent()"></div>
+                <div><label class="control-label">Height</label><input type="number" id="chartHeight" value="600" onchange="renderCurrent()"></div>
+            </div>
+            <div class="control-row" style="margin-top:15px;">
+                <label class="control-label">Inverted (Funnel Mode)</label>
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="inverted" checked onchange="renderCurrent()"> <span>Invert Triangle</span>
+                </label>
+            </div>
+            <div class="control-row">
+                <label class="control-label">Sizing Logic</label>
+                <select id="sizeMode" onchange="renderCurrent()">
+                    <option value="area" selected>Proportional (Area)</option>
+                    <option value="height">Uniform Height (Steps)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-card" style="border-left: 3px solid var(--primary);">
+            <h3>Shape & Spacing</h3>
+            <div class="control-row">
+                <label class="control-label">Layer Gap <span id="val-gap" class="range-val">2px</span></label>
+                <input type="range" id="gapSize" min="0" max="20" value="2" oninput="updateRangeLabel('gap', this.value, 'px'); renderCurrent()">
+            </div>
+            <div class="control-row">
+                <label class="control-label">Apex Width (Neck) <span id="val-neck" class="range-val">0%</span></label>
+                <input type="range" id="neckWidth" min="0" max="80" value="0" oninput="updateRangeLabel('neck', this.value, '%'); renderCurrent()">
+                <div style="font-size:10px; color:#777; margin-top:4px;">0% is sharp point, >0% is trapezoid.</div>
+            </div>
+            <div class="control-row">
+                 <label class="control-label">Base Width <span id="val-base" class="range-val">80%</span></label>
+                 <input type="range" id="baseWidth" min="20" max="100" value="80" oninput="updateRangeLabel('base', this.value, '%'); renderCurrent()">
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3>Appearance</h3>
+            <div class="control-row">
+                <label class="control-label">Color Theme</label>
+                <select id="colorTheme" onchange="applyThemeReset()">
+                    <option value="sunset" selected>Sunset (Orange/Red)</option>
+                    <option value="ocean">Ocean (Blue)</option>
+                    <option value="forest">Forest (Green)</option>
+                    <option value="corporate">Corporate</option>
+                    <option value="neon">Neon</option>
+                </select>
+            </div>
+            <div class="control-grid">
+                <div><label class="control-label">Stroke</label><div class="color-wrapper" style="border:1px solid #ccc; border-radius:4px;"><input type="color" id="strokeColor" value="#ffffff" oninput="renderCurrent()"></div></div>
+                <div><label class="control-label">Width</label><input type="number" id="strokeWidth" value="2" min="0" max="10" onchange="renderCurrent()"></div>
+            </div>
+             <div class="control-row" style="margin-top: 10px;">
+                <label class="control-label">Background</label>
+                <div style="display:flex; align-items:center; gap:10px; background:#eee; padding:5px; border-radius:6px;">
+                    <input type="checkbox" id="bgTransparent" checked onchange="toggleBgColor()"> <span>Transparent</span>
+                    <input type="color" id="bgColor" value="#ffffff" disabled oninput="renderCurrent()">
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3>Labels</h3>
+             <div class="control-grid">
+                <div><label class="control-label">Position</label><select id="labelPos" onchange="renderCurrent()"><option value="center">Center</option><option value="right">Right Side</option><option value="left">Left Side</option><option value="none">Hidden</option></select></div>
+                <div><label class="control-label">Content</label><select id="labelType" onchange="renderCurrent()"><option value="name">Name</option><option value="value">Value</option><option value="percent">Percent</option><option value="all" selected>All</option></select></div>
+            </div>
+            <div class="control-row" style="margin-top:10px;">
+                <label class="control-label">Font Size</label>
+                <input type="number" id="fontSize" value="14" onchange="renderCurrent()">
+            </div>
+            <div class="control-row">
+                 <label class="control-label">Label Color</label>
+                 <div class="color-wrapper" style="border:1px solid #ccc; border-radius:4px;"><input type="color" id="labelColor" value="#333333" oninput="renderCurrent()"></div>
+            </div>
+        </div>
+
+        <div class="settings-card" style="border-left: 3px solid #6c757d;">
+            <h3>Advanced</h3>
+            <div class="control-row"><label class="control-label" style="font-weight:normal; cursor:pointer;"><input type="checkbox" id="showJsonTab" onchange="toggleJsonTab()"> &nbsp; Show JSON Tab</label></div>
+        </div>
+    </div>
+
+    <div id="sidebar-footer">
+        <button class="update-btn-main" onclick="syncAndRender()">
+            <span style="font-size:16px;">⟳</span> Update Chart
+        </button>
+    </div>
+</div>
+
+<div id="main">
+    <div id="menu-container">
+        <button id="menu-btn" onclick="toggleMenu()" title="Options">☰</button>
+        <div id="main-menu">
+            <div class="menu-item" onclick="exportProject()">💾 Save JSON</div>
+            <div class="menu-item" onclick="document.getElementById('importFile').click()">📂 Load JSON</div>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importProject(this)">
+            <div class="menu-separator"></div>
+            <div class="menu-item" onclick="downloadImage('svg')">📷 Export SVG</div>
+            <div class="menu-item" onclick="downloadImage('png')">📷 Export PNG</div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" style="color:#e03131" onclick="clearStorage()">⚠️ Reset</div>
+        </div>
+    </div>
+    <div id="chart">
+        <div style="text-align:center; color:#888;">Initializing...<br>If this stays here, check internet connection for d3.js</div>
+    </div>
+    <div id="tooltip" class="tooltip"></div>
+</div>
+
+<script>
+    // --- ERROR HANDLING FOR BLANK PAGE ---
+    window.addEventListener('error', function(event) {
+        document.body.innerHTML = `<div style="padding:20px; font-family:sans-serif;">
+            <h2 style="color:red">Application Error</h2>
+            <p>Something went wrong preventing the page from loading.</p>
+            <p><strong>Error:</strong> ${event.message}</p>
+            <p><strong>Note:</strong> Ensure you have an internet connection to load the D3.js library.</p>
+        </div>`;
+    });
+
+    const STORAGE_KEY = 'pyramid_editor_pro_v3_clean'; // Changed key to force clean load
+    let activeTab = 'grid';
+    
+    // Default Data
+    let gridData = [
+        { name: "Website Visits", color: "#e67e22", val: 1000 },
+        { name: "Downloads", color: "#f39c12", val: 600 },
+        { name: "Requested Quote", color: "#f1c40f", val: 300 },
+        { name: "Invoice Sent", color: "#d35400", val: 100 },
+        { name: "Finalized", color: "#c0392b", val: 50 }
+    ];
+
+    const THEMES = {
+        sunset: ["#e67e22", "#f39c12", "#f1c40f", "#d35400", "#c0392b", "#8e44ad"],
+        ocean: ["#03045e", "#0077b6", "#00b4d8", "#90e0ef", "#caf0f8"],
+        forest: ["#2d6a4f", "#40916c", "#52b788", "#74c69d", "#b7e4c7"],
+        corporate: ["#2c3e50", "#34495e", "#7f8c8d", "#bdc3c7", "#ecf0f1"],
+        neon: ["#ff006e", "#8338ec", "#3a86ff", "#fb5607", "#ffbe0b"]
+    };
+
+    function getSettings() {
+        const getVal = (id, def) => { const el = document.getElementById(id); return el ? el.value : def; };
+        const getCheck = (id) => { const el = document.getElementById(id); return el ? el.checked : false; };
+
+        return {
+            chartWidth: getVal('chartWidth', 800),
+            chartHeight: getVal('chartHeight', 600),
+            chartTitle: getVal('chartTitle', ''),
+            gapSize: getVal('gapSize', 2),
+            neckWidth: getVal('neckWidth', 0),
+            baseWidth: getVal('baseWidth', 80),
+            colorTheme: getVal('colorTheme', 'sunset'),
+            strokeColor: getVal('strokeColor', '#ffffff'),
+            strokeWidth: getVal('strokeWidth', 2),
+            bgColor: getVal('bgColor', '#ffffff'),
+            labelPos: getVal('labelPos', 'center'),
+            labelType: getVal('labelType', 'all'),
+            fontSize: getVal('fontSize', 14),
+            labelColor: getVal('labelColor', '#333'),
+            sizeMode: getVal('sizeMode', 'area'),
+            inverted: getCheck('inverted'),
+            bgTransparent: getCheck('bgTransparent'),
+            showJsonTab: getCheck('showJsonTab')
+        };
+    }
+
+    function saveState() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ gridData, settings: getSettings() })); } catch(e){}
+    }
+
+    function loadState() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return;
+        try {
+            const data = JSON.parse(raw);
+            if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
+            if(data.settings) {
+                const s = data.settings;
+                Object.keys(s).forEach(k => {
+                    const el = document.getElementById(k);
+                    if(el) {
+                        if(k === 'bgTransparent' || k === 'showJsonTab' || k === 'inverted') el.checked = s[k];
+                        else el.value = s[k];
+                    }
+                });
+                if(s.gapSize) updateRangeLabel('gap', s.gapSize, 'px');
+                if(s.neckWidth) updateRangeLabel('neck', s.neckWidth, '%');
+                if(s.baseWidth) updateRangeLabel('base', s.baseWidth, '%');
+            }
+        } catch(e) {}
+    }
+
+    // --- UI HELPERS ---
+    function switchTab(t) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        const btn = document.getElementById(`btn-${t}`);
+        const tab = document.getElementById(`tab-${t}`);
+        if(btn) btn.classList.add('active');
+        if(tab) tab.classList.add('active');
+        if (activeTab === 'grid' && t === 'json') document.getElementById('jsonInput').value = JSON.stringify(gridData, null, 2);
+        activeTab = t;
+    }
+
+    function updateRangeLabel(id, val, suf) { 
+        const el = document.getElementById(`val-${id}`);
+        if(el) el.innerText = val + suf; 
+    }
+    
+    function toggleBgColor() { 
+        const el = document.getElementById('bgColor');
+        const check = document.getElementById('bgTransparent');
+        if(el && check) el.disabled = check.checked;
+        renderCurrent();
+    }
+
+    function toggleJsonTab() { 
+        const check = document.getElementById('showJsonTab');
+        const btn = document.getElementById('btn-json');
+        if(check && btn) btn.style.display = check.checked ? 'block' : 'none';
+        if(!check.checked && activeTab==='json') switchTab('grid');
+    }
+
+    function toggleMenu() { document.getElementById('main-menu').classList.toggle('show'); }
+    
+    // --- DATA GRID ---
+    function renderGridRows() {
+        const c = document.getElementById('rows-container'); 
+        if(!c) return;
+        c.innerHTML = '';
+        gridData.forEach((r, i) => {
+            const col = r.color || "#000000";
+            const div = document.createElement('div'); div.className = 'data-row';
+            div.innerHTML = `
+                <input type="text" value="${r.name}" onchange="updateRow(${i}, 'name', this.value)">
+                <div class="color-wrapper">
+                    <input type="color" value="${col}" oninput="updateColor(${i}, this.value, 'picker')">
+                    <input type="text" class="hex-input" value="${col}" oninput="updateColor(${i}, this.value, 'text')">
+                </div>
+                <input type="number" class="val-input" value="${r.val}" onchange="updateRow(${i}, 'val', this.value)">
+                <div class="del-cell" onclick="removeRow(${i})">×</div>
+            `;
+            c.appendChild(div);
+        });
+    }
+
+    function addGridRow() {
+        const theme = document.getElementById('colorTheme').value || 'sunset';
+        const colorScale = (THEMES[theme]) ? THEMES[theme] : THEMES['sunset'];
+        gridData.push({ name: "New Stage", color: colorScale[gridData.length % colorScale.length], val: 100 });
+        renderGridRows(); saveState();
+    }
+    function removeRow(i) { gridData.splice(i, 1); renderGridRows(); syncAndRender(); }
+    function updateRow(i, k, v) { gridData[i][k] = k==='val'?parseFloat(v):v; saveState(); }
+    function updateColor(i, v, src) {
+        gridData[i].color = v; 
+        const row = document.getElementById('rows-container').children[i];
+        if(src==='picker') row.querySelector('.hex-input').value = v;
+        else row.querySelector('input[type="color"]').value = v;
+        syncAndRender();
+    }
+
+    // --- MAIN RENDER LOGIC ---
+    function syncAndRender() {
+        saveState();
+        if(activeTab === 'json') {
+            try { gridData = JSON.parse(document.getElementById('jsonInput').value); } catch(e){}
+        } else {
+            document.getElementById('jsonInput').value = JSON.stringify(gridData, null, 2);
+        }
+        renderChart();
+    }
+    function renderCurrent() { syncAndRender(); }
+
+    function renderChart() {
+        if (typeof d3 === 'undefined') {
+            document.getElementById("chart").innerHTML = "<div style='color:red; text-align:center; padding:20px;'><strong>Error:</strong> D3.js library not loaded.<br>Please check your internet connection and refresh.</div>";
+            return;
+        }
+
+        try {
+            d3.select("#chart").html("");
+            const s = getSettings();
+            const width = parseInt(s.chartWidth) || 800;
+            const height = parseInt(s.chartHeight) || 600;
+            
+            const svg = d3.select("#chart").append("svg")
+                .attr("width", width).attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("xmlns", "http://www.w3.org/2000/svg");
+            
+            if(!s.bgTransparent) svg.style("background-color", s.bgColor);
+
+            let cx = width / 2;
+            let cy = 50 + (s.chartTitle ? 30 : 0);
+            const availH = Math.max(100, height - 100 - (s.chartTitle ? 30 : 0));
+            const maxW = Math.min(width - 60, availH * 1.5) * (parseInt(s.baseWidth)/100);
+            
+            if(s.chartTitle) {
+                svg.append("text").attr("x", width/2).attr("y", 40).attr("text-anchor", "middle")
+                   .style("font-size", "24px").style("font-weight", "bold").style("fill", "#333").text(s.chartTitle);
+            }
+
+            const totalVal = d3.sum(gridData, d => d.val) || 1; 
+            const neckRatio = parseInt(s.neckWidth) / 100;
+            let accArea = 0;
+            const totalArea = availH * maxW * (neckRatio + (1 - neckRatio) / 2);
+            let prevY = 0;
+            const stepH = availH / Math.max(1, gridData.length);
+            const gap = parseInt(s.gapSize);
+
+            let layers = gridData.map((d) => {
+                let y1 = prevY, y2;
+                if(s.sizeMode === 'height') {
+                    y2 = y1 + stepH;
+                } else {
+                    const valRatio = d.val / totalVal;
+                    const sliceArea = valRatio * totalArea;
+                    const targetArea = accArea + sliceArea;
+                    const k1 = maxW * neckRatio;
+                    const k2 = (maxW * (1 - neckRatio)) / (2 * availH);
+                    if (Math.abs(k2) < 0.0001) {
+                        y2 = targetArea / (k1 || 1);
+                    } else {
+                        y2 = (-k1 + Math.sqrt(k1*k1 + 4*k2*targetArea)) / (2*k2);
+                    }
+                    accArea += sliceArea;
+                }
+                const layer = { ...d, yStart: y1, yEnd: y2 };
+                prevY = y2;
+                return layer;
+            });
+
+            layers.forEach((d, i) => {
+                let ys = d.yStart + (i===0 ? 0 : gap/2);
+                let ye = d.yEnd - (i===layers.length-1 ? 0 : gap/2);
+                if (ys >= ye) return;
+
+                const wStart = maxW * (neckRatio + (1 - neckRatio) * (ys / availH));
+                const wEnd = maxW * (neckRatio + (1 - neckRatio) * (ye / availH));
+                let pts = [];
+                if(s.inverted) {
+                    const wfStart = maxW * (1 - (1 - neckRatio) * (ys / availH));
+                    const wfEnd   = maxW * (1 - (1 - neckRatio) * (ye / availH));
+                    pts = [{ x: cx - wfStart/2, y: cy + ys }, { x: cx + wfStart/2, y: cy + ys }, { x: cx + wfEnd/2,   y: cy + ye }, { x: cx - wfEnd/2,   y: cy + ye }];
+                } else {
+                    pts = [{ x: cx - wStart/2, y: cy + ys }, { x: cx + wStart/2, y: cy + ys }, { x: cx + wEnd/2,   y: cy + ye }, { x: cx - wEnd/2,   y: cy + ye }];
+                }
+
+                if (pts.some(p => isNaN(p.x) || isNaN(p.y))) return;
+
+                const g = svg.append("g").attr("class", "layer");
+                g.append("polygon")
+                    .attr("points", pts.map(p => `${p.x},${p.y}`).join(" "))
+                    .attr("fill", d.color)
+                    .attr("stroke", s.strokeColor)
+                    .attr("stroke-width", s.strokeWidth)
+                    .on("mouseover", function(e) {
+                         const pct = ((d.val / totalVal) * 100).toFixed(1);
+                         d3.select("#tooltip").style("opacity", 1).html(`<strong>${d.name}</strong><br>${d.val} (${pct}%)`)
+                           .style("left", e.pageX+"px").style("top", e.pageY+"px");
+                    })
+                    .on("mouseout", function() { d3.select("#tooltip").style("opacity", 0); });
+
+                if (s.labelPos !== 'none') {
+                    const labelY = cy + (ys + ye) / 2;
+                    const yMid = (ys + ye) / 2;
+                    let wMid = s.inverted ? maxW * (1 - (1 - neckRatio) * (yMid / availH)) : maxW * (neckRatio + (1 - neckRatio) * (yMid / availH));
+                    let labelX = cx;
+                    let anchor = "middle";
+
+                    if (s.labelPos === 'right') {
+                        labelX = cx + wMid/2 + 20; anchor = "start";
+                        g.append("line").attr("x1", cx + wMid/2).attr("y1", labelY).attr("x2", labelX - 5).attr("y2", labelY).attr("stroke", "#ccc");
+                    } else if (s.labelPos === 'left') {
+                        labelX = cx - wMid/2 - 20; anchor = "end";
+                        g.append("line").attr("x1", cx - wMid/2).attr("y1", labelY).attr("x2", labelX + 5).attr("y2", labelY).attr("stroke", "#ccc");
+                    }
+
+                    const pct = ((d.val / totalVal) * 100).toFixed(1) + "%";
+                    let txt = d.name;
+                    if(s.labelType === 'value') txt = d.val;
+                    if(s.labelType === 'percent') txt = pct;
+                    if(s.labelType === 'all') txt = `${d.name} (${pct})`;
+
+                    g.append("text")
+                        .attr("x", labelX).attr("y", labelY).attr("dy", "0.35em")
+                        .attr("text-anchor", anchor)
+                        .style("font-size", s.fontSize + "px")
+                        .style("fill", s.labelColor)
+                        .style("font-weight", "600")
+                        .text(txt);
+                }
+            });
+        } catch (err) { console.error(err); }
+    }
+
+    // --- UTILS ---
+    function toggleImport() { const body = document.getElementById('import-body'); if(body) body.classList.toggle('open'); }
+    function parseCSV() {
+        const txt = document.getElementById('csvInput').value;
+        if(!txt) return;
+        const rows = txt.split(/\n/);
+        const newData = [];
+        const theme = document.getElementById('colorTheme').value || 'sunset';
+        const colors = THEMES[theme] || THEMES['sunset'];
+        rows.forEach((r, idx) => {
+            const c = r.split(',');
+            if(c.length >= 2) {
+                const val = parseFloat(c[1]);
+                if(!isNaN(val)) newData.push({ name: c[0].trim(), val: val, color: colors[idx % colors.length] });
+            }
+        });
+        if(newData.length) { gridData = newData; renderGridRows(); syncAndRender(); toggleImport(); }
+    }
+    function applyThemeReset() {
+        const theme = document.getElementById('colorTheme').value;
+        const colors = THEMES[theme] || THEMES['sunset'];
+        gridData.forEach((d, i) => d.color = colors[i % colors.length]);
+        renderGridRows(); syncAndRender();
+    }
+    function exportProject() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ gridData, settings: getSettings() }, null, 2));
+        const a = document.createElement('a'); a.href = dataStr; a.download = "pyramid_project.json"; document.body.appendChild(a); a.click(); a.remove();
+    }
+    function importProject(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const d = JSON.parse(e.target.result);
+                if(d.gridData) gridData = d.gridData;
+                if(d.settings) {
+                    const s = d.settings;
+                    Object.keys(s).forEach(k => {
+                        const el = document.getElementById(k);
+                        if(el) { if(k.includes('inverted') || k.includes('Check') || k==='bgTransparent') el.checked=s[k]; else el.value=s[k]; }
+                    });
+                }
+                renderGridRows(); syncAndRender();
+            } catch(er) { alert("Invalid File"); }
+        };
+        reader.readAsText(file);
+    }
+    function clearStorage() { if(confirm("Reset everything?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+    function downloadImage(fmt) {
+        const svgEl = document.querySelector("svg");
+        if(!svgEl) return;
+        const s = getSettings();
+        let svgData = new XMLSerializer().serializeToString(svgEl);
+        if(!s.bgTransparent) svgData = svgData.replace('>', `><rect width="100%" height="100%" fill="${s.bgColor}"/>`);
+        if(fmt==='svg') {
+            const blob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "chart.svg"; document.body.appendChild(a); a.click(); a.remove();
+        } else {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+            canvas.width = parseInt(s.chartWidth); canvas.height = parseInt(s.chartHeight);
+            const blob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            img.onload = () => {
+                if(!s.bgTransparent || fmt==='jpeg') { ctx.fillStyle = s.bgTransparent?"#fff":s.bgColor; ctx.fillRect(0,0,canvas.width,canvas.height); }
+                ctx.drawImage(img, 0, 0);
+                const a = document.createElement('a'); a.href = canvas.toDataURL(`image/${fmt}`); a.download = `chart.${fmt}`; document.body.appendChild(a); a.click(); a.remove();
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+        }
+    }
+
+    // Init
+    window.onload = function() {
+        loadState();
+        toggleJsonTab();
+        renderGridRows();
+        syncAndRender();
+        toggleBgColor();
+        document.addEventListener('click', e => { 
+            const menu = document.getElementById('main-menu');
+            const btn = document.getElementById('menu-container');
+            if (menu && btn && !btn.contains(e.target)) menu.classList.remove('show'); 
+        });
+    };
+</script>
+</body>
+</html>
