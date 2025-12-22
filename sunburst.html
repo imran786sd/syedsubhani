@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunburst Editor Pro v3.8 (Button Restored)</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-hover: #3a0ca3;
+            --bg: #f4f6f8;
+            --border: #e0e0e0;
+            --header-bg: #f8f9fa;
+            --sidebar-bg: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #ced4da;
+            --text-main: #212529;
+            --text-muted: #6c757d;
+            --danger: #ef233c;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+            background: var(--bg);
+        }
+
+        /* --- SIDEBAR STRUCTURE --- */
+        #sidebar {
+            width: 460px;
+            min-width: 440px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.04);
+            z-index: 10;
+            height: 100vh; /* Full height */
+        }
+
+        /* --- TABS --- */
+        .tabs { 
+            display: flex; 
+            background: #fff; 
+            border-bottom: 1px solid var(--border); 
+            padding: 0; 
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .tab-btn {
+            flex: 1; padding: 18px 0; border: none; background: transparent; cursor: pointer;
+            font-weight: 600; color: var(--text-muted); border-bottom: 3px solid transparent; 
+            font-size: 13px; transition: all 0.2s ease; letter-spacing: 0.3px; text-transform: uppercase;
+        }
+        .tab-btn:hover { color: var(--primary); background: #f8f9fa; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: rgba(67, 97, 238, 0.04); }
+        
+        #btn-json { display: none; }
+
+        /* FIXED TAB CONTENT SCROLLING */
+        .tab-content { 
+            display: none; 
+            flex-direction: column; 
+            flex-grow: 1; /* Takes available space */
+            overflow-y: auto; /* Internal scrolling */
+            position: relative; 
+            background: #fff;
+            padding-bottom: 20px;
+        }
+        .tab-content.active { display: flex !important; }
+
+        /* --- SIDEBAR BOTTOM FOOTER (NEW) --- */
+        #sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: white;
+            flex-shrink: 0; /* Stays fixed at bottom */
+            z-index: 20;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.03);
+        }
+        .update-btn-main {
+            width: 100%; padding: 14px; background: var(--primary); color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3); transition: transform 0.1s, box-shadow 0.1s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .update-btn-main:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4); }
+        .update-btn-main:active { transform: translateY(0); }
+
+        /* --- GRID STYLES --- */
+        #tab-grid { padding: 0; background: white; height: 100%; }
+        
+        .grid-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 90px 60px 35px;
+            background: #f1f3f5; border-bottom: 1px solid #dee2e6;
+            font-size: 11px; font-weight: 700; color: #495057; text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky; top: 0; z-index: 5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .grid-header span { padding: 12px 8px; border-right: 1px solid #e9ecef; text-align: left; }
+        .grid-header span:last-child { border-right: none; }
+
+        #rows-container { flex-grow: 1; } /* Allow rows to expand */
+
+        .data-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 90px 60px 35px;
+            border-bottom: 1px solid #f1f3f5;
+            transition: background 0.15s;
+        }
+        .data-row:hover { background-color: #f8f9fa; }
+        .data-row:hover .del-cell { opacity: 1; color: #adb5bd; }
+
+        .data-row input[type="text"].lvl-input {
+            width: 100%; border: none; background: transparent; padding: 12px 8px;
+            font-size: 12px; outline: none; border-right: 1px solid #f1f3f5; 
+            box-sizing: border-box; color: #333; transition: all 0.2s; border-radius: 0;
+        }
+        .data-row input.val-input { 
+            width: 100%; border: none; background: transparent; padding: 12px 8px; 
+            text-align: right; font-family: 'Consolas', monospace; color: var(--primary); 
+            font-weight: 600; font-size: 12px; border-right: 1px solid #f1f3f5; 
+            outline: none; transition: all 0.2s; border-radius: 0;
+        }
+        .data-row input:focus { background: white; box-shadow: inset 0 -2px 0 var(--primary); z-index: 2; }
+
+        .color-wrapper { display: flex; align-items: center; border-right: 1px solid #f1f3f5; padding: 4px 6px; background: transparent; }
+        input[type="color"] { border: none; width: 20px; height: 20px; cursor: pointer; background: none; padding: 0; border-radius: 4px; overflow: hidden; margin-right: 6px; }
+        input.hex-input { width: 100%; border: none; font-family: 'Consolas', monospace; font-size: 10px; color: #666; text-transform: uppercase; outline: none; background: transparent; }
+
+        .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #e9ecef; font-size: 18px; transition: 0.2s; opacity: 0; }
+        .del-cell:hover { color: var(--danger) !important; background: #fff5f5; }
+
+        /* Grid Controls Area */
+        .grid-controls { 
+            padding: 20px; background: white; border-top: 1px solid var(--border); 
+            display: flex; flex-direction: column; gap: 15px; 
+        }
+        .btn-add {
+            background: #eef2ff; color: var(--primary); border: 1px solid transparent;
+            padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; 
+            font-weight: 700; font-size: 13px; transition: 0.2s; display: flex; 
+            align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-add:hover { background: #e0e7ff; border-color: #c7d2fe; transform: translateY(-1px); }
+
+        /* Import Section */
+        .import-section { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff; transition: box-shadow 0.2s; }
+        .import-section:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .import-header { padding: 12px 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #555; user-select: none; transition: all 0.2s; }
+        .import-header:hover { background: #fff; color: var(--primary); }
+        .import-body { padding: 15px; display: none; border-top: 1px solid #e0e0e0; background: #fcfcfc; }
+        .import-body.open { display: block; }
+        .import-body textarea { width: 100%; min-height: 100px; border: 1px solid #ced4da; padding: 12px; font-family: 'Consolas', monospace; font-size: 11px; margin-bottom: 12px; border-radius: 6px; background: #fff; color: #333; line-height: 1.5; box-sizing: border-box; }
+        .import-body textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1); outline: none; }
+        .import-help { font-size: 11px; color: #666; margin-bottom: 10px; background: #e3f2fd; padding: 8px 12px; border-radius: 4px; border-left: 3px solid #2196f3; }
+        .btn-parse { width: 100%; padding: 10px; background: #495057; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
+        .btn-parse:hover { background: #343a40; }
+
+        /* --- SETTINGS TAB STYLES --- */
+        #tab-settings { padding: 25px 20px; gap: 20px; background: #f8f9fa; }
+        #tab-json { padding: 20px; }
+
+        .settings-card { background: white; border-radius: 12px; border: 1px solid #e9ecef; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .settings-card h3 { margin: 0 0 18px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); border-bottom: 1px solid #f1f3f5; padding-bottom: 10px; font-weight: 800; }
+        .control-row { margin-bottom: 15px; }
+        .control-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: #343a40; margin-bottom: 8px; }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .settings-card input[type="text"], .settings-card input[type="number"], .settings-card select { width: 100%; padding: 10px 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px; color: #495057; background: #fff; box-sizing: border-box; transition: all 0.2s; }
+        .settings-card input:focus, .settings-card select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 8px 0; }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #e9ecef; border-radius: 3px; }
+        input[type=range]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; margin-top: -5px; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform 0.1s; }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        .range-val { font-size: 11px; color: var(--primary); font-weight: 700; background: #eef2ff; padding: 2px 8px; border-radius: 10px; }
+
+        .toggle-wrapper { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #e9ecef; cursor: pointer; }
+        .toggle-wrapper input[type="checkbox"] { accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer; }
+        .color-picker-group { display: flex; align-items: center; gap: 8px; }
+        .color-btn { width: 36px; height: 36px; padding: 0; border: 1px solid #ced4da; border-radius: 8px; cursor: pointer; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .color-btn input { width: 150%; height: 150%; margin: -25%; cursor: pointer; }
+        
+        .sub-panel { background: #fcfcfc; border: 1px dashed #ddd; border-radius: 6px; padding: 12px; margin-top: 10px; }
+        .sub-panel-title { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 8px; display: block; }
+
+        /* --- MAIN VIEW & MENU --- */
+        #main {
+            flex-grow: 1; background: var(--bg); position: relative;
+            background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px); background-size: 24px 24px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        
+        /* MENU BUTTON CONTAINER */
+        #menu-container {
+            position: absolute; top: 20px; right: 20px; z-index: 100;
+        }
+
+        #menu-btn {
+            background: white; border: 1px solid #ced4da; color: #495057;
+            width: 44px; height: 44px; border-radius: 12px;
+            font-size: 20px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #menu-btn:hover { background: #f8f9fa; transform: scale(1.05); color: var(--primary); }
+        
+        /* DROPDOWN MENU */
+        #main-menu {
+            display: none; position: absolute; right: 0; top: 55px;
+            background-color: white; min-width: 200px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-radius: 12px; border: 1px solid #e9ecef;
+            overflow: hidden; z-index: 101; padding: 6px 0;
+            animation: fadeIn 0.15s ease-out;
+        }
+        #main-menu.show { display: block; }
+
+        .menu-item {
+            padding: 12px 20px; text-decoration: none; display: flex; align-items: center; gap: 12px;
+            color: #495057; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.1s;
+        }
+        .menu-item:hover { background-color: #f1f3f5; color: var(--primary); }
+        .menu-separator { height: 1px; background: #e9ecef; margin: 6px 0; }
+        .menu-item.danger { color: #e03131; }
+        .menu-item.danger:hover { background-color: #fff5f5; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+        #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; }
+        #chart svg {
+            max-width: 100%; max-height: 100%; width: auto; height: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; display: block; border-radius: 16px;
+        }
+        
+        .pointer-line { fill: none; stroke-linecap: round; pointer-events: none; }
+        text.draggable { cursor: move; }
+        text.draggable:hover { font-weight: 900; }
+
+        .tooltip {
+            position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 10px 14px;
+            border-radius: 6px; font-size: 13px; pointer-events: none; opacity: 0;
+            transition: opacity 0.15s; margin-top: -10px; transform: translate(-50%, -100%); z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-family: 'Segoe UI', sans-serif;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-grid" onclick="switchTab('grid')">Data Editor</button>
+        <button class="tab-btn" id="btn-settings" onclick="switchTab('settings')">Settings</button>
+        <button class="tab-btn" id="btn-json" onclick="switchTab('json')">JSON Source</button>
+    </div>
+
+    <div id="tab-grid" class="tab-content active">
+        <div class="grid-header">
+            <span>Level 1</span><span>Level 2</span><span>Level 3</span><span>Level 4</span><span title="Hex Code">Color</span><span style="text-align: right;">Value</span><span></span>
+        </div>
+        <div id="rows-container"></div>
+        <div class="grid-controls">
+            <button class="btn-add" onclick="addGridRow()">
+                <span style="font-size:18px; line-height:1;">+</span> Add New Row
+            </button>
+            
+            <div class="import-section">
+                <div class="import-header" onclick="toggleImport()">
+                    <span>📂 Bulk Import (Excel / CSV)</span>
+                    <span id="import-arrow">▼</span>
+                </div>
+                <div class="import-body" id="import-body">
+                    <div class="import-help"><strong>Format:</strong> Level1, Level2, Level3, Level4, Value (Tab or Comma separated)</div>
+                    <textarea id="csvInput" placeholder="Region	Country	City		100&#10;Marketing	Social	Facebook		500"></textarea>
+                    <button class="btn-parse" onclick="parseCSV()">Parse & Overwrite Grid</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-json" class="tab-content"><textarea id="jsonInput"></textarea></div>
+
+    <div id="tab-settings" class="tab-content">
+        <div class="settings-card">
+            <h3>Canvas Dimensions</h3>
+            <div class="control-row">
+                <label class="control-label">Chart Title</label>
+                <input type="text" id="chartTitle" placeholder="My Sunburst Chart" oninput="renderCurrent()">
+            </div>
+            <div class="control-grid">
+                <div><label class="control-label">Width (px)</label><input type="number" id="chartWidth" value="1000" onchange="renderCurrent()"></div>
+                <div><label class="control-label">Height (px)</label><input type="number" id="chartHeight" value="1000" onchange="renderCurrent()"></div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3>Appearance</h3>
+            <div class="control-row">
+                <label class="control-label">Color Theme</label>
+                <select id="colorTheme" onchange="applyThemeReset()">
+                    <option value="vivid" selected>✨ Vivid (Modern)</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="forest">Forest</option>
+                    <option value="corporate">Corporate</option>
+                    <option value="neon">Neon</option>
+                    <option value="berry">Berry</option>
+                    <option value="schemeCategory10">Standard 10</option>
+                </select>
+            </div>
+            <div class="control-grid">
+                <div><label class="control-label">Visual Style</label><select id="visualStyle" onchange="renderCurrent()"><option value="flat" selected>Flat</option><option value="bevel">3D Bevel</option><option value="shadow">Drop Shadow</option><option value="glow">Outer Glow</option></select></div>
+                <div><label class="control-label">Texture</label><select id="textureOverlay" onchange="renderCurrent()"><option value="none" selected>None</option><option value="lines">Stripes</option><option value="dots">Dots</option><option value="grid">Grid</option></select></div>
+            </div>
+            <div class="sub-panel">
+                <span class="sub-panel-title">Opacity</span>
+                <div class="control-grid">
+                    <div><label class="control-label" style="font-weight:normal;">L1</label><input type="range" id="opL1" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()"></div>
+                    <div><label class="control-label" style="font-weight:normal;">L2</label><input type="range" id="opL2" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()"></div>
+                    <div><label class="control-label" style="font-weight:normal;">L3</label><input type="range" id="opL3" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()"></div>
+                    <div><label class="control-label" style="font-weight:normal;">L4</label><input type="range" id="opL4" min="0.1" max="1" step="0.1" value="1" oninput="renderCurrent()"></div>
+                </div>
+            </div>
+            <div class="control-row" style="margin-top: 15px;">
+                <label class="control-label">Background</label>
+                <div class="toggle-wrapper">
+                    <input type="checkbox" id="bgTransparent" checked onchange="toggleBgColor()"> <span style="font-size:12px; flex:1;">Transparent</span>
+                    <div class="color-btn"><input type="color" id="bgColor" value="#ffffff" disabled oninput="renderCurrent()"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card" style="border-left: 3px solid var(--primary);">
+            <h3>Shape & Borders</h3>
+            <div class="control-grid">
+                <div><label class="control-label">Stroke</label><div class="color-picker-group"><div class="color-btn" sty
