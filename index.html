@@ -18,17 +18,18 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 
+        html { scroll-behavior: smooth; }
+
         body {
             min-height: 100vh;
             color: var(--text-main);
-            /* Same Gradient as your Sunburst Tool */
             background: 
                 radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
                 radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
                 radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
             background-color: #eef2ff;
             background-image: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
-            background-attachment: fixed; /* Keeps bg still while scrolling */
+            background-attachment: fixed;
         }
 
         .container {
@@ -43,15 +44,78 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 60px;
-            padding: 20px 30px;
+            padding: 0 30px; /* Reduced padding because height is handled by flex */
+            height: 80px;
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             border: 1px solid var(--glass-border);
+            position: relative;
+            z-index: 1000;
         }
         .logo { font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
-        .nav-links a { margin-left: 20px; text-decoration: none; color: var(--text-main); font-weight: 500; transition: 0.2s; }
-        .nav-links a:hover { color: var(--primary); }
+        
+        .nav-links { display: flex; align-items: center; height: 100%; }
+        .nav-links > a, .dropbtn { 
+            margin-left: 20px; 
+            text-decoration: none; 
+            color: var(--text-main); 
+            font-weight: 500; 
+            transition: 0.2s;
+            cursor: pointer;
+            padding: 10px 0;
+        }
+        .nav-links > a:hover, .dropbtn:hover { color: var(--primary); }
+
+        /* --- DROPDOWN CSS --- */
+        .dropdown {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            margin-left: 20px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 70px; /* Pushes it below the nav bar */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            min-width: 180px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            z-index: 1001;
+            padding: 10px 0;
+            overflow: hidden;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .dropdown-content a {
+            color: var(--text-main);
+            padding: 12px 20px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.9rem;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        .dropdown-content a:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
+
+        /* Show Dropdown on Hover */
+        .dropdown:hover .dropdown-content { display: block; }
+
+        /* Icon rotation on hover */
+        .dropdown:hover .fa-angle-down { transform: rotate(180deg); }
+        .fa-angle-down { transition: transform 0.2s; font-size: 0.8rem; margin-left: 5px; }
+
 
         /* --- PROFILE SECTION --- */
         .profile-card {
@@ -63,77 +127,69 @@
             text-align: center;
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
             margin-bottom: 50px;
+            position: relative; z-index: 1; /* Ensure it stays behind nav dropdown */
         }
 
         .profile-img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 5px solid rgba(255,255,255,0.5);
-            margin-bottom: 20px;
+            width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
+            border: 5px solid rgba(255,255,255,0.5); margin-bottom: 20px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
-
         .profile-name { font-size: 2.5rem; font-weight: 700; margin-bottom: 10px; }
         .profile-role { color: var(--primary); font-weight: 600; font-size: 1.1rem; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
         .profile-bio { max-width: 600px; margin: 0 auto; line-height: 1.6; color: var(--text-muted); }
 
-        /* --- PROJECTS SECTION --- */
+        /* --- PROJECTS GRID --- */
         .section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 30px; padding-left: 10px; border-left: 5px solid var(--primary); }
-
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        /* The Link Card */
+        .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
         .project-card {
-            text-decoration: none; /* Removes underline from link */
-            color: inherit;
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
-            display: flex;
-            flex-direction: column;
+            text-decoration: none; color: inherit; background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 20px;
+            overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column;
         }
-        
-        .project-card:hover {
-            transform: translateY(-10px);
-            background: rgba(255, 255, 255, 0.6);
-            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.25);
-        }
-
-        .card-preview {
-            height: 180px;
-            background: linear-gradient(45deg, #a18cd1 0%, #fbc2eb 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4rem;
-            color: white;
-        }
-
-        .card-info { padding: 25px; }
+        .project-card:hover { transform: translateY(-10px); background: rgba(255, 255, 255, 0.6); box-shadow: 0 15px 35px rgba(99, 102, 241, 0.25); }
+        .card-preview { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 4rem; color: white; }
+        .bg-sunburst { background: linear-gradient(45deg, #a18cd1 0%, #fbc2eb 100%); }
+        .bg-donut { background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%); }
+        .bg-pyramid { background: linear-gradient(to top, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); }
+        .card-info { padding: 25px; flex-grow: 1; display: flex; flex-direction: column; }
         .card-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
-        .card-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; }
-        
-        .btn-launch {
-            display: inline-block;
-            background: var(--primary);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
+        .card-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; flex-grow: 1; }
+        .btn-launch { display: inline-block; background: var(--primary); color: white; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; text-align: center; }
 
-        /* --- UPLOAD IMAGE INSTRUCTION --- */
-        /* To change image: replace the src URL below */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            nav { flex-direction: column; height: auto; padding: 20px; gap: 15px; }
+            .nav-links { flex-direction: column; width: 100%; height: auto; gap: 5px; }
+            .nav-links > a { margin: 0; padding: 10px; width: 100%; text-align: center; }
+            
+            /* Mobile Dropdown Logic */
+            .dropdown { 
+                margin: 0; width: 100%; flex-direction: column; 
+            }
+            .dropbtn { width: 100%; text-align: center; display: block; }
+            
+            .dropdown-content {
+                position: static; /* Stack naturally on mobile */
+                transform: none;
+                width: 100%;
+                min-width: 100%;
+                box-shadow: none;
+                background: rgba(255,255,255,0.1); /* Subtle highlight */
+                margin-top: 5px;
+                border: none;
+                display: none; /* Keep hidden until hover/active */
+            }
+            
+            /* On mobile, usually "hover" requires a tap. 
+               This keeps the menu accessible without JavaScript toggles. */
+            .dropdown:hover .dropdown-content { display: block; }
+            .dropdown-content a { text-align: center; padding: 10px; }
+            
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        }
     </style>
 </head>
 <body>
@@ -143,10 +199,16 @@
             <div class="logo"><i class="fa-solid fa-layer-group"></i> Syed Subhani</div>
             <div class="nav-links">
                 <a href="#">Home</a>
-                <a href="#projects">Projects</a>
-                <a href="chart.html" target="_blank">Sunburst</a>
-                <a href="donut.html" target="_blank">Donut</a>
-                <a href="pyramid.html" target="_blank">pyramid</a>
+                
+                <div class="dropdown">
+                    <a href="#projects" class="dropbtn">Projects <i class="fa-solid fa-angle-down"></i></a>
+                    <div class="dropdown-content">
+                        <a href="chart.html" target="_blank"><i class="fa-solid fa-chart-pie"></i> Sunburst</a>
+                        <a href="donut.html" target="_blank"><i class="fa-solid fa-circle-notch"></i> Donut</a>
+                        <a href="pyramid.html" target="_blank"><i class="fa-solid fa-shapes"></i> Pyramid</a>
+                    </div>
+                </div>
+
                 <a href="https://www.linkedin.com/in/subhanisyed/" target="_blank">Contact</a>
             </div>
         </nav>
@@ -167,29 +229,44 @@
             
             <div class="projects-grid">
                 
-                <a href="chart.html" class="project-card">
-                    <div class="card-preview">
+                <a href="chart.html" class="project-card" target="_blank">
+                    <div class="card-preview bg-sunburst">
                         <i class="fa-solid fa-chart-pie"></i>
                     </div>
                     <div class="card-info">
                         <h3 class="card-title">Sunburst Editor Pro</h3>
                         <p class="card-desc">
-                            A powerful, glassmorphism-styled data visualization tool. 
-                            Create, edit, and export complex hierarchical data visualizations.
+                            A powerful tool to create, edit, and export complex hierarchical sunburst visualizations with JSON support.
                         </p>
                         <span class="btn-launch">Open Tool <i class="fa-solid fa-arrow-right"></i></span>
                     </div>
                 </a>
 
-                <div class="project-card" style="opacity: 0.6; cursor: default;">
-                    <div class="card-preview" style="background: linear-gradient(45deg, #e0c3fc 0%, #8ec5fc 100%);">
-                        <i class="fa-solid fa-code"></i>
+                <a href="donut.html" class="project-card" target="_blank">
+                    <div class="card-preview bg-donut">
+                        <i class="fa-solid fa-circle-notch"></i>
                     </div>
                     <div class="card-info">
-                        <h3 class="card-title">Coming Soon</h3>
-                        <p class="card-desc">More exciting projects are in the works. Stay tuned!</p>
+                        <h3 class="card-title">Pie & Donut Editor</h3>
+                        <p class="card-desc">
+                            Create stunning Pie and Donut charts. Features include smart labels, exploding slices, and bevel effects.
+                        </p>
+                        <span class="btn-launch">Open Tool <i class="fa-solid fa-arrow-right"></i></span>
                     </div>
-                </div>
+                </a>
+
+                <a href="pyramid.html" class="project-card" target="_blank">
+                    <div class="card-preview bg-pyramid">
+                        <i class="fa-solid fa-shapes"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Pyramid & Funnel</h3>
+                        <p class="card-desc">
+                            Generate area-accurate Pyramids and Sales Funnels with customizable neck widths and layer spacing.
+                        </p>
+                        <span class="btn-launch">Open Tool <i class="fa-solid fa-arrow-right"></i></span>
+                    </div>
+                </a>
 
             </div>
         </section>
