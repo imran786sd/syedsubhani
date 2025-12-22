@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pie & Donut Editor Pro v2.0</title>
+    <style>
+        :root {
+            --primary: #8e44ad; /* Purple theme to differentiate from Sunburst */
+            --primary-hover: #732d91;
+            --bg: #f4f6f8;
+            --border: #e0e0e0;
+            --header-bg: #f8f9fa;
+            --sidebar-bg: #ffffff;
+            --text-main: #212529;
+            --danger: #ef233c;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; display: flex; height: 100vh; overflow: hidden;
+            color: var(--text-main); background: var(--bg);
+        }
+
+        /* --- SIDEBAR --- */
+        #sidebar {
+            width: 450px; min-width: 440px; background: var(--sidebar-bg);
+            border-right: 1px solid var(--border); display: flex; flex-direction: column;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.04); z-index: 10; height: 100vh;
+        }
+
+        /* --- TABS --- */
+        .tabs { display: flex; background: #fff; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .tab-btn {
+            flex: 1; padding: 18px 0; border: none; background: transparent; cursor: pointer;
+            font-weight: 600; color: #6c757d; border-bottom: 3px solid transparent;
+            font-size: 13px; transition: all 0.2s; letter-spacing: 0.3px; text-transform: uppercase;
+        }
+        .tab-btn:hover { color: var(--primary); background: #f8f9fa; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: rgba(142, 68, 173, 0.04); }
+        
+        #btn-json { display: none; }
+        .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; background: #fff; padding-bottom: 20px; }
+        .tab-content.active { display: flex !important; }
+
+        /* --- GRID --- */
+        .grid-header {
+            display: grid; grid-template-columns: 2fr 90px 80px 35px;
+            background: #f1f3f5; border-bottom: 1px solid #dee2e6;
+            font-size: 11px; font-weight: 700; color: #495057; text-transform: uppercase;
+            letter-spacing: 0.5px; position: sticky; top: 0; z-index: 5;
+        }
+        .grid-header span { padding: 12px 8px; border-right: 1px solid #e9ecef; }
+        .data-row {
+            display: grid; grid-template-columns: 2fr 90px 80px 35px;
+            border-bottom: 1px solid #f1f3f5; transition: background 0.15s;
+        }
+        .data-row:hover { background-color: #f8f9fa; }
+        .data-row:hover .del-cell { opacity: 1; }
+        
+        .data-row input { width: 100%; border: none; background: transparent; padding: 12px 8px; font-size: 12px; outline: none; border-right: 1px solid #f1f3f5; box-sizing: border-box; }
+        .data-row input.val-input { text-align: right; font-family: 'Consolas', monospace; color: var(--primary); font-weight: 600; }
+        .data-row input:focus { background: white; box-shadow: inset 0 -2px 0 var(--primary); }
+
+        .color-wrapper { display: flex; align-items: center; border-right: 1px solid #f1f3f5; padding: 4px 6px; }
+        input[type="color"] { border: none; width: 20px; height: 20px; cursor: pointer; padding: 0; margin-right: 6px; border-radius: 4px; }
+        input.hex-input { font-family: 'Consolas', monospace; font-size: 10px; color: #666; text-transform: uppercase; padding: 0 !important; }
+
+        .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #adb5bd; font-size: 18px; opacity: 0; transition: 0.2s; }
+        .del-cell:hover { color: var(--danger); background: #fff5f5; }
+
+        .grid-controls { padding: 20px; background: white; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 15px; }
+        .btn-add { background: #f3e5f5; color: var(--primary); border: 1px solid transparent; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-add:hover { background: #e1bee7; }
+
+        /* Import Section */
+        .import-section { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff; }
+        .import-header { padding: 12px 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #555; }
+        .import-body { padding: 15px; display: none; border-top: 1px solid #e0e0e0; }
+        .import-body.open { display: block; }
+        .import-body textarea { width: 100%; min-height: 80px; border: 1px solid #ced4da; padding: 10px; font-family: 'Consolas', monospace; font-size: 11px; margin-bottom: 10px; box-sizing: border-box; }
+        .btn-parse { width: 100%; padding: 8px; background: #495057; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+        /* --- SETTINGS --- */
+        #tab-settings { padding: 25px 20px; gap: 20px; background: #f8f9fa; }
+        #tab-json { padding: 20px; } .settings-card { background: white; border-radius: 12px; border: 1px solid #e9ecef; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .settings-card h3 { margin: 0 0 15px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); border-bottom: 1px solid #f1f3f5; padding-bottom: 8px; font-weight: 800; }
+        
+        .control-row { margin-bottom: 12px; }
+        .control-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #343a40; margin-bottom: 6px; }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
+        input[type="range"] { width: 100%; margin: 8px 0; accent-color: var(--primary); cursor: pointer; }
+        .range-val { font-size: 11px; color: var(--primary); font-weight: 700; background: #f3e5f5; padding: 2px 6px; border-radius: 10px; }
+
+        /* --- MAIN VIEW --- */
+        #main { flex-grow: 1; background: var(--bg); position: relative; background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px); background-size: 24px 24px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        
+        #menu-container { position: absolute; top: 20px; right: 20px; z-index: 100; }
+        #menu-btn { background: white; border: 1px solid #ced4da; width: 44px; height: 44px; border-radius: 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        #menu-btn:hover { transform: scale(1.05); color: var(--primary); }
+        #main-menu { display: none; position: absolute; right: 0; top: 55px; background: white; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 12px; overflow: hidden; z-index: 101; padding: 6px 0; }
+        #main-menu.show { display: block; animation: fadeIn 0.15s ease-out; }
+        .menu-item { padding: 10px 20px; display: block; color: #495057; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.1s; }
+        .menu-item:hover { background: #f1f3f5; color: var(--primary); }
+        .menu-separator { height: 1px; background: #e9ecef; margin: 4px 0; }
+
+        #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; }
+        svg { max-width: 100%; max-height: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; border-radius: 16px; display: block; }
+
+        .tooltip { position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; transform: translate(-50%, -100%); margin-top: -10px; }
+        
+        /* Footer Update Button */
+        #sidebar-footer { padding: 20px; border-top: 1px solid var(--border); background: white; z-index: 20; }
+        .update-btn-main { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(142, 68, 173, 0.3); transition: transform 0.1s; }
+        .update-btn-main:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        
+        /* Pie Specifics */
+        .slice path { transition: opacity 0.2s, transform 0.2s; cursor: pointer; }
+        .slice:hover path { opacity: 0.9; transform: scale(1.02); }
+        .polyline { opacity: 0.4; stroke: black; stroke-width: 1px; fill: none; pointer-events: none; }
+        text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-grid" onclick="switchTab('grid')">Data Editor</button>
+        <button class="tab-btn" id="btn-settings" onclick="switchTab('settings')">Settings</button>
+        <button class="tab-btn" id="btn-json" onclick="switchTab('json')">JSON Source</button>
+    </div>
+
+    <div id="tab-grid" class="tab-content active">
+        <div class="grid-header">
+            <span>Category Name</span><span title="Hex Code">Color</span><span style="text-align: right;">Value</span><span></span>
+        </div>
+        <div id="rows-container"></div>
+        <div class="grid-controls">
+            <button class="btn-add" onclick="addGridRow()">+ Add Slice</button>
+            <div class="import-section">
+                <div class="import-header" onclick="toggleImport()">
+                    <span>📂 Import CSV Data</span><span id="import-arrow">▼</span>
+                </div>
+                <div class="import-body" id="import-body">
+                    <textarea id="csvInput" placeholder="Category, Value&#10;Social Media, 450&#10;Direct, 300"></textarea>
+                    <button class="btn-parse" onclick="parseCSV()">Parse & Overwrite</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-json" class="tab-content"><textarea id="jsonInput" style="width:100%; height:100%; border:none; padding:15px; font-family:monospace; box-sizing:border-box; outline:none;"></textarea></div>
+
+    <div id="tab-settings" class="tab-content">
+        <div class="settings-card">
+            <h3>Layout</h3>
+            <div class="control-row">
+                <label class="control-label">Chart Title</label>
+                <input type="text" id="chartTitle" value="Revenue Source" oninput="renderCurrent()">
+            </div>
+            <div class="control-grid">
+                <div><label class="control-label">Width</label><input type="number" id="chartWidth" value="800" onchange="renderCurrent()"></div>
+                <div><label class="control-label">Height</label><input type="number" id="chartHeight" value="600" onchange="renderCurrent()"></div>
+            </div>
+            <div class="control-row" style="margin-top:15px;">
+                <label class="control-label">Hole Radius (Donut) <span id="val-inr" class="range-val">50%</span></label>
+                <input type="range" id="innerRadius" min="0" max="90" value="50" oninput="updateRangeLabel('inr', this.value, '%'); renderCurrent()">
+            </div>
+            <div class="control-row">
+                <label class="control-label">Corner Radius <span id="val-cr" class="range-val">4px</span></label>
+                <input type="range" id="cornerRadius" min="0" max="20" value="4" oninput="updateRangeLabel('cr', this.value, 'px'); renderCurrent()">
+            </div>
+            <div class="control-row">
+                <label class="control-label">Slice Gap <span id="val-pad" class="range-val">0.02</span></label>
+                <input type="range" id="padAngle" min="0" max="0.1" step="0.01" value="0.02" oninput="updateRangeLabel('pad', this.value, ''); renderCurrent()">
+            </div>
+        </div>
+
+        <div class="settings-card" style="border-left: 3px solid var(--primary);">
+            <h3>Appearance</h3>
+            <div class="control-row">
+                <label class="control-label">Color Theme</label>
+                <select id="colorTheme" onchange="applyThemeReset()">
+                    <option value="vivid" selected>✨ Vivid (Modern)</option>
+                    <option value="pastel">Pastel</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="forest">Forest</option>
+                    <option value="neon">Neon</option>
+                </select>
+            </div>
+            <div class="control-grid">
+                <div><label class="control-label">Stroke</label><div class="color-wrapper" style="border:1px solid #ccc; border-radius:4px;"><input type="color" id="strokeColor" value="#ffffff" oninput="renderCurrent()"></div></div>
+                <div><label class="control-label">Width</label><input type="number" id="strokeWidth" value="2" min="0" max="10" onchange="renderCurrent()"></div>
+            </div>
+            <div class="control-row" style="margin-top:10px;">
+                <label class="control-label">Effects</label>
+                <select id="visualStyle" onchange="renderCurrent()">
+                    <option value="flat">Flat</option>
+                    <option value="shadow" selected>Drop Shadow</option>
+                    <option value="bevel">3D Bevel</option>
+                </select>
+            </div>
+             <div class="control-row" style="margin-top: 10px;">
+                <label class="control-label">Background</label>
+                <div style="display:flex; align-items:center; gap:10px; background:#eee; padding:5px; border-radius:6px;">
+                    <input type="checkbox" id="bgTransparent" checked onchange="toggleBgColor()"> <span>Transparent</span>
+                    <input type="color" id="bgColor" value="#ffffff" disabled oninput="renderCurrent()">
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3>Labels & Legend</h3>
+            <div class="control-row">
+                <label class="control-label">Position</label>
+                <select id="labelPos" onchange="renderCurrent()">
+                    <option value="outside" selected>Outside (with Lines)</option>
+                    <option value="inside">Inside Slice</option>
+                    <option value="none">Hidden</option>
+                </select>
+            </div>
+             <div class="control-grid">
+                <div><label class="control-label">Content</label><select id="labelType" onchange="renderCurrent()"><option value="name">Name</option><option value="value">Value</option><option value="percent">Percent</option><option value="all" selected>All</option></select></div>
+                <div><label class="control-label">Size</label><input type="number" id="fontSize" value="12" onchange="renderCurrent()"></div>
+            </div>
+            <div class="control-row" style="margin-top:10px;">
+                 <label class="control-label">Center Text (Donut)</label>
+                 <select id="centerText" onchange="renderCurrent()">
+                     <option value="total" selected>Total Value</option>
+                     <option value="title">Chart Title</option>
+                     <option value="none">None</option>
+                 </select>
+            </div>
+             <div class="control-row" style="margin-top:10px;">
+                <label class="control-label">Legend</label>
+                <select id="legendPos" onchange="renderCurrent()">
+                    <option value="right">Right</option>
+                    <option value="bottom">Bottom</option>
+                    <option value="none" selected>None</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-card" style="border-left: 3px solid #6c757d;">
+            <h3>Advanced</h3>
+            <div class="control-row"><label class="control-label" style="font-weight:normal; cursor:pointer;"><input type="checkbox" id="showJsonTab" onchange="toggleJsonTab()"> &nbsp; Show JSON Tab</label></div>
+        </div>
+    </div>
+
+    <div id="sidebar-footer">
+        <button class="update-btn-main" onclick="syncAndRender()">
+            <span style="font-size:16px;">⟳</span> Update Chart
+        </button>
+    </div>
+</div>
+
+<div id="main">
+    <div id="menu-container">
+        <button id="menu-btn" onclick="toggleMenu()" title="Options">☰</button>
+        <div id="main-menu">
+            <div class="menu-item" onclick="exportProject()">💾 Save JSON</div>
+            <div class="menu-item" onclick="document.getElementById('importFile').click()">📂 Load JSON</div>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importProject(this)">
+            <div class="menu-separator"></div>
+            <div class="menu-item" onclick="downloadImage('svg')">📷 Export SVG</div>
+            <div class="menu-item" onclick="downloadImage('png')">📷 Export PNG</div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" style="color:#e03131" onclick="clearStorage()">⚠️ Reset</div>
+        </div>
+    </div>
+    <div id="chart"></div>
+    <div id="tooltip" class="tooltip"></div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'pie_editor_pro_v2';
+    let activeTab = 'grid';
+    let gridData = [
+        { name: "Direct", color: "#8e44ad", val: 350 },
+        { name: "Social", color: "#3498db", val: 200 },
+        { name: "Organic", color: "#2ecc71", val: 150 },
+        { name: "Referral", color: "#f1c40f", val: 100 },
+        { name: "Email", color: "#e74c3c", val: 50 }
+    ];
+
+    const THEMES = {
+        vivid: ["#8e44ad", "#3498db", "#2ecc71", "#f1c40f", "#e74c3c", "#34495e"],
+        pastel: ["#ffb3ba", "#ffdfba", "#ffffba", "#baffc9", "#bae1ff", "#e6e6fa"],
+        ocean: ["#03045e", "#0077b6", "#00b4d8", "#90e0ef", "#caf0f8"],
+        forest: ["#2d6a4f", "#40916c", "#52b788", "#74c69d", "#b7e4c7"],
+        neon: ["#f72585", "#7209b7", "#3a0ca3", "#4361ee", "#4cc9f0"]
+    };
+
+    function getSettings() {
+        const ids = ['chartWidth', 'chartHeight', 'chartTitle', 'innerRadius', 'cornerRadius', 'padAngle',
+                     'colorTheme', 'strokeColor', 'strokeWidth', 'visualStyle', 'bgColor', 
+                     'labelPos', 'labelType', 'fontSize', 'centerText', 'legendPos'];
+        const s = {};
+        ids.forEach(id => s[id] = document.getElementById(id).value);
+        s.bgTransparent = document.getElementById('bgTransparent').checked;
+        s.showJsonTab = document.getElementById('showJsonTab').checked;
+        return s;
+    }
+
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ gridData, settings: getSettings() }));
+    }
+
+    function loadState() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return;
+        try {
+            const data = JSON.parse(raw);
+            if(data.gridData) gridData = data.gridData;
+            if(data.settings) {
+                const s = data.settings;
+                Object.keys(s).forEach(k => {
+                    const el = document.getElementById(k);
+                    if(el) {
+                        if(k === 'bgTransparent' || k === 'showJsonTab') el.checked = s[k];
+                        else el.value = s[k];
+                    }
+                });
+                updateRangeLabel('inr', s.innerRadius, '%');
+                updateRangeLabel('cr', s.cornerRadius, 'px');
+                updateRangeLabel('pad', s.padAngle, '');
+            }
+        } catch(e) {}
+    }
+
+    function switchTab(t) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`btn-${t}`).classList.add('active');
+        document.getElementById(`tab-${t}`).classList.add('active');
+        if (activeTab === 'grid' && t === 'json') document.getElementById('jsonInput').value = JSON.stringify(gridData, null, 2);
+        activeTab = t;
+    }
+
+    function renderGridRows() {
+        const c = document.getElementById('rows-container'); c.innerHTML = '';
+        gridData.forEach((r, i) => {
+            const col = r.color || "#000000";
+            const div = document.createElement('div'); div.className = 'data-row';
+            div.innerHTML = `
+                <input type="text" value="${r.name}" onchange="updateRow(${i}, 'name', this.value)">
+                <div class="color-wrapper">
+                    <input type="color" value="${col}" oninput="updateColor(${i}, this.value, 'picker')">
+                    <input type="text" class="hex-input" value="${col}" oninput="updateColor(${i}, this.value, 'text')">
+                </div>
+                <input type="number" class="val-input" value="${r.val}" onchange="updateRow(${i}, 'val', this.value)">
+                <div class="del-cell" onclick="removeRow(${i})">×</div>
+            `;
+            c.appendChild(div);
+        });
+    }
+
+    function addGridRow() {
+        const colorScale = d3.scaleOrdinal(THEMES[document.getElementById('colorTheme').value]);
+        gridData.push({ name: "New Slice", color: colorScale(gridData.length), val: 100 });
+        renderGridRows(); saveState();
+    }
+    function removeRow(i) { gridData.splice(i, 1); renderGridRows(); syncAndRender(); }
+    function updateRow(i, k, v) { gridData[i][k] = k==='val'?parseFloat(v):v; saveState(); }
+    
+    function updateColor(i, v, src) {
+        gridData[i].color = v; 
+        const row = document.getElementById('rows-container').children[i];
+        if(src==='picker') row.querySelector('.hex-input').value = v;
+        else row.querySelector('input[type="color"]').value = v;
+        syncAndRender();
+    }
+
+    function toggleImport() { document.getElementById('import-body').classList.toggle('open'); }
+    function parseCSV() {
+        const txt = document.getElementById('csvInput').value;
+        const rows = txt.split(/\n/);
+        const newData = [];
+        const colorScale = d3.scaleOrdinal(THEMES[document.getElementById('colorTheme').value]);
+        rows.forEach((r, idx) => {
+            const c = r.split(',');
+            if(c.length >= 2) {
+                const val = parseFloat(c[1]);
+                if(!isNaN(val)) newData.push({ name: c[0].trim(), val: val, color: colorScale(idx) });
+            }
+        });
+        if(newData.length) { gridData = newData; renderGridRows(); syncAndRender(); toggleImport(); }
+    }
+
+    function applyThemeReset() {
+        const colors = THEMES[document.getElementById('colorTheme').value];
+        gridData.forEach((d, i) => d.color = colors[i % colors.length]);
+        renderGridRows(); syncAndRender();
+    }
+
+    function syncAndRender() {
+        saveState();
+        if(activeTab === 'json') try { gridData = JSON.parse(document.getElementById('jsonInput').value); } catch(e){}
+        else document.getElementById('jsonInput').value = JSON.stringify(gridData, null, 2);
+        renderChart();
+    }
+    function renderCurrent() { syncAndRender(); }
+    
+    function updateRangeLabel(id, val, suf) { document.getElementById(`val-${id}`).innerText = val + suf; }
+    function toggleBgColor() { document.getElementById('bgColor').disabled = document.getElementById('bgTransparent').checked; renderCurrent(); }
+    function toggleJsonTab() { 
+        const s = document.getElementById('showJsonTab').checked;
+        document.getElementById('btn-json').style.display = s ? 'block' : 'none';
+        if(!s && activeTab==='json') switchTab('grid');
+    }
+
+    // --- CHART RENDERING ---
+    function renderChart() {
+        d3.select("#chart").html("");
+        const s = getSettings();
+        const width = parseInt(s.chartWidth), height = parseInt(s.chartHeight);
+        const radius = Math.min(width, height) / 2 - (s.legendPos !== 'none' ? 60 : 20);
+        const innerR = radius * (parseInt(s.innerRadius) / 100);
+        
+        const svg = d3.select("#chart").append("svg")
+            .attr("width", width).attr("height", height)
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("xmlns", "http://www.w3.org/2000/svg");
+        
+        if(!s.bgTransparent) svg.style("background-color", s.bgColor);
+
+        // Filters
+        const defs = svg.append("defs");
+        const shadow = defs.append("filter").attr("id", "drop-shadow");
+        shadow.append("feGaussianBlur").attr("in", "SourceAlpha").attr("stdDeviation", 3);
+        shadow.append("feOffset").attr("dx", 2).attr("dy", 2).attr("result", "offsetblur");
+        shadow.append("feFlood").attr("flood-color", "rgba(0,0,0,0.3)");
+        shadow.append("feComposite").attr("in2", "offsetblur").attr("operator", "in");
+        const merge = shadow.append("feMerge");
+        merge.append("feMergeNode");
+        merge.append("feMergeNode").attr("in", "SourceGraphic");
+
+        const bevel = defs.append("filter").attr("id", "bevel");
+        bevel.append("feGaussianBlur").attr("in", "SourceAlpha").attr("stdDeviation", 2).attr("result", "blur");
+        bevel.append("feSpecularLighting").attr("in", "blur").attr("surfaceScale", 5).attr("specularConstant", 0.5).attr("specularExponent", 20).attr("result", "specOut").append("fePointLight").attr("x", -5000).attr("y", -10000).attr("z", 20000);
+        bevel.append("feComposite").attr("in", "specOut").attr("in2", "SourceAlpha").attr("operator", "in").attr("result", "specOut");
+        bevel.append("feComposite").attr("in", "SourceGraphic").attr("in2", "specOut").attr("operator", "arithmetic").attr("k1", 0).attr("k2", 1).attr("k3", 1).attr("k4", 0);
+
+        let filter = null;
+        if(s.visualStyle === 'shadow') filter = "url(#drop-shadow)";
+        if(s.visualStyle === 'bevel') filter = "url(#bevel)";
+
+        // Chart Group
+        let cx = width/2, cy = height/2;
+        if(s.legendPos === 'right') cx -= 60;
+        if(s.legendPos === 'bottom') cy -= 30;
+        if(s.chartTitle) cy += 20;
+
+        const g = svg.append("g").attr("transform", `translate(${cx}, ${cy})`);
+        
+        // Title
+        if(s.chartTitle) {
+            svg.append("text").attr("x", width/2).attr("y", 40).attr("text-anchor", "middle")
+               .style("font-size", "24px").style("font-weight", "bold").style("fill", "#333").text(s.chartTitle);
+        }
+
+        const pie = d3.pie().value(d => d.val).sort(null);
+        const dataReady = pie(gridData);
+        const arc = d3.arc().innerRadius(innerR).outerRadius(radius).cornerRadius(s.cornerRadius).padAngle(s.padAngle);
+        const arcHover = d3.arc().innerRadius(innerR).outerRadius(radius + 10).cornerRadius(s.cornerRadius).padAngle(s.padAngle);
+        const outerArc = d3.arc().innerRadius(radius * 1.1).outerRadius(radius * 1.1);
+
+        // Slices
+        const slices = g.selectAll(".slice").data(dataReady).enter().append("g").attr("class", "slice");
+        
+        slices.append("path")
+            .attr("d", arc)
+            .attr("fill", d => d.data.color)
+            .attr("stroke", s.strokeColor)
+            .attr("stroke-width", s.strokeWidth)
+            .style("filter", filter)
+            .on("mouseover", function(e, d) {
+                d3.select(this).transition().duration(200).attr("d", arcHover);
+                const pct = ((d.value / d3.sum(gridData, x=>x.val))*100).toFixed(1);
+                d3.select("#tooltip").style("opacity", 1).html(`<strong>${d.data.name}</strong><br>${d.value} (${pct}%)`)
+                  .style("left", e.pageX+"px").style("top", e.pageY+"px");
+            })
+            .on("mouseout", function() {
+                d3.select(this).transition().duration(200).attr("d", arc);
+                d3.select("#tooltip").style("opacity", 0);
+            });
+
+        // Labels
+        if(s.labelPos !== 'none') {
+            const getText = (d) => {
+                const total = d3.sum(gridData, x=>x.val);
+                const pct = ((d.value/total)*100).toFixed(1) + "%";
+                if(s.labelType === 'name') return d.data.name;
+                if(s.labelType === 'value') return d.value;
+                if(s.labelType === 'percent') return pct;
+                return `${d.data.name}: ${pct}`;
+            };
+
+            if(s.labelPos === 'inside') {
+                slices.append("text")
+                    .attr("transform", d => `translate(${arc.centroid(d)})`)
+                    .style("text-anchor", "middle")
+                    .style("font-size", s.fontSize+"px")
+                    .style("fill", "#fff") // Auto contrast ideal, but white usually works on colored slices
+                    .style("text-shadow", "0 0 3px rgba(0,0,0,0.5)")
+                    .text(getText);
+            } else {
+                // Polylines
+                slices.append("polyline")
+                    .attr("points", d => {
+                        const posA = arc.centroid(d);
+                        const posB = outerArc.centroid(d);
+                        const posC = outerArc.centroid(d);
+                        const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+                        posC[0] = radius * 1.15 * (midAngle < Math.PI ? 1 : -1);
+                        return [posA, posB, posC];
+                    })
+                    .attr("class", "polyline");
+                
+                // Text
+                slices.append("text")
+                    .text(getText)
+                    .attr("transform", d => {
+                        const pos = outerArc.centroid(d);
+                        const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+                        pos[0] = radius * 1.2 * (midAngle < Math.PI ? 1 : -1);
+                        return `translate(${pos})`;
+                    })
+                    .style("text-anchor", d => {
+                        const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+                        return (midAngle < Math.PI ? 'start' : 'end');
+                    })
+                    .style("font-size", s.fontSize+"px");
+            }
+        }
+
+        // Center Text
+        if(s.centerText !== 'none' && parseInt(s.innerRadius) > 20) {
+            const total = d3.sum(gridData, d=>d.val);
+            g.append("text")
+                .attr("text-anchor", "middle").attr("dy", "0.3em")
+                .style("font-size", "28px").style("font-weight", "bold").style("fill", "#333")
+                .text(s.centerText === 'total' ? total : s.chartTitle);
+        }
+
+        // Legend
+        if(s.legendPos !== 'none') {
+            const legendG = svg.append("g");
+            if(s.legendPos === 'right') {
+                legendG.attr("transform", `translate(${width - 120}, 50)`);
+                gridData.forEach((d, i) => {
+                    const row = legendG.append("g").attr("transform", `translate(0, ${i * 25})`);
+                    row.append("rect").attr("width",15).attr("height",15).attr("fill", d.color).attr("rx",3);
+                    row.append("text").attr("x", 20).attr("y", 12).text(d.name).style("font-size","12px").style("font-weight","600");
+                });
+            } else {
+                legendG.attr("transform", `translate(20, ${height - 40})`);
+                let xOff = 0;
+                gridData.forEach((d, i) => {
+                    const row = legendG.append("g").attr("transform", `translate(${xOff}, 0)`);
+                    row.append("rect").attr("width",15).attr("height",15).attr("fill", d.color).attr("rx",3);
+                    const txt = row.append("text").attr("x", 20).attr("y", 12).text(d.name).style("font-size","12px").style("font-weight","600");
+                    xOff += txt.node().getComputedTextLength() + 40;
+                });
+            }
+        }
+    }
+
+    // --- EXPORT & MENU ---
+    function toggleMenu() { document.getElementById('main-menu').classList.toggle('show'); }
+    document.addEventListener('click', e => { if (!document.getElementById('menu-container').contains(e.target)) document.getElementById('main-menu').classList.remove('show'); });
+    
+    function exportProject() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ gridData, settings: getSettings() }, null, 2));
+        const a = document.createElement('a'); a.href = dataStr; a.download = "pie_project.json"; document.body.appendChild(a); a.click(); a.remove();
+    }
+    
+    function importProject(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const d = JSON.parse(e.target.result);
+                if(d.gridData) gridData = d.gridData;
+                if(d.settings) {
+                    Object.keys(d.settings).forEach(k => {
+                        const el = document.getElementById(k);
+                        if(el) { if(k.includes('Check') || k==='bgTransparent') el.checked=d.settings[k]; else el.value=d.settings[k]; }
+                    });
+                }
+                renderGridRows(); syncAndRender();
+            } catch(er) { alert("Invalid File"); }
+        };
+        reader.readAsText(file);
+    }
+
+    function clearStorage() { if(confirm("Reset everything?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+    
+    function downloadImage(fmt) {
+        const svgEl = document.querySelector("svg");
+        const s = getSettings();
+        let svgData = new XMLSerializer().serializeToString(svgEl);
+        if(!s.bgTransparent) svgData = svgData.replace('>', `><rect width="100%" height="100%" fill="${s.bgColor}"/>`);
+        
+        if(fmt==='svg') {
+            const blob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
+            triggerDL(URL.createObjectURL(blob), "chart.svg");
+        } else {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+            canvas.width = parseInt(s.chartWidth); canvas.height = parseInt(s.chartHeight);
+            const blob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            img.onload = () => {
+                if(!s.bgTransparent || fmt==='jpeg') { ctx.fillStyle = s.bgTransparent?"#fff":s.bgColor; ctx.fillRect(0,0,canvas.width,canvas.height); }
+                ctx.drawImage(img, 0, 0);
+                triggerDL(canvas.toDataURL(`image/${fmt}`), `chart.${fmt}`);
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+        }
+    }
+    function triggerDL(url, name) { const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+
+    // Init
+    loadState();
+    toggleJsonTab();
+    renderGridRows();
+    syncAndRender();
+    toggleBgColor();
+</script>
+</body>
+</html>
