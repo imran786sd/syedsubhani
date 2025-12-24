@@ -7,19 +7,6 @@
     
     <script src="https://d3js.org/d3.v7.min.js"></script>
     
-    <script type="module">
-        // Using the specific version you provided
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-        
-        // Expose Firebase functions to global scope for the app logic
-        window.firebaseModules = { initializeApp, getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, getFirestore, doc, getDoc, setDoc };
-        
-        // Dispatch event to signal Firebase is ready to load
-        window.dispatchEvent(new Event('firebase-modules-loaded'));
-    </script>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -293,16 +280,12 @@
         .cat-amount { font-weight: 700; font-family: 'Consolas', monospace; font-size: 1rem; }
         .cat-count { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 
-        /* NAV - FIXED POSITION FIX */
+        /* NAV - FIXED */
         .bottom-nav {
-            position: fixed; /* FIXED: Keeps it on screen */
-            bottom: 20px; 
-            left: 50%; transform: translateX(-50%);
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border); border-radius: 25px;
-            display: flex; padding: 5px 10px; gap: 5px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
-            z-index: 9999; /* Ensure it's on top */
+            display: flex; padding: 5px 10px; gap: 5px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 9999;
             align-items: center; width: auto; max-width: 95%; overflow-x: auto;
         }
         .nav-btn {
@@ -607,8 +590,12 @@
         </div>
     </div>
 
-<script>
-    // --- 1. FIREBASE CONFIGURATION (Mahira) ---
+<script type="module">
+    // --- 1. FIREBASE MODULE IMPORTS ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
     const firebaseConfig = {
         apiKey: "AIzaSyBg10pA9GtC56C3XR4Fg4fxSzfJbdE83_U",
         authDomain: "mahira-d7381.firebaseapp.com",
@@ -618,28 +605,28 @@
         appId: "1:133863322272:web:b9e1ff1b4662a74b4f0fc5"
     };
 
-    // --- 2. FIREBASE LOGIC ---
     let auth, db, currentUserUID;
-    
-    // Auto-init using the modules from window
-    window.addEventListener('firebase-modules-loaded', () => {
-        initFirebase();
-    });
-    setTimeout(() => { if(window.firebaseModules && !auth) initFirebase(); }, 1000); // Fallback
 
-    async function initFirebase() {
-        if(!window.firebaseModules) { console.error("Firebase Modules not loaded yet"); return; }
+    // --- 2. INIT FIREBASE ---
+    function initFirebase() {
         try {
-            const app = window.firebaseModules.initializeApp(firebaseConfig);
-            auth = window.firebaseModules.getAuth(app);
-            db = window.firebaseModules.getFirestore(app);
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
             
-            window.firebaseModules.onAuthStateChanged(auth, (user) => {
+            // Expose vars to window for button clicks to use
+            window.auth = auth;
+            window.db = db;
+            window.signInWithPopup = signInWithPopup;
+            window.GoogleAuthProvider = GoogleAuthProvider;
+            window.signOut = signOut;
+            
+            onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUserUID = user.uid;
                     updateProfileUI(user.displayName, user.photoURL);
                     showApp();
-                    loadData(); 
+                    loadData();
                 } else {
                     currentUserUID = null;
                     document.getElementById('auth-wrapper').style.display = 'flex';
@@ -647,27 +634,73 @@
                 }
             });
         } catch(e) {
-            alert("Firebase Init Error: " + e.message);
+            alert("Firebase Error: " + e.message);
         }
     }
 
-    async function handleGoogleLogin() {
-        if(!auth) return alert("Firebase not initialized. Check console.");
-        const provider = new window.firebaseModules.GoogleAuthProvider();
+    // --- 3. EXPORT FUNCTIONS TO GLOBAL SCOPE ---
+    window.handleGoogleLogin = async function() {
+        const provider = new GoogleAuthProvider();
         try {
-            await window.firebaseModules.signInWithPopup(auth, provider);
+            await signInWithPopup(auth, provider);
         } catch (error) {
             alert("Login Failed: " + error.message);
         }
-    }
+    };
 
-    function handleLogout() {
+    window.handleLogout = function() {
         if(confirm("Logout from Google Account?")) {
-            window.firebaseModules.signOut(auth);
+            signOut(auth);
             location.reload();
         }
-    }
+    };
 
+    // --- 4. DATA LOGIC (Inside Module to access db/auth) ---
+    window.loadData = async function() {
+        if(!currentUserUID) return;
+        document.getElementById('loader').style.display = 'inline-block';
+        try {
+            const docRef = doc(db, "users", currentUserUID);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                window.transactions = docSnap.data().transactions || [];
+            } else {
+                window.generateDummyData();
+            }
+        } catch (e) {
+            console.error("Load Error", e);
+        }
+        document.getElementById('loader').style.display = 'none';
+        window.initCurrency();
+        window.updateUI();
+    };
+
+    window.saveData = async function() {
+        window.updateUI();
+        if(currentUserUID) {
+            try {
+                await setDoc(doc(db, "users", currentUserUID), { 
+                    transactions: window.transactions,
+                    lastUpdated: new Date()
+                });
+            } catch(e) {
+                if(e.code === 'permission-denied') {
+                    alert("SAVE FAILED: Database Locked.\nGo to Firebase Console > Firestore Database > Rules.\nChange 'allow write: if false' to 'allow write: if request.auth != null'");
+                } else {
+                    console.error("Save Error", e);
+                }
+            }
+        }
+    };
+
+    // Start App
+    initFirebase();
+</script>
+
+<script>
+    // --- 5. UI LOGIC (Standard Script) ---
+    // These functions don't need direct Firebase access, they use the window globals we set above
+    
     function updateProfileUI(name, photo) {
         const safeName = name || "User";
         const safePhoto = photo || `https://ui-avatars.com/api/?name=${safeName}&background=2dd4bf&color=0b0e14&bold=true`;
@@ -686,59 +719,18 @@
         window.addEventListener('resize', () => { if(currentTab==='dashboard') updateUI(); });
     }
 
-    // --- DATA LOGIC (CLOUD) ---
-    async function loadData() {
-        if(!currentUserUID) return;
-        document.getElementById('loader').style.display = 'inline-block';
-        try {
-            const docRef = window.firebaseModules.doc(db, "users", currentUserUID);
-            const docSnap = await window.firebaseModules.getDoc(docRef);
-            if (docSnap.exists()) {
-                transactions = docSnap.data().transactions || [];
-            } else {
-                generateDummyData(); 
-            }
-        } catch (e) {
-            console.error("Load Error", e);
-            alert("Could not load data. Check permission rules.");
-        }
-        document.getElementById('loader').style.display = 'none';
-        initCurrency();
-        updateUI();
-    }
-
-    async function saveData() {
-        updateUI(); 
-        if(currentUserUID) {
-            try {
-                await window.firebaseModules.setDoc(window.firebaseModules.doc(db, "users", currentUserUID), { 
-                    transactions: transactions,
-                    lastUpdated: new Date()
-                });
-            } catch(e) {
-                console.error("Save Failed", e);
-                // ERROR TRAP FOR PERMISSIONS
-                if(e.code === 'permission-denied') {
-                    alert("SAVE FAILED: Permission Denied.\nPlease go to Firebase Console > Firestore Database > Rules and allow writes.");
-                } else {
-                    alert("Cloud Save Failed: " + e.message);
-                }
-            }
-        }
-    }
-
     function resetData() {
         if(confirm("Are you sure? This will delete all data from the Cloud.")) {
-            transactions = [];
-            saveData();
+            window.transactions = [];
+            window.saveData();
         }
     }
 
-    // --- HELPER FUNCTIONS & LOGIC ---
+    // --- HELPER FUNCTIONS ---
     const expCategories = ["Groceries", "Dining Out", "Fuel", "Transport", "Utilities", "Shopping", "Entertainment", "Health", "Bills", "Education", "Other"];
     const incCategories = ["Salary", "Bonus", "Investment", "Gift", "Sale", "Lottery", "Other"];
     let currentChartType = 'donut';
-    let transactions = [];
+    window.transactions = []; // Global
     let currentTab = 'dashboard';
     let editingId = null;
 
@@ -768,7 +760,7 @@
     let currentRate = 1;
     const symbols = { USD: "$", INR: "₹", EUR: "€", GBP: "£", JPY: "¥" };
 
-    async function initCurrency() {
+    window.initCurrency = async function() {
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
@@ -777,16 +769,16 @@
         const savedCurr = localStorage.getItem('budget_currency_pref');
         if(savedCurr && exchangeRates[savedCurr]) currentCurrency = savedCurr;
         document.getElementById('currency').value = currentCurrency;
-        updateRate();
+        window.updateRate();
     }
 
-    function changeCurrency() {
+    window.changeCurrency = function() {
         currentCurrency = document.getElementById('currency').value;
         localStorage.setItem('budget_currency_pref', currentCurrency);
-        updateRate();
+        window.updateRate();
     }
 
-    function updateRate() { currentRate = exchangeRates[currentCurrency] || 1; updateUI(); }
+    window.updateRate = function() { currentRate = exchangeRates[currentCurrency] || 1; window.updateUI(); }
     function formatMoney(amountInUSD) { return (symbols[currentCurrency]||"$") + (amountInUSD * currentRate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
     function formatCompactMoney(amountInUSD) {
         let val = amountInUSD * currentRate; const sym = symbols[currentCurrency] || "$";
@@ -795,7 +787,7 @@
         return sym + val.toFixed(0);
     }
 
-    function initDateControls() {
+    window.initDateControls = function() {
         const today = new Date();
         const yearSel = document.getElementById('year-select');
         yearSel.innerHTML = "";
@@ -808,33 +800,33 @@
         document.getElementById('custom-end').value = today.toLocaleDateString('en-CA');
     }
 
-    function generateDummyData() {
-        transactions = [];
+    window.generateDummyData = function() {
+        window.transactions = [];
         const today = new Date();
         const methods = ["Card", "PhonePe", "GPay", "Paytm", "NetBanking", "Cash"];
         for(let i=60; i>=0; i--) {
             const d = new Date(today); d.setDate(d.getDate() - i);
             const dateStr = d.toLocaleDateString('en-CA'); 
-            if(i % 14 === 0) transactions.push({id: Date.now()+i, date: dateStr, desc: "Salary", amount: 4000, type: "income", method: "NetBanking"});
-            transactions.push({id: Date.now()+i+1, date: dateStr, desc: "Groceries", amount: Math.floor(Math.random()*150)+20, type: "expense", method: methods[Math.floor(Math.random()*methods.length)]});
+            if(i % 14 === 0) window.transactions.push({id: Date.now()+i, date: dateStr, desc: "Salary", amount: 4000, type: "income", method: "NetBanking"});
+            window.transactions.push({id: Date.now()+i+1, date: dateStr, desc: "Groceries", amount: Math.floor(Math.random()*150)+20, type: "expense", method: methods[Math.floor(Math.random()*methods.length)]});
         }
-        saveData();
+        window.saveData();
     }
 
-    function switchTab(tabName, btn) {
+    window.switchTab = function(tabName, btn) {
         currentTab = tabName;
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
         document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
         document.getElementById(`view-${tabName}`).classList.add('active');
         document.getElementById('page-title').innerText = {'dashboard':'Dashboard','income':'Income','expenses':'Expenses','records':'Records','categories':'Categories','profile':'My Profile'}[tabName];
-        updateUI();
+        window.updateUI();
     }
 
-    function deleteTx(id) { if(confirm("Delete entry?")) { transactions = transactions.filter(t => t.id !== id); saveData(); } }
+    window.deleteTx = function(id) { if(confirm("Delete entry?")) { window.transactions = window.transactions.filter(t => t.id !== id); window.saveData(); } }
 
-    function editTx(id) {
-        const tx = transactions.find(t => t.id === id); if(!tx) return;
+    window.editTx = function(id) {
+        const tx = window.transactions.find(t => t.id === id); if(!tx) return;
         editingId = id; openCalc(true); setCalcType(tx.type);
         let catName = tx.desc; if(tx.desc.includes('(')) catName = tx.desc.split('(')[0].trim();
         document.getElementById('calc-cat').value = catName;
@@ -845,40 +837,125 @@
     }
 
     let calcString = "0"; let calcType = "expense";
-    function openCalc(isEdit = false) {
+    window.openCalc = function(isEdit = false) {
         document.getElementById('calc-modal').style.display = 'flex';
         document.getElementById('calc-title').innerText = isEdit ? "Edit Transaction" : "New Transaction";
         if(!isEdit) { editingId = null; setCalcType('expense'); calcString = "0"; document.getElementById('calc-note').value = ""; updateCalcDisplay(); }
     }
-    function closeCalc() { document.getElementById('calc-modal').style.display = 'none'; editingId = null; }
-    function setCalcType(type) {
+    window.closeCalc = function() { document.getElementById('calc-modal').style.display = 'none'; editingId = null; }
+    window.setCalcType = function(type) {
         calcType = type; document.getElementById('tab-exp').classList.toggle('active', type === 'expense'); document.getElementById('tab-inc').classList.toggle('active', type === 'income');
         const select = document.getElementById('calc-cat'); const currentVal = select.value; select.innerHTML = "";
         (type==='expense'?expCategories:incCategories).forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.innerText = c; select.appendChild(opt); });
         if((type==='expense'?expCategories:incCategories).includes(currentVal)) select.value = currentVal;
     }
-    function calcInput(val) {
+    window.calcInput = function(val) {
         if(val === 'del') { calcString = calcString.slice(0, -1); if(calcString === "") calcString = "0"; }
         else if (['+','-','*','/'].includes(val)) { if(['+','-','*','/'].includes(calcString.slice(-1))) calcString = calcString.slice(0, -1) + val; else calcString += val; }
         else { if(calcString === "0" && val !== '.') calcString = val; else calcString += val; }
         updateCalcDisplay();
     }
-    function calcEval() { try { if(/[^0-9+\-*/.]/.test(calcString)) return; calcString = parseFloat(new Function('return ' + calcString)().toFixed(2)).toString(); updateCalcDisplay(); } catch(e) { calcString = "Error"; } }
-    function updateCalcDisplay() { document.getElementById('calc-display').innerText = calcString; document.getElementById('calc-display').style.color = calcType === 'income' ? 'var(--primary)' : 'var(--secondary)'; }
-    function saveCalc() {
-        calcEval(); const amount = parseFloat(calcString); if(isNaN(amount) || amount <= 0) return alert("Invalid Amount");
+    window.calcEval = function() { try { if(/[^0-9+\-*/.]/.test(calcString)) return; calcString = parseFloat(new Function('return ' + calcString)().toFixed(2)).toString(); updateCalcDisplay(); } catch(e) { calcString = "Error"; } }
+    window.updateCalcDisplay = function() { document.getElementById('calc-display').innerText = calcString; document.getElementById('calc-display').style.color = calcType === 'income' ? 'var(--primary)' : 'var(--secondary)'; }
+    window.saveCalc = function() {
+        window.calcEval(); const amount = parseFloat(calcString); if(isNaN(amount) || amount <= 0) return alert("Invalid Amount");
         const cat = document.getElementById('calc-cat').value; const method = document.getElementById('calc-method').value;
         const note = document.getElementById('calc-note').value.trim(); const desc = note ? `${cat} (${note})` : cat;
         const amtUSD = amount / currentRate;
-        if(editingId) { const idx = transactions.findIndex(t => t.id === editingId); if(idx > -1) transactions[idx] = { ...transactions[idx], desc, amount: amtUSD, type: calcType, method }; }
-        else { transactions.push({ id: Date.now(), date: new Date().toLocaleDateString('en-CA'), desc, amount: amtUSD, type: calcType, method }); }
-        saveData(); closeCalc();
+        if(editingId) { const idx = window.transactions.findIndex(t => t.id === editingId); if(idx > -1) window.transactions[idx] = { ...window.transactions[idx], desc, amount: amtUSD, type: calcType, method }; }
+        else { window.transactions.push({ id: Date.now(), date: new Date().toLocaleDateString('en-CA'), desc, amount: amtUSD, type: calcType, method }); }
+        window.saveData(); window.closeCalc();
     }
 
     // FILTER & RENDER
-    function filterData() {
+    window.filterData = function() {
         const year = parseInt(document.getElementById('year-select').value); const period = document.getElementById('period-select').value;
         const start = document.getElementById('custom-start').value; const end = document.getElementById('custom-end').value;
         document.getElementById('custom-date-controls').classList.toggle('show', period === 'custom');
-        return transactions.filter(t => {
-            const d = new Date(t.date); if(period==='custom')
+        return window.transactions.filter(t => {
+            const d = new Date(t.date); if(period==='custom') return t.date >= start && t.date <= end;
+            if(d.getFullYear() !== year) return false;
+            if(period === 'all') return true;
+            if(period === 'q1') return d.getMonth() <= 2; if(period === 'q2') return d.getMonth() >= 3 && d.getMonth() <= 5;
+            if(period === 'q3') return d.getMonth() >= 6 && d.getMonth() <= 8; if(period === 'q4') return d.getMonth() >= 9;
+            return d.getMonth() === parseInt(period);
+        });
+    }
+    
+    window.updateUI = function() {
+        const data = window.filterData();
+        let inc=0, exp=0; data.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
+        document.getElementById('total-inc').innerText = formatMoney(inc); document.getElementById('total-exp').innerText = formatMoney(exp); document.getElementById('balance').innerText = formatMoney(inc - exp);
+        document.getElementById('profile-total-tx').innerText = data.length;
+        if(currentTab === 'dashboard') { renderExpenseFlow(data); if(currentChartType === 'donut') renderSpendingDonut(data); else renderSpendingSunburst(data); }
+        else if (currentTab === 'records') renderRecordsList(data);
+        else if (currentTab === 'income') renderDetailList(data, 'income');
+        else if (currentTab === 'expenses') renderDetailList(data, 'expense');
+        else if (currentTab === 'categories') renderCategories(data);
+    }
+
+    window.switchChartType = function(type, btn) { currentChartType = type; document.querySelectorAll('.chart-switch-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); window.updateUI(); }
+
+    function renderExpenseFlow(data) {
+        const container = document.getElementById('chart-flow'); container.innerHTML = "";
+        const dateMap = {}; data.filter(t => t.type === 'expense').forEach(t => dateMap[t.date] = (dateMap[t.date] || 0) + t.amount * currentRate);
+        const dates = Object.keys(dateMap).sort();
+        if(dates.length === 0) { container.innerHTML = "<div style='text-align:center;padding-top:80px;color:var(--text-muted)'>No Data</div>"; document.getElementById('flow-daily-container').innerHTML=""; return; }
+        const cData = dates.map(d => ({date:new Date(d), val:dateMap[d]}));
+        const w = container.clientWidth, h = container.clientHeight, m = {top:10, right:10, bottom:20, left:30};
+        const svg = d3.select("#chart-flow").append("svg").attr("width", w).attr("height", h);
+        const x = d3.scaleTime().domain(d3.extent(cData, d => d.date)).range([m.left, w - m.right]);
+        const y = d3.scaleLinear().domain([0, d3.max(cData, d => d.val)*1.1]).range([h - m.bottom, m.top]);
+        const area = d3.area().curve(d3.curveMonotoneX).x(d=>x(d.date)).y0(h-m.bottom).y1(d=>y(d.val));
+        svg.append("path").datum(cData).attr("fill", "var(--danger)").attr("opacity", 0.2).attr("d", area);
+        svg.append("path").datum(cData).attr("fill", "none").attr("stroke", "var(--danger)").attr("stroke-width", 2).attr("d", d3.line().curve(d3.curveMonotoneX).x(d=>x(d.date)).y(d=>y(d.val)));
+        
+        const strip = document.getElementById('flow-daily-container'); strip.innerHTML = "";
+        [...cData].reverse().forEach(d => { strip.innerHTML += `<div class="flow-daily-item"><div class="flow-day">${d.date.toLocaleDateString('en-US',{weekday:'short'})}</div><div class="flow-date">${d.date.getDate()}</div><div class="flow-amt">${formatCompactMoney(d.val/currentRate)}</div></div>`; });
+    }
+
+    function renderSpendingDonut(data) {
+        const container = document.getElementById('chart-cats'); container.innerHTML = "";
+        const map = {}; data.filter(t => t.type==='expense').forEach(t => { const n = t.desc.split('(')[0].trim(); map[n] = (map[n]||0) + t.amount*currentRate; });
+        const sorted = Object.keys(map).map(k=>({name:k, val:map[k]})).sort((a,b)=>b.val-a.val).slice(0,7);
+        if(sorted.length===0) { container.innerHTML = "<div style='text-align:center;padding-top:150px;color:var(--text-muted)'>No Expenses</div>"; return; }
+        const w = container.clientWidth, h = 400, r = Math.min(w,h)/2 * 0.7;
+        const svg = d3.select("#chart-cats").append("svg").attr("width", w).attr("height", h).append("g").attr("transform", `translate(${w/2},${h/2})`);
+        const color = d3.scaleOrdinal(d3.schemeSet2);
+        const pie = d3.pie().value(d=>d.val); const arc = d3.arc().innerRadius(r*0.6).outerRadius(r);
+        svg.selectAll('path').data(pie(sorted)).enter().append('path').attr('d', arc).attr('fill', d=>color(d.data.name)).attr('stroke', '#0b0e14').attr('stroke-width', 2);
+    }
+    
+    function renderSpendingSunburst(data) { renderSpendingDonut(data); }
+
+    function renderRecordsList(data) {
+        const c = document.getElementById('records-list-container'); c.innerHTML = "";
+        if(data.length===0) return c.innerHTML = "<div class='empty-state'>No records</div>";
+        data.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(t => {
+            c.innerHTML += `<div style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;"><div><div style="font-weight:600">${t.desc}</div><div style="font-size:0.8rem;color:var(--text-muted)">${t.date}</div></div><div style="text-align:right; font-weight:700; color:${t.type==='income'?'var(--primary)':'var(--danger)'}">${formatMoney(t.amount)}</div></div>`;
+        });
+    }
+    
+    function renderDetailList(data, type) {
+        const c = document.getElementById(type+'-list-container'); c.innerHTML = "";
+        const sub = data.filter(t=>t.type===type);
+        if(sub.length===0) return c.innerHTML = "<div class='empty-state'>Empty</div>";
+        sub.forEach(t => {
+            c.innerHTML += `<div style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;"><div>${t.desc}</div><div style="font-weight:700; color:${type==='income'?'var(--primary)':'var(--secondary)'}">${formatMoney(t.amount)}</div></div>`;
+        });
+    }
+
+    function renderCategories(data) {
+        const inc = document.getElementById('cat-list-income'); const exp = document.getElementById('cat-list-expense');
+        inc.innerHTML = ""; exp.innerHTML = "";
+        const map = {}; data.forEach(t => { const n = t.desc.split('(')[0].trim(); if(!map[n]) map[n]={val:0, type:t.type}; map[n].val += t.amount; });
+        Object.keys(map).forEach(k => {
+            const html = `<div class="cat-list-item"><div class="cat-name">${k}</div><div class="cat-amount">${formatMoney(map[k].val)}</div></div>`;
+            if(map[k].type === 'income') inc.innerHTML += html; else exp.innerHTML += html;
+        });
+    }
+
+    document.addEventListener('keydown', e => { if(document.getElementById('calc-modal').style.display==='flex') { if(/[0-9./+\-*]/.test(e.key)) window.calcInput(e.key); else if(e.key==='Enter') window.saveCalc(); else if(e.key==='Backspace') window.calcInput('del'); else if(e.key==='Escape') window.closeCalc(); } });
+</script>
+</body>
+</html>
