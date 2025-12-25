@@ -342,7 +342,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border); border-radius: 25px;
             display: flex; padding: 5px 10px; gap: 5px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 100;
-            align-items: center; width: auto; max-width: 95%; overflow-x: auto;
+            align-items: center; width: auto; max-width: 100%; overflow-x: auto;
         }
         .nav-btn {
             background: transparent; border: none; color: var(--text-muted);
@@ -415,8 +415,22 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             #main { order: 2; height: 100%; overflow: visible; padding-bottom: 100px; }
             .report-header { padding: 15px 20px; align-items: flex-start; gap: 10px; }
             .header-top-row { flex-wrap: wrap; gap:10px; }
-            .header-controls { width: 100%; justify-content: space-between; overflow-x: auto; }
-            .currency-wrapper, #period-select, #year-select { flex: 1; min-width: 80px; }
+            /* --- FIXED HEADER FOR MOBILE --- */
+.header-controls { 
+    width: 100%; 
+    justify-content: flex-start; /* Align to start */
+    overflow-x: auto; /* Enable scroll */
+    gap: 10px; 
+    padding-bottom: 5px; /* Space for scrollbar */
+}
+/* Stop items from squishing */
+.currency-wrapper, #period-select, #year-select { 
+    flex: 0 0 auto; /* Do not shrink */
+    width: auto; 
+    min-width: auto; 
+}
+/* Hide scrollbar for clean look */
+.header-controls::-webkit-scrollbar { display: none; }
             .custom-date-row { flex-direction: column; align-items: flex-start; }
             .view-container { padding: 20px 20px 120px 20px; }
             .summary-grid { grid-template-columns: 1fr; }
