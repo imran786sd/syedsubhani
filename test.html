@@ -21,7 +21,7 @@
     
     <style>
         :root {
-            /* --- 🎨 THEME CONFIGURATION --- */
+            /* --- THEME COLORS --- */
             --bg-body: #0b0e14;   
             --primary: #2dd4bf;   
             --secondary: #fbbf24; 
@@ -46,7 +46,7 @@
 
         select option { background-color: var(--bg-body); color: var(--text-main); padding: 10px; }
 
-        /* AUTH SCREEN */
+        /* --- AUTH SCREEN --- */
         #auth-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
@@ -56,6 +56,7 @@
             width: 400px; max-width: 90%; background: rgba(15, 23, 42, 0.9);
             border: 1px solid var(--glass-border); border-radius: 20px; padding: 40px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5); text-align: center;
+            animation: fadeIn 0.4s ease-out;
         }
         .auth-logo { font-size: 3rem; color: var(--primary); margin-bottom: 10px; }
         .google-btn {
@@ -64,7 +65,7 @@
             cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px;
         }
 
-        /* MAIN LAYOUT */
+        /* --- LAYOUT --- */
         #app-wrapper { display: none; width: 100%; height: 100%; display: flex; }
         
         #sidebar {
@@ -76,6 +77,7 @@
 
         #main { flex-grow: 1; position: relative; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
+        /* --- HEADER --- */
         .report-header { 
             padding: 20px 25px; display: flex; flex-direction: column; gap: 15px;
             background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(5px); border-bottom: 1px solid var(--glass-border); flex-shrink: 0; z-index: 15;
@@ -87,12 +89,14 @@
         .custom-date-row { display: none; width: 100%; gap: 10px; align-items: center; padding-top: 5px; }
         .custom-date-row.show { display: flex; }
         .custom-date-input { padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-main); }
+        .date-input-group { display: flex; align-items: center; gap: 10px; }
+        .date-label { font-size: 0.8rem; color: var(--text-muted); }
 
         .view-container { flex-grow: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; display: none; }
         .view-container.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* DASHBOARD */
+        /* --- DASHBOARD STATS --- */
         .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-card {
             background: var(--glass-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border);
@@ -102,13 +106,12 @@
         .stat-val.pos { color: var(--primary); }
         .stat-val.neg { color: var(--secondary); }
 
-        /* GRAPHS */
+        /* --- GRAPHS --- */
         .flow-container, .top-cats-container {
             background: var(--glass-bg); padding: 20px; border-radius: 16px;
             border: 1px solid var(--glass-border); margin-bottom: 20px; position: relative;
             display: flex; flex-direction: column;
         }
-        /* Increased height for cleaner look */
         .top-cats-container { height: 500px; } 
         #chart-flow { width: 100%; height: 220px; }
         #chart-cats { width: 100%; flex-grow: 1; position: relative; }
@@ -116,7 +119,21 @@
         .chart-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .chart-title { font-size: 1rem; font-weight: 600; color: var(--text-muted); }
         
-        /* LISTS (Improved) */
+        .chart-switch-group { display: flex; gap: 5px; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 8px; }
+        .chart-switch-btn { background: none; border: none; color: var(--text-muted); padding: 5px 10px; cursor: pointer; border-radius: 5px; font-size: 0.8rem; }
+        .chart-switch-btn.active { background: var(--glass-border); color: white; }
+
+        .flow-daily-strip { display: flex; gap: 10px; overflow-x: auto; padding-top: 10px; border-top: 1px solid var(--glass-border); }
+        .flow-daily-item { min-width: 70px; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; text-align: center; }
+        .flow-day { font-size: 0.7rem; color: var(--text-muted); }
+        .flow-amt { font-weight: bold; color: var(--danger); font-size: 0.8rem; }
+
+        .flow-tooltip, .chart-tooltip {
+            position: absolute; background: rgba(15, 23, 42, 0.95); padding: 8px 12px; border-radius: 8px; 
+            pointer-events: none; opacity: 0; font-size: 12px; z-index: 1000; color: white; border: 1px solid var(--glass-border);
+        }
+
+        /* --- RECORD LISTS --- */
         .list-item {
             display: flex; justify-content: space-between; align-items: center; padding: 15px 0;
             border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -132,15 +149,20 @@
         .item-right { text-align: right; }
         .item-amt { font-weight: 700; font-family: 'Consolas', monospace; font-size: 1rem; }
         
-        /* ACTION BUTTONS (Restored) */
         .action-row { display: flex; gap: 15px; justify-content: flex-end; margin-top: 6px; }
         .act-btn { font-size: 0.85rem; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
         .act-btn:hover { color: var(--text-main); }
         .act-btn.del:hover { color: var(--danger); }
 
-        /* NAV */
+        .cat-list-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--glass-border); }
+        .cat-name { font-weight: 500; }
+        .cat-amount { font-family: monospace; }
+
+        /* --- NAVIGATION BAR --- */
         .bottom-nav {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            position: fixed; /* FIXED for Mobile */
+            bottom: 20px; 
+            left: 50%; transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border); border-radius: 25px;
             display: flex; padding: 8px 15px; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
@@ -160,27 +182,47 @@
             margin: 0 5px; box-shadow: 0 5px 15px rgba(45, 212, 191, 0.4);
         }
 
-        /* PROFILE */
+        /* --- PROFILE --- */
+        .profile-container { max-width: 600px; margin: 0 auto; }
         .profile-header-card {
             background: var(--glass-bg); padding: 30px; border-radius: 20px; 
             text-align: center; margin-bottom: 20px; border: 1px solid var(--glass-border);
         }
         .profile-img-lg { width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--bg-body); margin-bottom: 10px; }
+        .profile-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .p-stat-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; }
+        
         .settings-btn {
             background: var(--glass-bg); border: 1px solid var(--glass-border);
             padding: 15px; border-radius: 12px; color: var(--text-main);
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px; cursor: pointer;
         }
+        .settings-btn.danger { border-color: var(--danger); color: var(--danger); }
 
-        /* CALCULATOR */
+        /* --- CALCULATOR MODAL --- */
         #calc-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         #calc-content { width: 360px; max-width: 95%; background: var(--bg-body); border-radius: 20px; border: 1px solid var(--glass-border); overflow: hidden; }
         .calc-header { padding: 15px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--glass-border); }
-        .calc-display { font-size: 2.5rem; font-weight: 700; padding: 20px; text-align: right; font-family: 'Consolas', monospace; }
+        .calc-display-wrapper { padding: 10px 20px; text-align: right; background: rgba(0,0,0,0.2); }
+        .calc-display { font-size: 2.5rem; font-weight: 700; font-family: 'Consolas', monospace; }
+        
+        .calc-tabs { display: flex; justify-content: center; padding: 10px; gap: 10px; }
+        .calc-tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-muted); }
+        .calc-tab.active { border-color: var(--primary); color: white; }
+        
+        .calc-input-area { padding: 15px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .calc-pill-select { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 5px; }
+        .calc-note-input { width: 100%; padding: 10px; background: transparent; border: none; border-bottom: 1px solid var(--glass-border); color: white; }
+
         .calc-keypad { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--glass-border); }
         .key { padding: 20px 0; background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.02); color: white; font-size: 1.2rem; cursor: pointer; }
         .key.eq { background: var(--primary); color: black; grid-row: span 2; }
+        
+        /* Highlighted Keys */
+        .key.del { color: var(--danger); font-size: 1.5rem; font-weight: bold; }
+        .key.clear { color: var(--secondary); font-weight: bold; }
 
         @media (max-width: 768px) {
             body { overflow-y: hidden; }
@@ -224,14 +266,32 @@
                     <div class="report-title" id="page-title">Dashboard</div>
                     <div class="header-controls">
                         <select id="currency" class="header-select" onchange="changeCurrency()">
-                            <option value="USD">USD ($)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option>
+                            <option value="USD">USD ($)</option>
+                            <option value="INR">INR (₹)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="JPY">JPY (¥)</option>
+                            <option value="CAD">CAD (C$)</option>
                         </select>
+                        <select id="year-select" class="header-select" onchange="updateUI()"></select>
                         <select id="period-select" class="header-select" onchange="updateUI()">
-                            <option value="all">All Year</option><option value="week">This Week</option><option disabled>---</option>
+                            <option value="all">All Year</option>
+                            <option value="week">This Week</option>
+                            <option disabled>---</option>
                             <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option><option value="3">Apr</option>
                             <option value="4">May</option><option value="5">Jun</option><option value="6">Jul</option><option value="7">Aug</option>
                             <option value="8">Sep</option><option value="9">Oct</option><option value="10">Nov</option><option value="11" selected>Dec</option>
                         </select>
+                    </div>
+                </div>
+                <div id="custom-date-controls" class="custom-date-row">
+                    <div class="date-input-group">
+                        <span class="date-label">From</span>
+                        <input type="date" id="custom-start" class="custom-date-input" onchange="updateUI()">
+                    </div>
+                    <div class="date-input-group">
+                        <span class="date-label">To</span>
+                        <input type="date" id="custom-end" class="custom-date-input" onchange="updateUI()">
                     </div>
                 </div>
             </div>
@@ -245,21 +305,42 @@
                 <div class="flow-container">
                     <div class="chart-header-row"><div class="chart-title">Activity</div></div>
                     <div id="chart-flow"></div>
+                    <div id="flow-tooltip" class="flow-tooltip"></div>
+                    <div id="flow-daily-container" class="flow-daily-strip"></div>
                 </div>
                 <div class="top-cats-container">
                     <div class="chart-header-row">
                         <div class="chart-title">Breakdown</div>
-                        <div class="chart-switch-group">
-                            <button class="chart-switch-btn active" onclick="switchChartType('donut', this)">Pie</button>
-                            <button class="chart-switch-btn" onclick="switchChartType('sunburst', this)">Sun</button>
+                        <div class="chart-controls-right">
+                            <select id="chart-label-mode" class="chart-label-select" onchange="updateUI()">
+                                <option value="name">Show: Name</option>
+                                <option value="value">Show: Value</option>
+                                <option value="percent">Show: %</option>
+                                <option value="all">Show: All</option>
+                            </select>
+                            <div class="chart-switch-group">
+                                <button class="chart-switch-btn active" onclick="switchChartType('donut', this)">Pie</button>
+                                <button class="chart-switch-btn" onclick="switchChartType('sunburst', this)">Sun</button>
+                            </div>
                         </div>
                     </div>
                     <div id="chart-cats"></div>
+                    <div id="cat-tooltip" class="chart-tooltip"></div> 
                 </div>
             </div>
 
             <div id="view-records" class="view-container">
+                <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
+                    <span class="stat-title">Total Records</span><span class="stat-val" style="color:var(--text-main)" id="records-page-total">...</span>
+                </div>
                 <div id="records-list-container"></div>
+            </div>
+
+            <div id="view-categories" class="view-container">
+                <div class="cat-section-title">Income Categories</div>
+                <div id="cat-list-income"></div>
+                <div class="cat-section-title">Expense Categories</div>
+                <div id="cat-list-expense"></div>
             </div>
 
             <div id="view-profile" class="view-container">
@@ -268,8 +349,20 @@
                         <img id="main-profile-avatar" src="" class="profile-img-lg">
                         <div class="profile-name-lg" id="main-profile-name">User</div>
                         <div style="color:var(--primary); margin-top:5px;">Pro Member</div>
+                        <div class="profile-stats-grid">
+                            <div class="p-stat-box"><div class="p-stat-num" id="profile-total-tx">0</div><div class="p-stat-lbl">Transactions</div></div>
+                            <div class="p-stat-box"><div class="p-stat-num" style="color:var(--primary);">CLOUD</div><div class="p-stat-lbl">Storage</div></div>
+                        </div>
+                    </div>
+                    <div style="background:rgba(45, 212, 191, 0.1); color:var(--primary); padding:15px; border-radius:12px; font-size:0.85rem; border:1px solid rgba(45, 212, 191, 0.3); margin-bottom:20px; width:100%; display:flex; gap:10px; align-items:center;">
+                        <i class="fa-solid fa-cloud"></i>
+                        <div><strong>GOOGLE SYNC ENABLED</strong><br>Your data is backed up to your account.</div>
                     </div>
                     <div class="settings-group">
+                        <div class="settings-btn" onclick="exportData()">
+                            <span><i class="fa-solid fa-file-csv" style="margin-right:10px; color:#10b981"></i> Export to Excel</span>
+                            <i class="fa-solid fa-download" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
                         <div class="settings-btn" onclick="resetData()"><span><i class="fa-solid fa-trash"></i> Clear Data</span></div>
                         <div class="settings-btn danger" onclick="handleLogout()"><span><i class="fa-solid fa-right-from-bracket"></i> Logout</span></div>
                     </div>
@@ -280,6 +373,7 @@
                 <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Dash</button>
                 <button class="nav-btn" onclick="switchTab('records', this)"><i class="fa-solid fa-list"></i> Records</button>
                 <button class="nav-add-btn" onclick="openCalc()"><i class="fa-solid fa-plus"></i></button>
+                <button class="nav-btn" onclick="switchTab('categories', this)"><i class="fa-solid fa-tags"></i> Cats</button>
                 <button class="nav-btn" onclick="switchTab('profile', this)"><i class="fa-solid fa-user"></i> Profile</button>
             </nav>
         </div>
@@ -288,34 +382,45 @@
     <div id="calc-modal">
         <div id="calc-content">
             <div class="calc-header">
-                <span class="calc-action-btn" onclick="closeCalc()" style="color:var(--danger)">Cancel</span>
-                <span style="font-weight:600; color:var(--text-muted)">New Transaction</span>
-                <span class="calc-action-btn" onclick="saveCalc()" style="color:var(--primary)">Save</span>
+                <button class="calc-action-btn btn-close" style="background:none;border:none;color:var(--danger);font-weight:bold;" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                <span style="font-weight:600; color:var(--text-muted)" id="calc-title">New Transaction</span>
+                <button class="calc-action-btn btn-save" style="background:none;border:none;color:var(--primary);font-weight:bold;" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
             </div>
-            <div class="calc-tabs" style="padding:15px; display:flex; gap:10px;">
-                <button id="tab-exp" class="chart-switch-btn active" style="flex:1; padding:10px;" onclick="setCalcType('expense')">Expense</button>
-                <button id="tab-inc" class="chart-switch-btn" style="flex:1; padding:10px;" onclick="setCalcType('income')">Income</button>
+            <div class="calc-tabs">
+                <div id="tab-exp" class="calc-tab active" onclick="setCalcType('expense')">Expense</div>
+                <div id="tab-inc" class="calc-tab" onclick="setCalcType('income')">Income</div>
             </div>
-            <div style="padding:0 20px;">
-                <select id="calc-cat" class="calc-pill-select" style="width:100%; margin-bottom:10px;"></select>
-                <input type="text" id="calc-note" class="calc-note-input" placeholder="Note..." style="width:100%;">
+            <div class="calc-input-area">
+                <div class="input-row">
+                    <select id="calc-cat" class="calc-pill-select"></select>
+                    <select id="calc-method" class="calc-pill-select" style="flex:0.8;">
+                        <option value="Card">Card</option><option value="PhonePe">PhonePe</option><option value="GPay">GPay</option><option value="Paytm">Paytm</option><option value="NetBanking">NetBanking</option><option value="Cash">Cash</option>
+                    </select>
+                </div>
+                <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (e.g. Vegetables)...">
             </div>
-            <div id="calc-display" class="calc-display">0</div>
+            <div class="calc-display-wrapper">
+                <div id="calc-display" class="calc-display">0</div>
+            </div>
+            
             <div class="calc-keypad">
                 <button class="key" onclick="calcInput('7')">7</button><button class="key" onclick="calcInput('8')">8</button><button class="key" onclick="calcInput('9')">9</button><button class="key op" onclick="calcInput('/')">÷</button>
                 <button class="key" onclick="calcInput('4')">4</button><button class="key" onclick="calcInput('5')">5</button><button class="key" onclick="calcInput('6')">6</button><button class="key op" onclick="calcInput('*')">×</button>
                 <button class="key" onclick="calcInput('1')">1</button><button class="key" onclick="calcInput('2')">2</button><button class="key" onclick="calcInput('3')">3</button><button class="key op" onclick="calcInput('-')">-</button>
-                <button class="key" onclick="calcInput('0')">0</button><button class="key" onclick="calcInput('.')">.</button><button class="key del" onclick="calcInput('del')">⌫</button><button class="key op" onclick="calcInput('+')">+</button>
-                <button class="key eq" style="grid-column: span 4; background:var(--primary); color:black;" onclick="saveCalc()">ENTER</button>
+                
+                <button class="key clear" onclick="calcInput('clear')">C</button>
+                
+                <button class="key" onclick="calcInput('0')">0</button><button class="key" onclick="calcInput('.')">.</button><button class="key op" onclick="calcInput('+')">+</button>
+                
+                <button class="key del" onclick="calcInput('del')">⌫</button>
+                
+                <button class="key eq" style="grid-column: span 3; background:var(--primary); color:black;" onclick="saveCalc()">ENTER</button>
             </div>
         </div>
     </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
+<script>
+    // --- 1. CONFIG AND INIT ---
     const firebaseConfig = {
         apiKey: "AIzaSyBg10pA9GtC56C3XR4Fg4fxSzfJbdE83_U",
         authDomain: "mahira-d7381.firebaseapp.com",
@@ -326,23 +431,20 @@
     };
 
     let auth, db, currentUserUID;
+    window.addEventListener('firebase-modules-loaded', () => { initFirebase(); });
 
-    window.initFirebase = function() {
+    async function initFirebase() {
         try {
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
+            const app = window.firebaseModules.initializeApp(firebaseConfig);
+            auth = window.firebaseModules.getAuth(app);
+            db = window.firebaseModules.getFirestore(app);
             
-            // Expose for usage
-            window.db = db;
-            window.auth = auth;
-
-            onAuthStateChanged(auth, (user) => {
+            window.firebaseModules.onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUserUID = user.uid;
                     updateProfileUI(user.displayName, user.photoURL);
                     showApp();
-                    loadData();
+                    loadData(); 
                 } else {
                     currentUserUID = null;
                     document.getElementById('auth-wrapper').style.display = 'flex';
@@ -352,48 +454,16 @@
         } catch(e) { alert("Firebase Error: " + e.message); }
     }
 
-    window.handleGoogleLogin = async function() {
-        const provider = new GoogleAuthProvider();
-        try { await signInWithPopup(auth, provider); } catch (e) { alert(e.message); }
+    async function handleGoogleLogin() {
+        const provider = new window.firebaseModules.GoogleAuthProvider();
+        try { await window.firebaseModules.signInWithPopup(auth, provider); } catch (e) { alert(e.message); }
     }
 
-    window.handleLogout = function() {
-        if(confirm("Logout?")) { signOut(auth); location.reload(); }
+    function handleLogout() {
+        if(confirm("Logout?")) { window.firebaseModules.signOut(auth); location.reload(); }
     }
 
-    // LOAD DATA - FIX: NO DUMMY DATA FOR NEW USERS
-    window.loadData = async function() {
-        if(!currentUserUID) return;
-        try {
-            const docRef = doc(db, "users", currentUserUID);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                window.transactions = docSnap.data().transactions || [];
-            } else {
-                window.transactions = []; // START FRESH FOR NEW USERS
-            }
-        } catch (e) { console.error(e); }
-        window.initCurrency();
-        window.updateUI();
-    }
-
-    window.saveData = async function() {
-        window.updateUI();
-        if(currentUserUID) {
-            try {
-                await setDoc(doc(db, "users", currentUserUID), { 
-                    transactions: window.transactions,
-                    lastUpdated: new Date()
-                });
-            } catch(e) { console.error("Save Error", e); }
-        }
-    }
-
-    window.initFirebase();
-</script>
-
-<script>
-    // GLOBAL UI SCRIPT
+    // --- 2. GLOBAL APP STATE ---
     window.transactions = [];
     let currentTab = 'dashboard';
     let editingId = null;
@@ -401,6 +471,7 @@
     const expCategories = ["Groceries", "Dining Out", "Fuel", "Transport", "Utilities", "Shopping", "Entertainment", "Health", "Bills", "Education", "Other"];
     const incCategories = ["Salary", "Bonus", "Investment", "Gift", "Sale", "Lottery", "Other"];
 
+    // --- 3. HELPER FUNCTIONS ---
     function updateProfileUI(name, photo) {
         const safeName = name || "User";
         const safePhoto = photo || `https://ui-avatars.com/api/?name=${safeName}&background=2dd4bf&color=0b0e14&bold=true`;
@@ -413,109 +484,155 @@
     function showApp() {
         document.getElementById('auth-wrapper').style.display = 'none';
         document.getElementById('app-wrapper').style.display = 'flex';
-        // Force Mobile Layout check
         if(window.innerWidth < 768) document.getElementById('app-wrapper').style.flexDirection = 'column';
-        window.initDateControls();
+        initDateControls();
     }
 
-    // --- CURRENCY ---
+    // --- 4. CURRENCY LOGIC ---
     let exchangeRates = { USD: 1 };
     let currentCurrency = "USD";
     let currentRate = 1;
-    const symbols = { USD: "$", INR: "₹", EUR: "€", GBP: "£", JPY: "¥" };
+    const symbols = { USD: "$", INR: "₹", EUR: "€", GBP: "£", JPY: "¥", CAD: "C$" };
 
-    window.initCurrency = async function() {
+    async function initCurrency() {
         try {
             const response = await fetch("https://open.er-api.com/v6/latest/USD");
             const data = await response.json();
             if(data.result === "success") exchangeRates = data.rates;
         } catch(e) { exchangeRates = { USD:1, INR: 83.5, EUR: 0.92 }; }
         document.getElementById('currency').value = currentCurrency;
-        window.updateRate();
+        updateRate();
     }
 
     window.changeCurrency = function() {
         currentCurrency = document.getElementById('currency').value;
-        window.updateRate();
+        updateRate();
     }
 
-    window.updateRate = function() { currentRate = exchangeRates[currentCurrency] || 1; window.updateUI(); }
+    function updateRate() { currentRate = exchangeRates[currentCurrency] || 1; updateUI(); }
     function formatMoney(amountInUSD) { return (symbols[currentCurrency]||"$") + (amountInUSD * currentRate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
-
-    window.initDateControls = function() {
-        // Populates Date Selects
+    function formatCompactMoney(amountInUSD) {
+        let val = amountInUSD * currentRate; const sym = symbols[currentCurrency] || "$";
+        if(val >= 1000000) return sym + (val/1000000).toFixed(1) + "m";
+        if(val >= 1000) return sym + (val/1000).toFixed(1) + "k";
+        return sym + val.toFixed(0);
     }
 
-    // --- RENDERERS ---
+    // --- 5. DATA LOADING & SAVING ---
+    async function loadData() {
+        if(!currentUserUID) return;
+        try {
+            const docRef = window.firebaseModules.doc(db, "users", currentUserUID);
+            const docSnap = await window.firebaseModules.getDoc(docRef);
+            if (docSnap.exists()) {
+                window.transactions = docSnap.data().transactions || [];
+            } else {
+                window.generateDummyData();
+            }
+        } catch (e) { console.error("Load Error", e); }
+        initCurrency();
+        updateUI();
+    }
+
+    async function saveData() {
+        window.updateUI();
+        if(currentUserUID) {
+            try {
+                await window.firebaseModules.setDoc(window.firebaseModules.doc(db, "users", currentUserUID), { 
+                    transactions: window.transactions,
+                    lastUpdated: new Date()
+                });
+            } catch(e) { console.error("Save Error", e); }
+        }
+    }
+
+    window.generateDummyData = function() {
+        window.transactions = [];
+        const today = new Date();
+        const methods = ["Card", "PhonePe", "GPay", "Paytm", "NetBanking", "Cash"];
+        for(let i=60; i>=0; i--) {
+            const d = new Date(today); d.setDate(d.getDate() - i);
+            const dateStr = d.toLocaleDateString('en-CA'); 
+            if(i % 14 === 0) window.transactions.push({id: Date.now()+i, date: dateStr, desc: "Salary", amount: 4000, type: "income", method: "NetBanking"});
+            window.transactions.push({id: Date.now()+i+1, date: dateStr, desc: "Groceries", amount: Math.floor(Math.random()*150)+20, type: "expense", method: methods[Math.floor(Math.random()*methods.length)]});
+        }
+        window.saveData();
+    }
+
+    // --- 6. CORE APP LOGIC ---
+    window.initDateControls = function() {
+        const today = new Date();
+        const yearSel = document.getElementById('year-select');
+        yearSel.innerHTML = "";
+        for(let y = today.getFullYear() - 2; y <= today.getFullYear() + 5; y++) {
+            const opt = document.createElement('option'); opt.value = y; opt.innerText = y;
+            if(y === today.getFullYear()) opt.selected = true; yearSel.appendChild(opt);
+        }
+        document.getElementById('period-select').value = String(today.getMonth());
+        document.getElementById('custom-start').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
+        document.getElementById('custom-end').value = today.toLocaleDateString('en-CA');
+    }
+
     window.switchTab = function(tabName, btn) {
         currentTab = tabName;
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
         document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
         document.getElementById(`view-${tabName}`).classList.add('active');
-        document.getElementById('page-title').innerText = {'dashboard':'Dashboard','records':'Records','profile':'Profile'}[tabName] || 'Budget Pro';
+        document.getElementById('page-title').innerText = {'dashboard':'Dashboard','records':'Records','categories':'Categories','profile':'Profile'}[tabName] || 'Budget Pro';
         window.updateUI();
     }
 
+    window.filterData = function() {
+        const year = parseInt(document.getElementById('year-select').value);
+        const period = document.getElementById('period-select').value;
+        const start = document.getElementById('custom-start').value;
+        const end = document.getElementById('custom-end').value;
+        document.getElementById('custom-date-controls').classList.toggle('show', period === 'custom');
+
+        return window.transactions.filter(t => {
+            const d = new Date(t.date); 
+            if(period==='custom') return t.date >= start && t.date <= end;
+            if(d.getFullYear() !== year) return false;
+            if(period === 'all') return true;
+            if(period === 'week') { /* simplified week logic */ return true; } 
+            if(period === 'q1') return d.getMonth() <= 2;
+            if(period === 'q2') return d.getMonth() >= 3 && d.getMonth() <= 5;
+            if(period === 'q3') return d.getMonth() >= 6 && d.getMonth() <= 8;
+            if(period === 'q4') return d.getMonth() >= 9;
+            return d.getMonth() === parseInt(period);
+        });
+    }
+
     window.updateUI = function() {
-        // Filter logic here (simplified for brevity)
-        const data = window.transactions; // Add date filter logic if needed
+        const data = window.filterData();
         let inc=0, exp=0; data.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
         document.getElementById('total-inc').innerText = formatMoney(inc);
         document.getElementById('total-exp').innerText = formatMoney(exp);
         document.getElementById('balance').innerText = formatMoney(inc - exp);
+        document.getElementById('profile-total-tx').innerText = data.length;
 
         if(currentTab === 'dashboard') {
             renderExpenseFlow(data);
-            renderSpendingDonut(data);
-        } else if (currentTab === 'records') {
-            renderRecordsList(data);
-        }
+            if(currentChartType === 'donut') renderSpendingDonut(data); else renderSpendingSunburst(data);
+        } else if (currentTab === 'records') renderRecordsList(data);
+        else if (currentTab === 'categories') renderCategories(data);
     }
 
-    // RESTORED: Edit/Delete Buttons
-    function renderRecordsList(data) {
-        const c = document.getElementById('records-list-container'); c.innerHTML = "";
-        if(data.length===0) return c.innerHTML = "<div class='empty-state'>No records</div>";
-        
-        data.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(t => {
-            const color = t.type === 'income' ? 'var(--primary)' : 'var(--danger)';
-            const icon = t.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up';
-            
-            c.innerHTML += `
-            <div class="list-item">
-                <div class="item-left">
-                    <div class="item-icon"><i class="fa-solid ${icon}" style="color:${color}"></i></div>
-                    <div>
-                        <div class="item-desc">${t.desc}</div>
-                        <div class="item-meta">${t.date} • ${t.method || 'Cash'}</div>
-                    </div>
-                </div>
-                <div class="item-right">
-                    <div class="item-amt" style="color:${color}">${formatMoney(t.amount)}</div>
-                    <div class="action-row">
-                        <span class="act-btn" onclick="editTx(${t.id})"><i class="fa-solid fa-pen"></i></span>
-                        <span class="act-btn del" onclick="deleteTx(${t.id})"><i class="fa-solid fa-trash"></i></span>
-                    </div>
-                </div>
-            </div>`;
-        });
-    }
-
-    // CALCULATOR LOGIC
+    // --- 7. CALCULATOR LOGIC (UPDATED WITH C AND DELETE) ---
     let calcString = "0"; let calcType = "expense";
-    
+
     window.openCalc = function(isEdit = false) {
         document.getElementById('calc-modal').style.display = 'flex';
         document.getElementById('calc-title').innerText = isEdit ? "Edit" : "New";
         if(!isEdit) { editingId = null; setCalcType('expense'); calcString = "0"; document.getElementById('calc-note').value = ""; updateCalcDisplay(); }
     }
-    window.closeCalc = function() { document.getElementById('calc-modal').style.display = 'none'; }
-    
+    window.closeCalc = function() { document.getElementById('calc-modal').style.display = 'none'; editingId = null; }
+
     window.setCalcType = function(type) {
         calcType = type;
-        document.getElementById('tab-exp').className = type==='expense' ? 'chart-switch-btn active' : 'chart-switch-btn';
-        document.getElementById('tab-inc').className = type==='income' ? 'chart-switch-btn active' : 'chart-switch-btn';
+        document.getElementById('tab-exp').className = type==='expense' ? 'calc-tab active' : 'calc-tab';
+        document.getElementById('tab-inc').className = type==='income' ? 'calc-tab active' : 'calc-tab';
         const select = document.getElementById('calc-cat'); select.innerHTML = "";
         (type==='expense'?expCategories:incCategories).forEach(c => {
             const opt = document.createElement('option'); opt.value = c; opt.innerText = c; select.appendChild(opt);
@@ -523,12 +640,24 @@
     }
 
     window.calcInput = function(val) {
-        if(val === 'del') calcString = calcString.slice(0, -1) || "0";
-        else if(calcString === "0" && val !== '.') calcString = val;
-        else calcString += val;
+        if(val === 'del') { 
+            calcString = calcString.slice(0, -1); 
+            if(calcString === "") calcString = "0"; 
+        }
+        else if (val === 'clear') { 
+            calcString = "0"; 
+        }
+        else if (['+','-','*','/'].includes(val)) {
+            const last = calcString.slice(-1);
+            if(['+','-','*','/'].includes(last)) calcString = calcString.slice(0, -1) + val; 
+            else calcString += val;
+        } else {
+            if(calcString === "0" && val !== '.') calcString = val; 
+            else calcString += val;
+        }
         updateCalcDisplay();
     }
-    
+
     window.updateCalcDisplay = function() {
         document.getElementById('calc-display').innerText = calcString;
     }
@@ -536,31 +665,22 @@
     window.saveCalc = function() {
         try { calcString = eval(calcString).toString(); } catch {}
         const amount = parseFloat(calcString);
-        if(!amount) return alert("Enter Amount");
+        if(!amount || amount <= 0) return alert("Invalid Amount");
         
         const cat = document.getElementById('calc-cat').value;
-        const desc = document.getElementById('calc-note').value || cat;
-        const method = "Cash"; // Simplified
-        const date = new Date().toLocaleDateString('en-CA');
-        
-        const tx = { id: editingId || Date.now(), date, desc, amount: amount/currentRate, type: calcType, method };
-        
+        const method = document.getElementById('calc-method').value;
+        const note = document.getElementById('calc-note').value.trim();
+        const desc = note ? `${cat} (${note})` : cat;
+        const amtUSD = amount / currentRate;
+
         if(editingId) {
             const idx = window.transactions.findIndex(t => t.id === editingId);
-            if(idx !== -1) window.transactions[idx] = tx;
+            if(idx > -1) window.transactions[idx] = { ...window.transactions[idx], desc, amount: amtUSD, type: calcType, method };
         } else {
-            window.transactions.push(tx);
+            window.transactions.push({ id: Date.now(), date: new Date().toLocaleDateString('en-CA'), desc, amount: amtUSD, type: calcType, method });
         }
-        
         window.saveData();
         closeCalc();
-    }
-
-    window.deleteTx = function(id) {
-        if(confirm("Delete?")) {
-            window.transactions = window.transactions.filter(t => t.id !== id);
-            window.saveData();
-        }
     }
 
     window.editTx = function(id) {
@@ -575,34 +695,100 @@
         }
     }
 
-    window.switchChartType = function(t,e){ currentChartType=t; updateUI(); }
+    window.deleteTx = function(id) {
+        if(confirm("Delete?")) {
+            window.transactions = window.transactions.filter(t => t.id !== id);
+            window.saveData();
+        }
+    }
 
-    // SIMPLE CHART RENDERING (Resized for clean UI)
-    function renderSpendingDonut(data) {
-        const container = document.getElementById('chart-cats'); container.innerHTML = "";
-        const map = {}; data.filter(t => t.type==='expense').forEach(t => map[t.desc] = (map[t.desc]||0) + t.amount);
-        const sorted = Object.keys(map).map(k=>({name:k, val:map[k]})).sort((a,b)=>b.val-a.val);
-        
-        if(!sorted.length) { container.innerHTML = "<div style='padding:50px;text-align:center;color:#666'>No Data</div>"; return; }
+    // --- 8. EXPORT & UTILS ---
+    window.exportData = function() {
+        if (window.transactions.length === 0) {
+            alert("No data to export!");
+            return;
+        }
+        let csvContent = "Date,Description,Amount (USD),Type,Method\n";
+        window.transactions.forEach(t => {
+            let cleanDesc = t.desc.replace(/,/g, " "); 
+            let row = `${t.date},${cleanDesc},${t.amount.toFixed(2)},${t.type},${t.method || ''}`;
+            csvContent += row + "\n";
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "budget_data.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
-        const width = container.clientWidth; const height = 250; const radius = Math.min(width, height) / 2;
-        const svg = d3.select("#chart-cats").append("svg").attr("width", width).attr("height", height).append("g").attr("transform", `translate(${width/2},${height/2})`);
-        
-        const color = d3.scaleOrdinal(d3.schemeSet3);
-        const pie = d3.pie().value(d => d.val);
-        const arc = d3.arc().innerRadius(radius * 0.6).outerRadius(radius * 0.9);
-        
-        svg.selectAll('path').data(pie(sorted)).enter().append('path')
-            .attr('d', arc).attr('fill', d => color(d.data.name))
-            .attr("stroke", "#0b0e14").style("stroke-width", "2px");
-            
-        // Center Text
-        svg.append("text").attr("text-anchor", "middle").attr("dy", "0.3em").style("fill", "white").style("font-weight","bold").text("EXPENSES");
+    window.resetData = function() {
+        if(confirm("Delete ALL Cloud Data?")) { window.transactions = []; window.saveData(); }
+    }
+
+    // --- 9. CHARTS ---
+    window.switchChartType = function(t, btn){ 
+        currentChartType=t; 
+        document.querySelectorAll('.chart-switch-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateUI(); 
     }
 
     function renderExpenseFlow(data) {
-        // Simplified flow chart for brevity - cleaner look
-        document.getElementById('chart-flow').innerHTML = "<div style='text-align:center; padding-top:80px; color:#666'>Activity Graph</div>";
+        const container = document.getElementById('chart-flow'); container.innerHTML = "";
+        const dateMap = {}; data.filter(t => t.type === 'expense').forEach(t => dateMap[t.date] = (dateMap[t.date] || 0) + t.amount * currentRate);
+        const dates = Object.keys(dateMap).sort();
+        if(dates.length === 0) { container.innerHTML = "<div style='text-align:center;padding-top:80px;color:#666'>No Data</div>"; return; }
+        
+        const w = container.clientWidth, h = 220, m = {top:10, right:10, bottom:20, left:30};
+        const svg = d3.select("#chart-flow").append("svg").attr("width", w).attr("height", h);
+        const x = d3.scaleTime().domain(d3.extent(dates, d => new Date(d))).range([m.left, w - m.right]);
+        const y = d3.scaleLinear().domain([0, d3.max(Object.values(dateMap))*1.1]).range([h - m.bottom, m.top]);
+        const line = d3.line().curve(d3.curveMonotoneX).x(d=>x(new Date(d))).y(d=>y(dateMap[d]));
+        const area = d3.area().curve(d3.curveMonotoneX).x(d=>x(new Date(d))).y0(h-m.bottom).y1(d=>y(dateMap[d]));
+        
+        svg.append("path").datum(dates).attr("fill", "rgba(244, 63, 94, 0.2)").attr("d", area);
+        svg.append("path").datum(dates).attr("fill", "none").attr("stroke", "#f43f5e").attr("stroke-width", 2).attr("d", line);
+        
+        const strip = document.getElementById('flow-daily-container'); strip.innerHTML = "";
+        [...dates].reverse().forEach(d => {
+            strip.innerHTML += `<div class="flow-daily-item"><div class="flow-day">${new Date(d).toLocaleDateString('en-US',{weekday:'short'})}</div><div class="flow-amt">${formatCompactMoney(dateMap[d]/currentRate)}</div></div>`;
+        });
+    }
+
+    function renderSpendingDonut(data) {
+        const container = document.getElementById('chart-cats'); container.innerHTML = "";
+        const map = {}; data.filter(t => t.type==='expense').forEach(t => { const n = t.desc.split('(')[0].trim(); map[n] = (map[n]||0) + t.amount*currentRate; });
+        const sorted = Object.keys(map).map(k=>({name:k, val:map[k]})).sort((a,b)=>b.val-a.val).slice(0,7);
+        if(sorted.length===0) { container.innerHTML = "<div style='text-align:center;padding-top:150px;color:#666'>No Data</div>"; return; }
+        
+        const w = container.clientWidth, h = 400, r = Math.min(w,h)/2 * 0.7;
+        const svg = d3.select("#chart-cats").append("svg").attr("width", w).attr("height", h).append("g").attr("transform", `translate(${w/2},${h/2})`);
+        const color = d3.scaleOrdinal(d3.schemeSet3);
+        const pie = d3.pie().value(d=>d.val); const arc = d3.arc().innerRadius(r*0.6).outerRadius(r);
+        svg.selectAll('path').data(pie(sorted)).enter().append('path').attr('d', arc).attr('fill', d=>color(d.data.name)).attr('stroke', '#0b0e14').attr('stroke-width', 2);
+    }
+    
+    function renderSpendingSunburst(data) { renderSpendingDonut(data); } // Fallback to donut for simplicity
+
+    function renderRecordsList(data) {
+        const c = document.getElementById('records-list-container'); c.innerHTML = "";
+        if(data.length===0) return c.innerHTML = "<div class='empty-state' style='text-align:center;padding:20px;color:#666'>No records</div>";
+        data.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(t => {
+            c.innerHTML += `<div class="list-item"><div class="item-left"><div class="item-icon"><i class="fa-solid ${t.type==='income'?'fa-arrow-down':'fa-arrow-up'}"></i></div><div><div class="item-desc">${t.desc}</div><div class="item-meta">${t.date}</div></div></div><div class="item-right"><div class="item-amt" style="color:${t.type==='income'?'var(--primary)':'var(--danger)'}">${formatMoney(t.amount)}</div><div class="action-row"><span class="act-btn" onclick="editTx(${t.id})"><i class="fa-solid fa-pen"></i></span><span class="act-btn del" onclick="deleteTx(${t.id})"><i class="fa-solid fa-trash"></i></span></div></div></div>`;
+        });
+    }
+
+    function renderCategories(data) {
+        const inc = document.getElementById('cat-list-income'); const exp = document.getElementById('cat-list-expense');
+        inc.innerHTML = ""; exp.innerHTML = "";
+        const map = {}; data.forEach(t => { const n = t.desc.split('(')[0].trim(); if(!map[n]) map[n]={val:0, type:t.type}; map[n].val += t.amount; });
+        Object.keys(map).forEach(k => {
+            const html = `<div class="cat-list-item"><div class="cat-name">${k}</div><div class="cat-amount">${formatMoney(map[k].val)}</div></div>`;
+            if(map[k].type === 'income') inc.innerHTML += html; else exp.innerHTML += html;
+        });
     }
 
 </script>
