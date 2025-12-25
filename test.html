@@ -12,12 +12,15 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     
     <script type="module">
-        // FIXED: Changed version from 12.7.0 to 11.2.0
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+        // Using the specific version you provided
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
         
+        // Expose Firebase functions to global scope for the app logic
         window.firebaseModules = { initializeApp, getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, getFirestore, doc, getDoc, setDoc };
+        
+        // Dispatch event to signal Firebase is ready to load
         window.dispatchEvent(new Event('firebase-modules-loaded'));
     </script>
 
@@ -463,52 +466,62 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             </div>
         </div>
 
-       <div id="calc-modal">
-        <div id="calc-content">
-            <div class="calc-header">
-                <button class="calc-action-btn" style="background:none;border:none;color:var(--danger);" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
-                <div style="font-size:0.9rem; font-weight:600; color:var(--text-muted)" id="calc-title">New Transaction</div>
-                <button class="calc-action-btn" style="background:none;border:none;color:var(--primary);" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
-            </div>
-            
-            <div class="calc-tabs">
-                <div class="calc-tab active" id="tab-exp" onclick="setCalcType('expense')">EXPENSE</div>
-                <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')">INCOME</div>
-            </div>
-
-            <div class="calc-input-area">
-                <div class="input-row">
-                    <input type="date" id="calc-date" class="calc-pill-select" style="flex:1; font-family:'Inter'; color-scheme:dark;">
-                    <select id="calc-method" class="calc-pill-select" style="flex:1;">
-                        <option value="Card">Card</option>
-                        <option value="PhonePe">PhonePe</option>
-                        <option value="GPay">GPay</option>
-                        <option value="Paytm">Paytm</option>
-                        <option value="NetBanking">NetBanking</option>
-                        <option value="Cash">Cash</option>
-                    </select>
+        <div id="calc-modal">
+            <div id="calc-content">
+                <div class="calc-header">
+                    <button class="calc-action-btn btn-close" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                    <div style="font-size:0.9rem; font-weight:600; color:var(--text-muted)" id="calc-title">New Transaction</div>
+                    <button class="calc-action-btn btn-save" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
                 </div>
-                <div class="input-row">
-                    <select id="calc-cat" class="calc-pill-select" style="width:100%; font-weight:bold;"></select>
+                
+                <div class="calc-tabs">
+                    <div class="calc-tab active expense-tab" id="tab-exp" onclick="setCalcType('expense')">EXPENSE</div>
+                    <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')">INCOME</div>
                 </div>
-                <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (e.g. Dinner, Uber)...">
-            </div>
 
-            <div class="calc-display-wrapper">
-                <div id="calc-display" class="calc-display">0</div>
-            </div>
-            
-            <div class="calc-keypad">
-                <button class="key" onclick="calcInput('7')">7</button><button class="key" onclick="calcInput('8')">8</button><button class="key" onclick="calcInput('9')">9</button><button class="key op" onclick="calcInput('/')">÷</button>
-                <button class="key" onclick="calcInput('4')">4</button><button class="key" onclick="calcInput('5')">5</button><button class="key" onclick="calcInput('6')">6</button><button class="key op" onclick="calcInput('*')">×</button>
-                <button class="key" onclick="calcInput('1')">1</button><button class="key" onclick="calcInput('2')">2</button><button class="key" onclick="calcInput('3')">3</button><button class="key op" onclick="calcInput('-')">-</button>
-                <button class="key clear" onclick="calcInput('clear')">C</button>
-                <button class="key" onclick="calcInput('0')">0</button><button class="key" onclick="calcInput('.')">.</button><button class="key op" onclick="calcInput('+')">+</button>
-                <button class="key del" onclick="calcInput('del')">⌫</button>
-                <button class="key eq" style="grid-column: span 3; background:var(--primary); color:black;" onclick="saveCalc()">ENTER</button>
+                <div class="calc-input-area">
+                    <div class="input-row">
+                        <select id="calc-cat" class="calc-pill-select">
+                            </select>
+                        <select id="calc-method" class="calc-pill-select" style="flex:0.8;">
+                            <option value="Card">Card</option>
+                            <option value="PhonePe">PhonePe</option>
+                            <option value="GPay">GPay</option>
+                            <option value="Paytm">Paytm</option>
+                            <option value="NetBanking">NetBanking</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+                    <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (e.g. Vegetables)...">
+                </div>
+
+                <div class="calc-display-wrapper">
+                    <div id="calc-display" class="calc-display">0</div>
+                </div>
+
+                <div class="calc-keypad">
+                    <button class="key op" onclick="calcInput('/')">÷</button>
+                    <button class="key" onclick="calcInput('7')">7</button>
+                    <button class="key" onclick="calcInput('8')">8</button>
+                    <button class="key" onclick="calcInput('9')">9</button>
+                    
+                    <button class="key op" onclick="calcInput('*')">×</button>
+                    <button class="key" onclick="calcInput('4')">4</button>
+                    <button class="key" onclick="calcInput('5')">5</button>
+                    <button class="key" onclick="calcInput('6')">6</button>
+                    
+                    <button class="key op" onclick="calcInput('-')">-</button>
+                    <button class="key" onclick="calcInput('1')">1</button>
+                    <button class="key" onclick="calcInput('2')">2</button>
+                    <button class="key" onclick="calcInput('3')">3</button>
+                    
+                    <button class="key op" onclick="calcInput('+')">+</button>
+                    <button class="key" onclick="calcInput('.')">.</button>
+                    <button class="key" onclick="calcInput('0')">0</button>
+                    <button class="key del" onclick="calcInput('del')"><i class="fa-solid fa-delete-left"></i></button>
+                </div>
             </div>
         </div>
-    </div>
 
         <div id="main">
             <div class="report-header">
@@ -774,20 +787,12 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     }
 
     // Google Login Function
-   async function handleGoogleLogin() {
+    async function handleGoogleLogin() {
+        const provider = new window.firebaseModules.GoogleAuthProvider();
         try {
-            // 1. Check if Firebase actually loaded
-            if (!window.firebaseModules) {
-                throw new Error("Firebase SDK not loaded yet. Check your internet or version number.");
-            }
-            
-            // 2. Now it is safe to use
-            const provider = new window.firebaseModules.GoogleAuthProvider();
             await window.firebaseModules.signInWithPopup(auth, provider);
         } catch (error) {
-            // 3. This will now actually show you the alert instead of doing nothing
             alert("Login Failed: " + error.message);
-            console.error(error);
         }
     }
 
@@ -1004,56 +1009,44 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     }
 
     // --- REPAIRED EDIT FUNCTION ---
-    window.editTx = function(id) {
-        const tx = window.transactions.find(t => t.id === id);
-        if(tx) {
-            editingId = id;
-            openCalc(true); // Open modal
-            setCalcType(tx.type);
-            
-            // Load Values
-            document.getElementById('calc-date').value = tx.date; // Load Date
-            document.getElementById('calc-method').value = tx.method || 'Cash';
-            
-            // Handle Category/Note extraction
-            let catName = tx.desc;
-            let note = "";
-            if (tx.desc.includes('(')) {
-                catName = tx.desc.split('(')[0].trim();
-                const match = tx.desc.match(/\(([^)]*)\)/);
-                if (match) note = match[1];
-            }
-            document.getElementById('calc-cat').value = catName;
-            document.getElementById('calc-note').value = note;
-            
-            calcString = (tx.amount * currentRate).toFixed(2);
-            updateCalcDisplay();
+    function editTx(id) {
+        const tx = transactions.find(t => t.id === id);
+        if(!tx) return;
+        editingId = id; 
+        openCalc(true); 
+        setCalcType(tx.type);
+        
+        let catName = tx.desc;
+        if (tx.desc.includes('(')) {
+            catName = tx.desc.split('(')[0].trim();
         }
+        document.getElementById('calc-cat').value = catName;
+
+        if(tx.method) document.getElementById('calc-method').value = tx.method;
+        
+        let note = "";
+        if(tx.desc.includes('(')) {
+            const match = tx.desc.match(/\(([^)]*)\)/); 
+            if (match && match[1]) {
+                note = match[1];
+            }
+        }
+        document.getElementById('calc-note').value = note;
+        
+        calcString = (tx.amount * currentRate).toFixed(2);
+        updateCalcDisplay();
     }
 
     // --- CALCULATOR ---
     let calcString = "0";
     let calcType = "expense";
 
-    / --- 1. OPEN CALCULATOR (Sets Default Date) ---
-    window.openCalc = function(isEdit = false) {
+    function openCalc(isEdit = false) {
         document.getElementById('calc-modal').style.display = 'flex';
         document.getElementById('calc-title').innerText = isEdit ? "Edit Transaction" : "New Transaction";
-        
         if(!isEdit) {
-            editingId = null; 
-            setCalcType('expense'); 
-            calcString = "0";
-            document.getElementById('calc-note').value = ""; 
-            
-            // Set Date to TODAY by default
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            document.getElementById('calc-date').value = `${yyyy}-${mm}-${dd}`;
-
-            updateCalcDisplay();
+            editingId = null; setCalcType('expense'); calcString = "0";
+            document.getElementById('calc-note').value = ""; updateCalcDisplay();
         }
     }
 
@@ -1098,32 +1091,29 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         document.getElementById('calc-display').style.color = calcType === 'income' ? 'var(--primary)' : 'var(--secondary)';
     }
 
-    // --- 3. SAVE TRANSACTION (Saves Selected Date) ---
-    window.saveCalc = function() {
-        try { calcString = eval(calcString).toString(); } catch {}
+    function saveCalc() {
+        calcEval(); 
         const amount = parseFloat(calcString);
-        if(!amount || amount <= 0) return alert("Invalid Amount");
         
-        // Get Inputs
-        const dateVal = document.getElementById('calc-date').value; // Get User Date
+        if(isNaN(amount) || amount <= 0) { 
+            alert("Please enter a valid amount greater than 0"); 
+            return; 
+        }
+        
         const cat = document.getElementById('calc-cat').value;
         const method = document.getElementById('calc-method').value;
         const note = document.getElementById('calc-note').value.trim();
-        
-        if(!dateVal) return alert("Please select a date"); // Safety Check
-
         const desc = note ? `${cat} (${note})` : cat;
         const amtUSD = amount / currentRate;
 
         if(editingId) {
-            const idx = window.transactions.findIndex(t => t.id === editingId);
-            if(idx > -1) window.transactions[idx] = { ...window.transactions[idx], date: dateVal, desc, amount: amtUSD, type: calcType, method };
+            const idx = transactions.findIndex(t => t.id === editingId);
+            if(idx > -1) transactions[idx] = { ...transactions[idx], desc, amount: amtUSD, type: calcType, method };
         } else {
-            // Use dateVal instead of new Date()
-            window.transactions.push({ id: Date.now(), date: dateVal, desc, amount: amtUSD, type: calcType, method });
+            const dateStr = new Date().toLocaleDateString('en-CA');
+            transactions.push({ id: Date.now(), date: dateStr, desc: desc, amount: amtUSD, type: calcType, method: method });
         }
-        window.saveData();
-        closeCalc();
+        saveData(); closeCalc();
     }
 
     // --- FILTER ---
