@@ -549,6 +549,49 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
 /* Calculator Debt Tab Color */
 .calc-tab.active.debt-tab { border-color: #a855f7; color: #a855f7; }
+
+/* --- GOALS VIEW STYLES --- */
+.goal-card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 20px; margin-bottom: 20px;
+    position: relative; overflow: hidden;
+}
+.goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.goal-title { font-weight: 700; font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+.goal-icon-box { 
+    width: 40px; height: 40px; border-radius: 10px; 
+    background: rgba(45, 212, 191, 0.1); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+
+/* Progress Bar */
+.goal-progress-bg {
+    width: 100%; height: 8px; background: rgba(255,255,255,0.05);
+    border-radius: 4px; margin: 15px 0; overflow: hidden;
+}
+.goal-progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 4px; width: 0%; transition: width 0.5s ease;
+}
+
+.goal-stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+.goal-current { color: var(--text-main); font-size: 1rem; }
+
+/* Add Money Button inside Card */
+.btn-goal-add {
+    width: 100%; padding: 10px; margin-top: 15px;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+    border-radius: 8px; color: var(--primary); font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: 0.2s;
+}
+.btn-goal-add:hover { background: var(--primary); color: #000; }
+
+/* New Goal Form (Hidden by default) */
+#add-goal-form {
+    background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px;
+    border: 1px dashed var(--glass-border); margin-bottom: 20px; display: none;
+}
     </style>
 </head>
 <body>
@@ -585,7 +628,10 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                     </div>
                 </div>
             </div>
-
+<div class="settings-btn" onclick="switchTab('goals')" style="margin-top:20px;">
+    <span><i class="fa-solid fa-bullseye" style="margin-right:10px; color:#f472b6;"></i> Savings Goals</span>
+    <i class="fa-solid fa-chevron-right" style="font-size:0.8rem;"></i>
+</div>
             <div style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.5; margin-top:20px;">
                 Use the <strong>+</strong> button below to add transactions. <br><br>
                 <em>Note: Profile & Logout are now in the bottom tabs.</em>
@@ -775,7 +821,26 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     </div>
     <div id="debts-list-container"></div>
 </div>
+<div id="view-goals" class="view-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div class="chart-title">My Targets</div>
+        <button class="nav-add-btn" style="width:35px; height:35px; font-size:1rem;" onclick="toggleGoalForm()">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
 
+    <div id="add-goal-form">
+        <div class="input-row">
+            <input type="text" id="goal-name" class="calc-pill-select" placeholder="Goal Name (e.g. iPhone)" style="flex:2; font-weight:bold;">
+            <div style="flex:1; position:relative;">
+                <input type="number" id="goal-target" class="calc-pill-select" placeholder="Target Amount">
+            </div>
+        </div>
+        <button class="btn-goal-add" onclick="saveNewGoal()" style="margin-top:10px; background:var(--primary); color:black;">Create Goal</button>
+    </div>
+
+    <div id="goals-list-container"></div>
+</div>
             <div id="view-income" class="view-container">
                 <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
                     <span class="stat-title">Total Income (Period)</span>
@@ -821,6 +886,11 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                     </div>
 
                     <div class="settings-group">
+
+                        <div class="settings-btn" onclick="setDailyReminder()">
+    <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> Set Daily Reminder</span>
+    <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
+</div>
                         <div class="settings-btn" onclick="toggleTheme()">
                             <span>
                                 <i id="theme-icon" class="fa-solid fa-moon" style="margin-right:10px; width:20px; text-align:center;"></i> 
@@ -963,8 +1033,9 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             const docSnap = await window.firebaseModules.getDoc(docRef);
             
             if (docSnap.exists()) {
-                // FIXED: Now saves to global window variable
-                window.transactions = docSnap.data().transactions || [];
+                const data = docSnap.data();
+            window.transactions = data.transactions || [];
+            window.goals = data.goals || []; // <--- LOAD GOALS
             } else {
                 generateDummyData(); // First time login
             }
@@ -1127,7 +1198,8 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         if(btn) btn.classList.add('active');
         document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
         document.getElementById(`view-${tabName}`).classList.add('active');
-        
+        // Inside updateUI...
+    if (currentTab === 'goals') renderGoals();
         const titles = { 'dashboard': 'Dashboard', 'income': 'Income Details', 'expenses': 'Expense Details', 'records': 'All Records', 'categories': 'Categories', 'profile': 'My Profile' };
         document.getElementById('page-title').innerText = titles[tabName] || 'Budget Pro';
         updateUI();
@@ -1472,7 +1544,14 @@ function renderDebts(data) {
             return true;
         });
     }
-
+function setDailyReminder() {
+        // Creates a link to add a recurring 9PM event to Google Calendar
+        const title = "Update Budget Tracker";
+        const details = "Time to add your daily expenses and income!";
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(details)}&recur=RRULE:FREQ=DAILY`;
+        
+        window.open(url, '_blank');
+    }
     // --- UI RENDERING ---
     window.updateUI = function() {
         const filtered = filterData();
@@ -1951,6 +2030,109 @@ function renderDebts(data) {
                 .then(reg => console.log('App Installed!', reg.scope))
                 .catch(err => console.log('App Fail:', err));
         });
+    }
+    // --- GOALS LOGIC ---
+    window.goals = []; // Store goals here
+
+    function renderGoals() {
+        const container = document.getElementById('goals-list-container');
+        container.innerHTML = "";
+        
+        if(!window.goals || window.goals.length === 0) {
+            container.innerHTML = "<div class='empty-state'>No goals yet. Click + to add one!</div>";
+            return;
+        }
+
+        window.goals.forEach((g, index) => {
+            const percent = Math.min(100, (g.saved / g.target) * 100).toFixed(1);
+            
+            container.innerHTML += `
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <div class="goal-title">
+                            <div class="goal-icon-box"><i class="fa-solid fa-bullseye"></i></div>
+                            ${g.name}
+                        </div>
+                        <div style="font-size:0.9rem; font-weight:bold; color:var(--primary);">
+                            ${percent}%
+                        </div>
+                    </div>
+                    
+                    <div class="goal-progress-bg">
+                        <div class="goal-progress-fill" style="width:${percent}%"></div>
+                    </div>
+                    
+                    <div class="goal-stats">
+                        <div>Saved: <span class="goal-current">${formatMoney(g.saved)}</span></div>
+                        <div>Target: ${formatMoney(g.target)}</div>
+                    </div>
+
+                    <button class="btn-goal-add" onclick="addMoneyToGoal(${index})">
+                        <i class="fa-solid fa-circle-plus"></i> Add Money
+                    </button>
+                    
+                    <div style="text-align:center; margin-top:10px;">
+                         <span style="font-size:0.7rem; color:var(--danger); cursor:pointer;" onclick="deleteGoal(${index})">Delete Goal</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function toggleGoalForm() {
+        const f = document.getElementById('add-goal-form');
+        f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function saveNewGoal() {
+        const name = document.getElementById('goal-name').value;
+        const target = parseFloat(document.getElementById('goal-target').value);
+        if(!name || !target) return alert("Please fill details");
+        
+        // Convert target to USD for storage
+        const targetUSD = target / currentRate;
+        
+        if(!window.goals) window.goals = [];
+        window.goals.push({ name, target: targetUSD, saved: 0 });
+        
+        saveGoalsData();
+        document.getElementById('goal-name').value = "";
+        document.getElementById('goal-target').value = "";
+        toggleGoalForm();
+    }
+
+    function addMoneyToGoal(index) {
+        const amount = prompt("How much to add?");
+        if(amount) {
+            const val = parseFloat(amount);
+            if(val > 0) {
+                // Store in USD
+                window.goals[index].saved += (val / currentRate);
+                saveGoalsData();
+            }
+        }
+    }
+    
+    function deleteGoal(index) {
+        if(confirm("Delete this goal?")) {
+            window.goals.splice(index, 1);
+            saveGoalsData();
+        }
+    }
+
+    // Save Goals to Firebase (Merged with user object)
+    async function saveGoalsData() {
+        renderGoals(); // Update UI
+        if(currentUserUID) {
+            try {
+                // We save goals alongside transactions
+                await window.firebaseModules.setDoc(window.firebaseModules.doc(db, "users", currentUserUID), { 
+                    transactions: window.transactions,
+                    goals: window.goals, // <--- Saving Goals
+                    lastUpdated: new Date()
+                }, { merge: true });
+            } catch(e) { console.error(e); }
+        }
     }
 
 </script>
