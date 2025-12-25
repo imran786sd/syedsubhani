@@ -1,5 +1,5 @@
 // Update version to force browser to reload
-const CACHE_NAME = 'budget-pro-v2'; 
+const CACHE_NAME = 'budget-pro-v1'; 
 
 const ASSETS = [
   './',
