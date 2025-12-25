@@ -515,14 +515,13 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         <div class="input-row">
             <select id="calc-cat" class="calc-pill-select" style="width:100%; font-weight:bold;"></select>
             
-            <input type="text" id="calc-person" class="calc-pill-select" style="display:none; width:100%; font-weight:bold;" placeholder="Person Name (e.g. Raju)">
-        </div>
-        
-        <div id="debt-toggle" class="input-row" style="display:none; margin-top:10px;">
-            <select id="debt-dir" class="calc-pill-select">
-                <option value="lent">I Gave (Lent)</option>
-                <option value="borrowed">I Took (Borrowed)</option>
-            </select>
+            <div id="debt-row-wrapper" style="display:none; width:100%; gap:10px;">
+                <input type="text" id="calc-person" class="calc-pill-select" style="flex:1; font-weight:bold;" placeholder="Person Name">
+                <select id="debt-dir" class="calc-pill-select" style="flex:0.7; font-size:0.85rem;">
+                    <option value="lent">Gave (Lent)</option>
+                    <option value="borrowed">Got (Borrow)</option>
+                </select>
+            </div>
         </div>
 
         <div class="input-row" style="margin-top:10px;">
@@ -530,7 +529,8 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                 <option value="Cash">Cash</option><option value="Card">Card</option><option value="PhonePe">PhonePe</option><option value="GPay">GPay</option><option value="NetBanking">NetBanking</option>
             </select>
         </div>
-        <input type="text" id="calc-note" class="calc-note-input" placeholder="Note..." style="margin-top:10px;">
+        
+        <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (Optional)..." style="margin-top:10px;">
     </div>
 
     <div class="calc-display-wrapper"><div id="calc-display" class="calc-display">0</div></div>
@@ -1104,41 +1104,31 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     window.setCalcType = function(type) {
         calcType = type;
         
-        // 1. Update Tab Styles (Highlight the correct one)
+        // 1. Highlight Tab
         document.getElementById('tab-exp').className = type==='expense'?'calc-tab active expense-tab':'calc-tab';
         document.getElementById('tab-inc').className = type==='income'?'calc-tab active':'calc-tab';
         document.getElementById('tab-debt').className = type==='debt'?'calc-tab active debt-tab':'calc-tab';
 
-        // 2. Toggle Inputs (Show/Hide fields)
+        // 2. Toggle Fields
         const catSelect = document.getElementById('calc-cat');
-        const personInput = document.getElementById('calc-person');
-        const debtToggle = document.getElementById('debt-toggle');
+        const debtWrapper = document.getElementById('debt-row-wrapper');
 
         if(type === 'debt') {
-            // Debt Mode: Show Person Name, Hide Categories
             catSelect.style.display = 'none';
-            personInput.style.display = 'block'; 
-            debtToggle.style.display = 'flex';   
+            debtWrapper.style.display = 'flex'; // Show the Name + Type row
         } else {
-            // Expense/Income Mode: Show Categories, Hide Person Name
             catSelect.style.display = 'block';
-            personInput.style.display = 'none';
-            debtToggle.style.display = 'none';
+            debtWrapper.style.display = 'none';
             
-            // FIX: Re-populate the list immediately!
+            // Refill Categories
             catSelect.innerHTML = "";
             const list = type === 'expense' ? expCategories : incCategories;
-            
-            // Safety check to make sure list exists
-            if(list && list.length > 0) {
-                list.forEach(c => {
-                    const opt = document.createElement('option'); 
-                    opt.value = c; 
-                    opt.innerText = c; 
-                    catSelect.appendChild(opt);
-                });
-            }
+            if(list) list.forEach(c => {
+                const opt = document.createElement('option'); opt.value = c; opt.innerText = c; catSelect.appendChild(opt);
+            });
         }
+        updateCalcDisplay();
+    }
         
         // 3. Refresh the Display Color
         updateCalcDisplay();
@@ -1196,9 +1186,10 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         if(calcType === 'debt') {
             const person = document.getElementById('calc-person').value.trim();
             if(!person) return alert("Enter Person Name");
-            desc = person; // Store Name
+            desc = person; 
+            
+            // READ FROM DROPDOWN INSTEAD OF BUTTONS
             const dir = document.getElementById('debt-dir').value;
-            // Lent = Expense-like behavior, Borrowed = Income-like behavior
             type = dir === 'lent' ? 'debt_lent' : 'debt_borrowed';
         } else {
             const cat = document.getElementById('calc-cat').value;
@@ -1206,8 +1197,8 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         }
 
         const amtUSD = amount / currentRate;
-        const txObj = { id: editingId || Date.now(), date: dateVal, desc, amount: amtUSD, type, method };
-
+        const txObj = { id: editingId || Date.now(), date: dateVal, desc, amount: amtUSD, type, method, note };
+        
         if(editingId) {
             const idx = window.transactions.findIndex(t => t.id === editingId);
             if(idx > -1) window.transactions[idx] = txObj;
@@ -1320,19 +1311,20 @@ function renderDebts(data) {
         openCalc(); 
         setCalcType('debt');
         
-        // 1. Fill Name
-        document.getElementById('calc-input-main').value = person;
-        document.getElementById('calc-person').value = person; 
+        // Fill Name
+        document.getElementById('calc-person').value = person;
         
-        // 2. Fill Amount (Positive value)
+        // Fill Amount
         calcString = Math.abs(balance * currentRate).toFixed(2); 
         updateCalcDisplay();
         
-        // 3. Set Logic: If Balance is Positive (They Owe), we are "receiving" (Borrow logic to reduce bal)
+        // Set Dropdown Logic: 
+        // If they owe you (+), you are "receiving" (use 'borrowed' logic to reduce balance)
+        // If you owe them (-), you are "giving" (use 'lent' logic to reduce balance)
         const dir = balance > 0 ? 'borrowed' : 'lent';
         document.getElementById('debt-dir').value = dir;
         
-        document.getElementById('calc-note').value = "Partial Payment / Settlement";
+        document.getElementById('calc-note').value = "Settlement";
     }
     // --- FILTER ---
     function filterData() {
