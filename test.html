@@ -332,26 +332,6 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     position: absolute; left: 15px; top: 50%;
     transform: translateY(-50%); color: var(--text-muted);
 }
-        /* --- WALLET BALANCES --- */
-.wallet-strip {
-    display: flex; gap: 15px; overflow-x: auto; 
-    padding-bottom: 10px; margin-bottom: 25px;
-    /* Hide scrollbar for clean look */
-    scrollbar-width: none; -ms-overflow-style: none;
-}
-.wallet-strip::-webkit-scrollbar { display: none; }
-
-.wallet-card {
-    min-width: 140px; padding: 15px; 
-    background: var(--glass-bg); border: 1px solid var(--glass-border); 
-    border-radius: 16px; display: flex; flex-direction: column; gap: 5px;
-    flex-shrink: 0; transition: transform 0.2s;
-}
-.wallet-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
-.wallet-icon { font-size: 1.2rem; color: var(--primary); margin-bottom: 5px; }
-.wallet-name { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-.wallet-bal { font-size: 1.2rem; font-weight: 700; color: var(--text-main); font-family: 'Consolas', monospace; }
-.wallet-bal.neg { color: var(--danger); } /* Red for negative (credit/debt) */
         /* NAV */
         .bottom-nav {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -612,8 +592,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                         <div class="stat-val" id="balance">...</div>
                     </div>
                 </div>
-<div class="cat-section-title" style="margin-bottom:15px; margin-top:0;">Wallet Balances</div>
-<div id="wallet-container" class="wallet-strip"></div>
+
                 <div class="dashboard-lower">
                     <div class="flow-container">
                         <div class="chart-header-row">
@@ -1175,34 +1154,23 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         });
     }
 
-    // --- UPDATED UI FUNCTION ---
-    window.updateUI = function() {
-        // 1. Get data based on current filter
-        const filtered = window.filterData(); // Ensure we use window.filterData()
+    // --- UI RENDERING ---
+    function updateUI() {
+        const filtered = filterData();
         
-        // 2. Calculate Totals
         let inc=0, exp=0;
         filtered.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
-        
-        // 3. Update Header Stats
         document.getElementById('total-inc').innerText = formatMoney(inc);
         document.getElementById('total-exp').innerText = formatMoney(exp);
         document.getElementById('balance').innerText = formatMoney(inc - exp);
+        
         document.getElementById('profile-total-tx').innerText = filtered.length;
 
-        // 4. Render Active View
         if(currentTab === 'dashboard') {
             renderExpenseFlow(filtered);
-            
-            // *** NEW: Add this line to show wallets ***
-            // We pass the FULL transaction list to wallets so balances are accurate
-            // (e.g. your bank balance doesn't change just because you filtered for "This Week")
-            renderWallets(window.transactions); 
-            
             if(currentChartType === 'donut') renderSpendingDonut(filtered);
             else renderSpendingSunburst(filtered);
-        } 
-        else if (currentTab === 'records') renderRecordsList(filtered);
+        } else if (currentTab === 'records') renderRecordsList(filtered);
         else if (currentTab === 'income') renderDetailList(filtered, 'income');
         else if (currentTab === 'expenses') renderDetailList(filtered, 'expense');
         else if (currentTab === 'categories') renderCategories(filtered);
@@ -1655,7 +1623,6 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             setTimeout(() => updateThemeUI(true), 50); 
         }
     })();
-    
 
 </script>
 </body>
