@@ -338,12 +338,20 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 }
         /* NAV */
         .bottom-nav {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border); border-radius: 25px;
-            display: flex; padding: 5px 10px; gap: 5px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 100;
-            align-items: center; width: auto; max-width: 95%; overflow-x: auto;
-        }
+    /* Keep existing positioning */
+    position: fixed; bottom: 0; left: 0; width: 100%; 
+    background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
+    border-top: 1px solid var(--glass-border);
+    z-index: 100;
+    
+    /* New Layout Settings */
+    display: flex; 
+    justify-content: space-between; /* Spread items to edges */
+    align-items: center;
+    padding: 10px 25px; /* Add side padding */
+    overflow: visible; /* Allow button to float outside */
+    border-radius: 0; /* Flat bottom */
+}
         .nav-btn {
             background: transparent; border: none; color: var(--text-muted);
             padding: 10px 12px; border-radius: 15px; cursor: pointer;
@@ -355,13 +363,23 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .nav-btn i { font-size: 1.2rem; }
         
         .nav-add-btn {
-            background: var(--primary); color: #000; border: none;
-            width: 45px; height: 45px; border-radius: 50%; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem; cursor: pointer; margin: 0 5px;
-            box-shadow: 0 5px 20px rgba(45, 212, 191, 0.3);
-            transition: transform 0.2s;
-        }
+    position: absolute; 
+    bottom: 25px; /* Push it up */
+    left: 50%; 
+    transform: translateX(-50%); /* Center perfectly */
+    
+    width: 60px; height: 60px; /* Make it bigger */
+    border-radius: 50%;
+    background: var(--primary); 
+    color: #000;
+    border: 6px solid var(--bg-body); /* Creates the "cutout" effect */
+    
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; 
+    box-shadow: 0 0 15px rgba(45, 212, 191, 0.4); /* Glow effect */
+    z-index: 101;
+    margin: 0; /* Remove old margins */
+}
         .nav-add-btn:hover { transform: scale(1.1); }
 
         /* --- COMPACT CALCULATOR MODAL --- */
@@ -415,8 +433,22 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             #main { order: 2; height: 100%; overflow: visible; padding-bottom: 100px; }
             .report-header { padding: 15px 20px; align-items: flex-start; gap: 10px; }
             .header-top-row { flex-wrap: wrap; gap:10px; }
-            .header-controls { width: 100%; justify-content: space-between; overflow-x: auto; }
-            .currency-wrapper, #period-select, #year-select { flex: 1; min-width: 80px; }
+            /* --- FIXED HEADER FOR MOBILE --- */
+.header-controls { 
+    width: 100%; 
+    justify-content: flex-start; /* Align to start */
+    overflow-x: auto; /* Enable scroll */
+    gap: 10px; 
+    padding-bottom: 5px; /* Space for scrollbar */
+}
+/* Stop items from squishing */
+.currency-wrapper, #period-select, #year-select { 
+    flex: 0 0 auto; /* Do not shrink */
+    width: auto; 
+    min-width: auto; 
+}
+/* Hide scrollbar for clean look */
+.header-controls::-webkit-scrollbar { display: none; }
             .custom-date-row { flex-direction: column; align-items: flex-start; }
             .view-container { padding: 20px 20px 120px 20px; }
             .summary-grid { grid-template-columns: 1fr; }
