@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget Tracker Pro (Mahira Sync)</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2dd4bf">
+<meta name="theme-color" content="#2dd4bf">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     
     <script type="module">
@@ -37,6 +37,28 @@
             --danger: #f43f5e;
             --text-muted: #94a3b8;
             --calc-bg: #1e293b;
+            /* --- ☀️ LIGHT MODE OVERRIDES --- */
+body.light-mode {
+    --bg-body: #f8fafc;           /* Light Gray Background */
+    --text-main: #0f172a;         /* Dark Text */
+    --text-muted: #64748b;        /* Muted Text */
+    --glass-bg: rgba(255, 255, 255, 0.85); /* White Glass */
+    --glass-border: rgba(0, 0, 0, 0.05);   /* Subtle Dark Border */
+    --calc-bg: #ffffff;           /* White Calculator */
+}
+
+/* Fix specific elements for Light Mode visibility */
+body.light-mode .calc-keypad { border-top: 1px solid rgba(0,0,0,0.1); }
+body.light-mode .key { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+body.light-mode .key:active { background: #cbd5e1; }
+body.light-mode .calc-display-wrapper { background: #f1f5f9; color: #000; }
+body.light-mode .calc-pill-select { background: #fff; color: #000; border-color: #cbd5e1; }
+body.light-mode .calc-note-input { color: #000; border-color: #cbd5e1; }
+body.light-mode .nav-btn { color: #64748b; }
+body.light-mode .nav-btn.active { background: var(--primary); color: #fff; }
+body.light-mode .profile-name-lg { color: #000; }
+body.light-mode .profile-stats-grid .p-stat-box { background: rgba(0,0,0,0.05); }
+body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -293,7 +315,24 @@
         .cat-right { text-align: right; }
         .cat-amount { font-weight: 700; font-family: 'Consolas', monospace; font-size: 1rem; }
         .cat-count { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
-
+/* --- SEARCH BAR --- */
+.search-container { position: relative; margin-bottom: 15px; }
+.search-input {
+    width: 100%; padding: 12px 15px 12px 45px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px; color: var(--text-main);
+    font-size: 0.95rem; outline: none; transition: 0.3s;
+}
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(45, 212, 191, 0.2);
+}
+.search-icon {
+    position: absolute; left: 15px; top: 50%;
+    transform: translateY(-50%); color: var(--text-muted);
+}
         /* NAV */
         .bottom-nav {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -588,6 +627,10 @@
             </div>
 
             <div id="view-records" class="view-container">
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search records..." onkeyup="handleSearch()">
+                </div>
                 <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
                     <span class="stat-title">Total Records (Period)</span>
                     <span class="stat-val" style="color:var(--text-main)" id="records-page-total">...</span>
@@ -648,6 +691,13 @@
                     </div>
 
                     <div class="settings-group">
+                        <div class="settings-btn" onclick="toggleTheme()">
+                            <span>
+                                <i id="theme-icon" class="fa-solid fa-moon" style="margin-right:10px; width:20px; text-align:center;"></i> 
+                                <span id="theme-text">Dark Mode</span>
+                            </span>
+                                <i class="fa-solid fa-toggle-off" id="theme-toggle-icon" style="font-size:1.2rem; color:var(--text-muted)"></i>
+                        </div>
                         <div class="settings-btn" onclick="exportData()">
                             <span><i class="fa-solid fa-file-csv" style="margin-right:10px; color:#10b981"></i> Export to Excel</span>
                             <i class="fa-solid fa-download" style="font-size:0.8rem; color:var(--text-muted)"></i>
@@ -780,7 +830,8 @@
             const docSnap = await window.firebaseModules.getDoc(docRef);
             
             if (docSnap.exists()) {
-window.transactions = docSnap.data().transactions || [];
+                // FIXED: Now saves to global window variable
+                window.transactions = docSnap.data().transactions || [];
             } else {
                 generateDummyData(); // First time login
             }
@@ -1453,23 +1504,126 @@ window.transactions = docSnap.data().transactions || [];
     });
     // --- FEATURE: EXPORT TO CSV ---
     window.exportData = function() {
-        if (!window.transactions || window.transactions.length === 0) { alert("No data to export!"); return; }
-        let csvContent = "Date,Description,Amount (USD),Type,Method\n";
+        if (!window.transactions || window.transactions.length === 0) { 
+            alert("No data to export!"); 
+            return; 
+        }
+        
+        // 1. Get the currently selected currency (e.g., "INR", "CAD")
+        const selectedCurrency = document.getElementById('currency').value;
+
+        // 2. Use backticks (`) to insert the currency into the Header Row
+        let csvContent = `Date,Description,Amount (${selectedCurrency}),Type,Method\n`;
+        
         window.transactions.forEach(t => {
             let cleanDesc = t.desc.replace(/,/g, " "); 
-            let amt = Number(t.amount).toFixed(2);
+            
+            // 3. Convert the value from USD to the selected currency
+            let convertedAmt = t.amount * currentRate; 
+            let amt = Number(convertedAmt).toFixed(2);
+            
             let row = `${t.date},${cleanDesc},${amt},${t.type},${t.method || ''}`;
             csvContent += row + "\n";
         });
+        
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", "budget_data.csv");
+        
+        // 4. File name also includes the currency now
+        link.setAttribute("download", `budget_data_${selectedCurrency}.csv`);
+        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
+    // --- FEATURE: SMART SEARCH (>, <, =) ---
+    window.handleSearch = function() {
+        // 1. Get input and clean it
+        let query = document.getElementById('search-input').value.trim().toLowerCase();
+        
+        // 2. Get currently filtered data (respects date/year)
+        const currentData = window.filterData();
+        
+        let searchResults = [];
+
+        // 3. Check if input starts with an operator (>, <, >=, <=, =)
+        // Regex looks for: Operator + Optional Space + Number
+        const match = query.match(/^([<>]=?|=)\s*(\d+(\.\d+)?)$/);
+
+        if (match) {
+            // --- MATH MODE ---
+            const operator = match[1];
+            const searchVal = parseFloat(match[2]);
+
+            searchResults = currentData.filter(t => {
+                // IMPORTANT: Convert stored USD amount to CURRENT displayed currency
+                // This ensures if you see ₹500 on screen, searching >400 works correctly.
+                const val = t.amount * currentRate; 
+                
+                if (operator === '>') return val > searchVal;
+                if (operator === '<') return val < searchVal;
+                if (operator === '>=') return val >= searchVal;
+                if (operator === '<=') return val <= searchVal;
+                if (operator === '=') return Math.abs(val - searchVal) < 0.01; // Exact match (with float safety)
+                return false;
+            });
+        } else {
+            // --- TEXT MODE (Standard) ---
+            searchResults = currentData.filter(t => {
+                // Convert amount to displayed string for matching (e.g. finds "50" in "150")
+                const valStr = (t.amount * currentRate).toFixed(2);
+                
+                return t.desc.toLowerCase().includes(query) || 
+                       valStr.includes(query) ||
+                       (t.method && t.method.toLowerCase().includes(query));
+            });
+        }
+        
+        // 4. Render results
+        renderRecordsList(searchResults);
+    };
+    // --- FEATURE: THEME TOGGLE ---
+    window.toggleTheme = function() {
+        const body = document.body;
+        body.classList.toggle('light-mode');
+        
+        const isLight = body.classList.contains('light-mode');
+        localStorage.setItem('budget_theme', isLight ? 'light' : 'dark');
+        updateThemeUI(isLight);
+    }
+
+    function updateThemeUI(isLight) {
+        const icon = document.getElementById('theme-icon');
+        const text = document.getElementById('theme-text');
+        const toggle = document.getElementById('theme-toggle-icon');
+        
+        if(isLight) {
+            icon.className = "fa-solid fa-sun";
+            icon.style.color = "#f59e0b"; // Orange Sun
+            text.innerText = "Light Mode";
+            toggle.className = "fa-solid fa-toggle-on";
+            toggle.style.color = "var(--primary)";
+        } else {
+            icon.className = "fa-solid fa-moon";
+            icon.style.color = "var(--text-main)"; // Default text color
+            text.innerText = "Dark Mode";
+            toggle.className = "fa-solid fa-toggle-off";
+            toggle.style.color = "var(--text-muted)";
+        }
+    }
+
+    // --- INIT THEME ON LOAD ---
+    // Call this immediately to set correct theme
+    (function initTheme() {
+        const savedTheme = localStorage.getItem('budget_theme');
+        if(savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            // We use a small timeout to ensure DOM is ready if script runs too early
+            setTimeout(() => updateThemeUI(true), 50); 
+        }
+    })();
     // --- PWA REGISTRATION ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
