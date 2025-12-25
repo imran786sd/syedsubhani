@@ -446,6 +446,52 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     display: flex; flex-direction: column; 
     transition: all 0.2s ease; overflow: hidden;
 }
+        /* --- STYLIZED DROPDOWN HISTORY --- */
+.debt-history-container {
+    background: rgba(11, 14, 20, 0.5); /* Darker inner background */
+    border-top: 1px solid rgba(255,255,255,0.05);
+    box-shadow: inset 0 10px 20px rgba(0,0,0,0.3); /* Inner shadow for depth */
+    display: none; /* Hidden by default */
+    animation: slideOpen 0.3s ease-out; /* Smooth animation */
+}
+
+/* Animation for opening */
+@keyframes slideOpen {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* The small header inside the list */
+.debt-hist-header-label {
+    padding: 10px 15px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Individual Transaction Items */
+.debt-hist-item {
+    padding: 12px 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.2s;
+}
+.debt-hist-item:last-child { border-bottom: none; }
+.debt-hist-item:hover { background: rgba(255,255,255,0.05); } /* Highlight on hover */
+
+/* Icons inside the list */
+.hist-action-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: none; background: rgba(255,255,255,0.05);
+    color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+}
+.hist-action-btn:hover { background: var(--text-main); color: #000; }
+.hist-action-btn.del:hover { background: var(--danger); color: white; }
 
 /* Row 1: Name, Amount, Chevron */
 .debt-header-main {
@@ -1259,19 +1305,16 @@ function renderDebts(data) {
         
         const people = {};
         
-        // 1. Group Data
+        // 1. Group Data & Find Totals
         window.transactions.forEach(t => {
             if(t.type !== 'debt_lent' && t.type !== 'debt_borrowed') return;
             const person = t.desc;
             if(!people[person]) people[person] = { bal: 0, txs: [], lastDate: t.date };
             
-            // Calc Balance
             if(t.type === 'debt_lent') people[person].bal += t.amount;
             else people[person].bal -= t.amount;
             
-            // Track Transactions
             people[person].txs.push(t);
-            // Track Latest Date
             if(t.date > people[person].lastDate) people[person].lastDate = t.date;
         });
 
@@ -1283,29 +1326,27 @@ function renderDebts(data) {
             const val = personData.bal;
             totalNet += val;
 
-            const isLent = val >= 0; // True if they owe you
+            const isLent = val >= 0; 
             const colorClass = isLent ? "lent" : "borrowed";
             const uniqueId = `debt-card-${index}`;
             const formattedAmt = formatMoney(Math.abs(val));
             
-            // A. Calculate Days Ago
+            // Days Ago Logic
             const today = new Date();
             const lastTxDate = new Date(personData.lastDate);
             const diffTime = Math.abs(today - lastTxDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
             const dayText = diffDays === 0 ? "Today" : diffDays === 1 ? "Yesterday" : `${diffDays} days ago`;
 
-            // B. WhatsApp Logic (Only if they owe you)
+            // WhatsApp Button Logic
             let waBtn = "";
             if(isLent && Math.abs(val) > 1) {
-                const msg = `Hi ${p}, a gentle reminder that the pending balance is ${formattedAmt}. Thanks!`;
+                const msg = `Hi ${p}, reminder regarding balance: ${formattedAmt}.`;
                 const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-                waBtn = `<button class="btn-mini-action btn-wa" onclick="event.stopPropagation(); window.open('${waUrl}', '_blank')">
-                            <i class="fa-brands fa-whatsapp"></i>
-                         </button>`;
+                waBtn = `<button class="btn-mini-action btn-wa" onclick="event.stopPropagation(); window.open('${waUrl}', '_blank')"><i class="fa-brands fa-whatsapp"></i></button>`;
             }
 
-            // C. Build History List
+            // Build Stylized History List
             let histHtml = '';
             personData.txs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(t => {
                 const tColor = t.type === 'debt_lent' ? 'var(--secondary)' : 'var(--danger)';
@@ -1316,19 +1357,18 @@ function renderDebts(data) {
                     <div class="debt-hist-item">
                         <div style="flex:1;">
                             <div class="debt-hist-date">${t.date}</div>
-                            <div style="font-size:0.85rem; color:var(--text-main);">${note}</div>
+                            <div style="font-size:0.85rem; color:var(--text-main); margin-top:2px;">${note}</div>
                         </div>
-                        <div style="text-align:right;">
-                            <div style="font-weight:bold; color:${tColor}; font-family:'Consolas';">${tSign}${formatMoney(t.amount)}</div>
-                            <div style="margin-top:4px;">
-                                <i class="fa-solid fa-pen" style="color:var(--text-muted); margin-right:10px; cursor:pointer;" onclick="event.stopPropagation(); editTx(${t.id})"></i>
-                                <i class="fa-solid fa-trash" style="color:var(--danger); cursor:pointer;" onclick="event.stopPropagation(); deleteTx(${t.id})"></i>
+                        <div style="text-align:right; display:flex; align-items:center; gap:12px;">
+                            <div style="font-weight:bold; color:${tColor}; font-family:'Consolas'; font-size:0.95rem;">${tSign}${formatMoney(t.amount)}</div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="hist-action-btn" onclick="event.stopPropagation(); editTx(${t.id})"><i class="fa-solid fa-pen" style="font-size:0.75rem;"></i></button>
+                                <button class="hist-action-btn del" onclick="event.stopPropagation(); deleteTx(${t.id})"><i class="fa-solid fa-trash" style="font-size:0.75rem;"></i></button>
                             </div>
                         </div>
                     </div>`;
             });
 
-            // D. Render Full Card
             container.innerHTML += `
                 <div class="debt-card" id="${uniqueId}">
                     <div class="debt-header-main" onclick="toggleDebt('${uniqueId}')">
@@ -1344,19 +1384,17 @@ function renderDebts(data) {
 
                     <div class="debt-action-row">
                         <div class="debt-days-badge"><i class="fa-regular fa-clock"></i> ${dayText}</div>
-                        
                         <div class="debt-btn-group">
-                            ${waBtn} <button class="btn-mini-action btn-settle" onclick="event.stopPropagation(); settleDebt('${p}', ${val})">
+                            ${waBtn}
+                            <button class="btn-mini-action btn-settle" onclick="event.stopPropagation(); settleDebt('${p}', ${val})">
                                 <i class="fa-solid fa-check"></i> Settle
                             </button>
                         </div>
                     </div>
 
                     <div class="debt-history-container">
-                        <div style="padding:10px 15px; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                            Transaction History
-                        </div>
-                        <div class="debt-history-scroll" style="max-height:200px; overflow-y:auto;">
+                        <div class="debt-hist-header-label">Transaction Log</div>
+                        <div class="debt-history-scroll" style="max-height:250px; overflow-y:auto;">
                             ${histHtml}
                         </div>
                     </div>
@@ -1369,24 +1407,9 @@ function renderDebts(data) {
         netEl.className = totalNet >= 0 ? "stat-val pos" : "stat-val neg";
     }
 
-    // Helper to toggle class
+    // Toggle Function
     function toggleDebt(id) {
         document.getElementById(id).classList.toggle('open');
-    }
-
-    // --- UPDATED TOGGLE FUNCTION ---
-    function toggleHistory(id) {
-        const histEl = document.getElementById(id);
-        const cardEl = document.getElementById('card-' + id);
-        
-        // Toggle Display
-        if (histEl.style.display === 'block') {
-            histEl.style.display = 'none';
-            cardEl.classList.remove('open'); // Rotate arrow back
-        } else {
-            histEl.style.display = 'block';
-            cardEl.classList.add('open'); // Rotate arrow down
-        }
     }
 
     function settleDebt(person, balance) {
