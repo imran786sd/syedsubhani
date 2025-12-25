@@ -1508,22 +1508,50 @@
         link.click();
         document.body.removeChild(link);
     };
-    // --- FEATURE: INSTANT SEARCH ---
+    // --- FEATURE: SMART SEARCH (>, <, =) ---
     window.handleSearch = function() {
-        // 1. Get the search text (lowercase for case-insensitive matching)
-        const query = document.getElementById('search-input').value.toLowerCase();
+        // 1. Get input and clean it
+        let query = document.getElementById('search-input').value.trim().toLowerCase();
         
-        // 2. Get the current filtered data (respects date/year selection)
+        // 2. Get currently filtered data (respects date/year)
         const currentData = window.filterData();
         
-        // 3. Filter further based on search query
-        const searchResults = currentData.filter(t => 
-            t.desc.toLowerCase().includes(query) || 
-            t.amount.toString().includes(query) ||
-            (t.method && t.method.toLowerCase().includes(query))
-        );
+        let searchResults = [];
+
+        // 3. Check if input starts with an operator (>, <, >=, <=, =)
+        // Regex looks for: Operator + Optional Space + Number
+        const match = query.match(/^([<>]=?|=)\s*(\d+(\.\d+)?)$/);
+
+        if (match) {
+            // --- MATH MODE ---
+            const operator = match[1];
+            const searchVal = parseFloat(match[2]);
+
+            searchResults = currentData.filter(t => {
+                // IMPORTANT: Convert stored USD amount to CURRENT displayed currency
+                // This ensures if you see ₹500 on screen, searching >400 works correctly.
+                const val = t.amount * currentRate; 
+                
+                if (operator === '>') return val > searchVal;
+                if (operator === '<') return val < searchVal;
+                if (operator === '>=') return val >= searchVal;
+                if (operator === '<=') return val <= searchVal;
+                if (operator === '=') return Math.abs(val - searchVal) < 0.01; // Exact match (with float safety)
+                return false;
+            });
+        } else {
+            // --- TEXT MODE (Standard) ---
+            searchResults = currentData.filter(t => {
+                // Convert amount to displayed string for matching (e.g. finds "50" in "150")
+                const valStr = (t.amount * currentRate).toFixed(2);
+                
+                return t.desc.toLowerCase().includes(query) || 
+                       valStr.includes(query) ||
+                       (t.method && t.method.toLowerCase().includes(query));
+            });
+        }
         
-        // 4. Render the filtered list
+        // 4. Render results
         renderRecordsList(searchResults);
     };
 
