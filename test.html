@@ -1076,12 +1076,26 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     let calcString = "0";
     let calcType = "expense";
 
-    function openCalc(isEdit = false) {
+    window.openCalc = function(isEdit = false) {
         document.getElementById('calc-modal').style.display = 'flex';
-        document.getElementById('calc-title').innerText = isEdit ? "Edit Transaction" : "New Transaction";
+        
+        // Set Date to Today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById('calc-date').value = `${yyyy}-${mm}-${dd}`;
+
         if(!isEdit) {
-            editingId = null; setCalcType('expense'); calcString = "0";
-            document.getElementById('calc-note').value = ""; updateCalcDisplay();
+            editingId = null; 
+            setCalcType('income'); // <--- CHANGED THIS to 'income'
+            calcString = "0"; 
+            document.getElementById('calc-note').value = ""; 
+            
+            // Clear specific inputs if they exist
+            if(document.getElementById('calc-person')) document.getElementById('calc-person').value = "";
+            
+            updateCalcDisplay();
         }
     }
 
