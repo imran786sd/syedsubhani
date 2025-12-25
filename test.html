@@ -1089,42 +1089,68 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
     window.setCalcType = function(type) {
         calcType = type;
-        // Update Tabs
+        
+        // 1. Update Tab Styles (Highlight the correct one)
         document.getElementById('tab-exp').className = type==='expense'?'calc-tab active expense-tab':'calc-tab';
         document.getElementById('tab-inc').className = type==='income'?'calc-tab active':'calc-tab';
         document.getElementById('tab-debt').className = type==='debt'?'calc-tab active debt-tab':'calc-tab';
 
-        // Toggle Inputs
+        // 2. Toggle Inputs (Show/Hide fields)
         const catSelect = document.getElementById('calc-cat');
         const personInput = document.getElementById('calc-person');
         const debtToggle = document.getElementById('debt-toggle');
 
         if(type === 'debt') {
+            // Debt Mode: Show Person Name, Hide Categories
             catSelect.style.display = 'none';
-            personInput.style.display = 'block'; // Show Text Input
-            debtToggle.style.display = 'flex';   // Show Gave/Took
+            personInput.style.display = 'block'; 
+            debtToggle.style.display = 'flex';   
         } else {
+            // Expense/Income Mode: Show Categories, Hide Person Name
             catSelect.style.display = 'block';
             personInput.style.display = 'none';
             debtToggle.style.display = 'none';
             
-            // Reload Categories
+            // FIX: Re-populate the list immediately!
             catSelect.innerHTML = "";
             const list = type === 'expense' ? expCategories : incCategories;
-            list.forEach(c => {
-                const opt = document.createElement('option'); opt.value = c; opt.innerText = c; catSelect.appendChild(opt);
-            });
+            
+            // Safety check to make sure list exists
+            if(list && list.length > 0) {
+                list.forEach(c => {
+                    const opt = document.createElement('option'); 
+                    opt.value = c; 
+                    opt.innerText = c; 
+                    catSelect.appendChild(opt);
+                });
+            }
         }
+        
+        // 3. Refresh the Display Color
         updateCalcDisplay();
     }
 
     function calcInput(val) {
-        if(val === 'del') { calcString = calcString.slice(0, -1); if(calcString === "") calcString = "0"; }
+        if(val === 'del') { 
+            calcString = calcString.slice(0, -1); 
+            if(calcString === "") calcString = "0"; 
+        }
+        else if(val === 'clear') { 
+            // FIX: Actually reset to 0 instead of writing "clear"
+            calcString = "0"; 
+        }
         else if (['+','-','*','/'].includes(val)) {
             const last = calcString.slice(-1);
-            if(['+','-','*','/'].includes(last)) calcString = calcString.slice(0, -1) + val; else calcString += val;
+            // Prevent double operators (e.g. 5++5)
+            if(['+','-','*','/'].includes(last)) {
+                calcString = calcString.slice(0, -1) + val; 
+            } else {
+                calcString += val;
+            }
         } else {
-            if(calcString === "0" && val !== '.') calcString = val; else calcString += val;
+            // Standard number input
+            if(calcString === "0" && val !== '.') calcString = val; 
+            else calcString += val;
         }
         updateCalcDisplay();
     }
