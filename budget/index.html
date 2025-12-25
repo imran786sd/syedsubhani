@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget Tracker Pro (Mahira Sync)</title>
-    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2dd4bf">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     
     <script type="module">
@@ -1469,6 +1470,14 @@ window.transactions = docSnap.data().transactions || [];
         link.click();
         document.body.removeChild(link);
     };
+    // --- PWA REGISTRATION ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('App Installed!', reg.scope))
+                .catch(err => console.log('App Fail:', err));
+        });
+    }
 
 </script>
 </body>
