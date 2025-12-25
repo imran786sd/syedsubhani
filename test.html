@@ -292,7 +292,24 @@
         .cat-right { text-align: right; }
         .cat-amount { font-weight: 700; font-family: 'Consolas', monospace; font-size: 1rem; }
         .cat-count { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
-
+/* --- SEARCH BAR --- */
+.search-container { position: relative; margin-bottom: 15px; }
+.search-input {
+    width: 100%; padding: 12px 15px 12px 45px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px; color: var(--text-main);
+    font-size: 0.95rem; outline: none; transition: 0.3s;
+}
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(45, 212, 191, 0.2);
+}
+.search-icon {
+    position: absolute; left: 15px; top: 50%;
+    transform: translateY(-50%); color: var(--text-muted);
+}
         /* NAV */
         .bottom-nav {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -587,6 +604,10 @@
             </div>
 
             <div id="view-records" class="view-container">
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search records..." onkeyup="handleSearch()">
+                </div>
                 <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
                     <span class="stat-title">Total Records (Period)</span>
                     <span class="stat-val" style="color:var(--text-main)" id="records-page-total">...</span>
@@ -1486,6 +1507,24 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+    // --- FEATURE: INSTANT SEARCH ---
+    window.handleSearch = function() {
+        // 1. Get the search text (lowercase for case-insensitive matching)
+        const query = document.getElementById('search-input').value.toLowerCase();
+        
+        // 2. Get the current filtered data (respects date/year selection)
+        const currentData = window.filterData();
+        
+        // 3. Filter further based on search query
+        const searchResults = currentData.filter(t => 
+            t.desc.toLowerCase().includes(query) || 
+            t.amount.toString().includes(query) ||
+            (t.method && t.method.toLowerCase().includes(query))
+        );
+        
+        // 4. Render the filtered list
+        renderRecordsList(searchResults);
     };
 
 </script>
