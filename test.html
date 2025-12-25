@@ -438,11 +438,41 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             .bottom-nav { bottom: 0; left: 0; transform: none; width: 100%; border-radius: 0; justify-content: space-around; padding: 12px 10px; }
         }
         /* --- DEBT VIEW STYLES --- */
+/* --- DEBT CARD IMPROVEMENTS --- */
 .debt-card {
-    background: var(--glass-bg); border: 1px solid var(--glass-border);
-    padding: 15px; border-radius: 12px; margin-bottom: 10px;
-    display: flex; justify-content: space-between; align-items: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative; /* For positioning */
 }
+
+/* The dropdown arrow icon */
+.debt-chevron {
+    color: var(--text-muted);
+    margin-left: 10px;
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+}
+/* Class to rotate arrow when open */
+.debt-card.open .debt-chevron {
+    transform: rotate(180deg);
+}
+
+/* SCROLLABLE HISTORY (The Fix for Long Cards) */
+.debt-history {
+    display: none; 
+    margin-top: 15px; 
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+.debt-history-scroll {
+    max-height: 200px; /* Limit height to prevent huge cards */
+    overflow-y: auto;  /* Enable scrolling inside the card */
+    padding-right: 5px; /* Space for scrollbar */
+}
+
+/* Custom Scrollbar for the history list */
+.debt-history-scroll::-webkit-scrollbar { width: 4px; }
+.debt-history-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 .debt-avatar { 
     width: 40px; height: 40px; border-radius: 50%; 
     background: rgba(255,255,255,0.05); color: var(--text-main);
@@ -1210,13 +1240,12 @@ function renderDebts(data) {
         
         const people = {};
         
-        // 1. Group transactions by Person
+        // 1. Group Transactions
         window.transactions.forEach(t => {
             if(t.type !== 'debt_lent' && t.type !== 'debt_borrowed') return;
-            const person = t.desc; // Name is stored here
+            const person = t.desc;
             if(!people[person]) people[person] = { bal: 0, txs: [] };
             
-            // Lent = Positive (Asset), Borrowed = Negative (Liability)
             if(t.type === 'debt_lent') people[person].bal += t.amount;
             else people[person].bal -= t.amount;
             
@@ -1225,49 +1254,44 @@ function renderDebts(data) {
 
         let totalNet = 0;
         
-        // 2. Build the List
+        // 2. Render Cards
         Object.keys(people).forEach((p, index) => {
             const personData = people[p];
             const val = personData.bal;
             totalNet += val;
             
+            // Skip settled debts (0 balance) if you prefer clean view
+            if(Math.abs(val) < 0.01 && personData.txs.length > 0) return;
+
             const isLent = val >= 0;
             const subText = isLent ? "Owes you" : "You owe";
             const colorClass = isLent ? "lent" : "borrowed";
-            const uniqueId = `debt-hist-${index}`;
+            const uniqueId = `debt-hist-${index}`; // Unique ID for this person's history
 
-            // Create History List (Recent first)
+            // Build History Items
             let histHtml = '';
             personData.txs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(t => {
                 const tColor = t.type === 'debt_lent' ? 'var(--secondary)' : 'var(--danger)';
                 const tSign = t.type === 'debt_lent' ? '+' : '-';
-                
-                // Note logic: If note exists show it, else show generic "Lent/Borrowed"
-                let metaText = t.note || (t.type==='debt_lent'?'Gave Money':'Got Money');
+                let metaText = t.note || (t.type==='debt_lent'?'Gave':'Got');
 
                 histHtml += `
                     <div class="debt-hist-item">
                         <div style="flex:1;">
                             <div class="debt-hist-date">${t.date}</div>
-                            <div style="color:var(--text-main);">${metaText}</div>
+                            <div style="color:var(--text-main); font-size:0.85rem;">${metaText}</div>
                         </div>
-                        <div style="text-align:right; display:flex; gap:15px; align-items:center;">
+                        <div style="text-align:right; display:flex; align-items:center; gap:10px;">
                             <div style="font-weight:bold; color:${tColor}; font-family:'Consolas';">${tSign}${formatMoney(t.amount)}</div>
-                            
-                            <div style="display:flex; gap:10px;">
-                                <button onclick="event.stopPropagation(); editTx(${t.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer; padding:5px;">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <button onclick="event.stopPropagation(); deleteTx(${t.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:5px;">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </div>
+                            <button onclick="event.stopPropagation(); editTx(${t.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer;"><i class="fa-solid fa-pen" style="font-size:0.8rem;"></i></button>
+                            <button onclick="event.stopPropagation(); deleteTx(${t.id})" style="background:none; border:none; color:var(--danger); cursor:pointer;"><i class="fa-solid fa-trash" style="font-size:0.8rem;"></i></button>
                         </div>
                     </div>`;
             });
 
+            // Build Card HTML
             container.innerHTML += `
-                <div class="debt-card" onclick="toggleHistory('${uniqueId}')">
+                <div class="debt-card" id="card-${uniqueId}" onclick="toggleHistory('${uniqueId}')">
                     <div class="debt-card-header">
                         <div style="display:flex; align-items:center;">
                             <div class="debt-avatar">${p.charAt(0).toUpperCase()}</div>
@@ -1276,15 +1300,19 @@ function renderDebts(data) {
                                 <div style="font-size:0.75rem; color:var(--text-muted);">${subText}</div>
                             </div>
                         </div>
-                        <div class="debt-amt ${colorClass}">${formatMoney(Math.abs(val))}</div>
+                        <div style="display:flex; align-items:center;">
+                            <div class="debt-amt ${colorClass}">${formatMoney(Math.abs(val))}</div>
+                            <i class="fa-solid fa-chevron-down debt-chevron"></i>
+                        </div>
                     </div>
                     
                     <div id="${uniqueId}" class="debt-history">
-                        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:bold;">Transaction Log</div>
-                        ${histHtml}
+                        <div class="debt-history-scroll">
+                            ${histHtml}
+                        </div>
                         <div class="debt-actions">
                             <button class="btn-settle" onclick="event.stopPropagation(); settleDebt('${p}', ${val})">
-                                <i class="fa-solid fa-hand-holding-dollar"></i> ADD PAYMENT / SETTLE
+                                <i class="fa-solid fa-check"></i> Settle / Pay
                             </button>
                         </div>
                     </div>
@@ -1297,10 +1325,19 @@ function renderDebts(data) {
         netEl.className = totalNet >= 0 ? "stat-val pos" : "stat-val neg";
     }
 
-    // Keep these helpers!
+    // --- UPDATED TOGGLE FUNCTION ---
     function toggleHistory(id) {
-        const el = document.getElementById(id);
-        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        const histEl = document.getElementById(id);
+        const cardEl = document.getElementById('card-' + id);
+        
+        // Toggle Display
+        if (histEl.style.display === 'block') {
+            histEl.style.display = 'none';
+            cardEl.classList.remove('open'); // Rotate arrow back
+        } else {
+            histEl.style.display = 'block';
+            cardEl.classList.add('open'); // Rotate arrow down
+        }
     }
 
     function settleDebt(person, balance) {
