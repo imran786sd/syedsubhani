@@ -1454,7 +1454,7 @@
     // --- FEATURE: EXPORT TO CSV ---
     window.exportData = function() {
         if (!window.transactions || window.transactions.length === 0) { alert("No data to export!"); return; }
-        let csvContent = "Date,Description,Amount (${selectedCurrency}),Type,Method\n";
+        let csvContent = `Date,Description,Amount (${selectedCurrency}),Type,Method\n`;
         window.transactions.forEach(t => {
             let cleanDesc = t.desc.replace(/,/g, " "); 
             let amt = (t.amount * currentRate).toFixed(2);
