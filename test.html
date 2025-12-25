@@ -439,36 +439,55 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         }
         /* --- DEBT VIEW STYLES --- */
 /* --- DEBT CARD IMPROVEMENTS --- */
+/* --- SMART DEBT CARD --- */
 .debt-card {
-    transition: all 0.3s ease;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 12px; margin-bottom: 12px;
+    display: flex; flex-direction: column; 
+    transition: all 0.2s ease; overflow: hidden;
+}
+
+/* Row 1: Name, Amount, Chevron */
+.debt-header-main {
+    padding: 15px 15px 5px 15px; /* Less bottom padding */
+    display: flex; justify-content: space-between; align-items: center;
     cursor: pointer;
-    position: relative; /* For positioning */
 }
 
-/* The dropdown arrow icon */
-.debt-chevron {
-    color: var(--text-muted);
-    margin-left: 10px;
-    transition: transform 0.3s ease;
-    font-size: 0.8rem;
-}
-/* Class to rotate arrow when open */
-.debt-card.open .debt-chevron {
-    transform: rotate(180deg);
+/* Row 2: Info (Days) & Actions */
+.debt-action-row {
+    padding: 5px 15px 15px 15px;
+    display: flex; justify-content: space-between; align-items: center;
 }
 
-/* SCROLLABLE HISTORY (The Fix for Long Cards) */
-.debt-history {
-    display: none; 
-    margin-top: 15px; 
-    padding-top: 10px;
-    border-top: 1px solid rgba(255,255,255,0.05);
+.debt-days-badge {
+    font-size: 0.7rem; color: var(--text-muted);
+    background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px;
+    display: inline-block;
 }
-.debt-history-scroll {
-    max-height: 200px; /* Limit height to prevent huge cards */
-    overflow-y: auto;  /* Enable scrolling inside the card */
-    padding-right: 5px; /* Space for scrollbar */
+
+.debt-btn-group { display: flex; gap: 8px; }
+
+/* Action Buttons */
+.btn-mini-action {
+    border: none; border-radius: 6px; 
+    padding: 6px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
 }
+.btn-settle { background: var(--primary); color: #000; }
+.btn-wa { background: #25D366; color: #fff; } /* WhatsApp Green */
+
+/* History List (Hidden by default) */
+.debt-history-container {
+    background: rgba(0,0,0,0.2); /* Slightly darker background for list */
+    border-top: 1px solid var(--glass-border);
+    display: none; /* Hidden */
+}
+.debt-card.open .debt-history-container { display: block; }
+
+/* Rotating Chevron */
+.debt-chevron { transition: transform 0.3s; margin-left: 8px; font-size: 0.8rem; color: var(--text-muted); }
+.debt-card.open .debt-chevron { transform: rotate(180deg); }
 
 /* Custom Scrollbar for the history list */
 .debt-history-scroll::-webkit-scrollbar { width: 4px; }
@@ -1240,16 +1259,20 @@ function renderDebts(data) {
         
         const people = {};
         
-        // 1. Group Transactions
+        // 1. Group Data
         window.transactions.forEach(t => {
             if(t.type !== 'debt_lent' && t.type !== 'debt_borrowed') return;
             const person = t.desc;
-            if(!people[person]) people[person] = { bal: 0, txs: [] };
+            if(!people[person]) people[person] = { bal: 0, txs: [], lastDate: t.date };
             
+            // Calc Balance
             if(t.type === 'debt_lent') people[person].bal += t.amount;
             else people[person].bal -= t.amount;
             
+            // Track Transactions
             people[person].txs.push(t);
+            // Track Latest Date
+            if(t.date > people[person].lastDate) people[person].lastDate = t.date;
         });
 
         let totalNet = 0;
@@ -1259,70 +1282,96 @@ function renderDebts(data) {
             const personData = people[p];
             const val = personData.bal;
             totalNet += val;
-            
-            // Skip settled debts (0 balance) if you prefer clean view
-            if(Math.abs(val) < 0.01 && personData.txs.length > 0) return;
 
-            const isLent = val >= 0;
-            const subText = isLent ? "Owes you" : "You owe";
+            const isLent = val >= 0; // True if they owe you
             const colorClass = isLent ? "lent" : "borrowed";
-            const uniqueId = `debt-hist-${index}`; // Unique ID for this person's history
+            const uniqueId = `debt-card-${index}`;
+            const formattedAmt = formatMoney(Math.abs(val));
+            
+            // A. Calculate Days Ago
+            const today = new Date();
+            const lastTxDate = new Date(personData.lastDate);
+            const diffTime = Math.abs(today - lastTxDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            const dayText = diffDays === 0 ? "Today" : diffDays === 1 ? "Yesterday" : `${diffDays} days ago`;
 
-            // Build History Items
+            // B. WhatsApp Logic (Only if they owe you)
+            let waBtn = "";
+            if(isLent && Math.abs(val) > 1) {
+                const msg = `Hi ${p}, a gentle reminder that the pending balance is ${formattedAmt}. Thanks!`;
+                const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                waBtn = `<button class="btn-mini-action btn-wa" onclick="event.stopPropagation(); window.open('${waUrl}', '_blank')">
+                            <i class="fa-brands fa-whatsapp"></i>
+                         </button>`;
+            }
+
+            // C. Build History List
             let histHtml = '';
             personData.txs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(t => {
                 const tColor = t.type === 'debt_lent' ? 'var(--secondary)' : 'var(--danger)';
                 const tSign = t.type === 'debt_lent' ? '+' : '-';
-                let metaText = t.note || (t.type==='debt_lent'?'Gave':'Got');
-
+                let note = t.note || (t.type==='debt_lent'?'Gave':'Got');
+                
                 histHtml += `
                     <div class="debt-hist-item">
                         <div style="flex:1;">
                             <div class="debt-hist-date">${t.date}</div>
-                            <div style="color:var(--text-main); font-size:0.85rem;">${metaText}</div>
+                            <div style="font-size:0.85rem; color:var(--text-main);">${note}</div>
                         </div>
-                        <div style="text-align:right; display:flex; align-items:center; gap:10px;">
+                        <div style="text-align:right;">
                             <div style="font-weight:bold; color:${tColor}; font-family:'Consolas';">${tSign}${formatMoney(t.amount)}</div>
-                            <button onclick="event.stopPropagation(); editTx(${t.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer;"><i class="fa-solid fa-pen" style="font-size:0.8rem;"></i></button>
-                            <button onclick="event.stopPropagation(); deleteTx(${t.id})" style="background:none; border:none; color:var(--danger); cursor:pointer;"><i class="fa-solid fa-trash" style="font-size:0.8rem;"></i></button>
+                            <div style="margin-top:4px;">
+                                <i class="fa-solid fa-pen" style="color:var(--text-muted); margin-right:10px; cursor:pointer;" onclick="event.stopPropagation(); editTx(${t.id})"></i>
+                                <i class="fa-solid fa-trash" style="color:var(--danger); cursor:pointer;" onclick="event.stopPropagation(); deleteTx(${t.id})"></i>
+                            </div>
                         </div>
                     </div>`;
             });
 
-            // Build Card HTML
+            // D. Render Full Card
             container.innerHTML += `
-                <div class="debt-card" id="card-${uniqueId}" onclick="toggleHistory('${uniqueId}')">
-                    <div class="debt-card-header">
+                <div class="debt-card" id="${uniqueId}">
+                    <div class="debt-header-main" onclick="toggleDebt('${uniqueId}')">
                         <div style="display:flex; align-items:center;">
                             <div class="debt-avatar">${p.charAt(0).toUpperCase()}</div>
-                            <div>
-                                <div style="font-weight:600;">${p}</div>
-                                <div style="font-size:0.75rem; color:var(--text-muted);">${subText}</div>
-                            </div>
+                            <div style="font-weight:700; font-size:1rem;">${p}</div>
                         </div>
                         <div style="display:flex; align-items:center;">
-                            <div class="debt-amt ${colorClass}">${formatMoney(Math.abs(val))}</div>
+                            <div class="debt-amt ${colorClass}" style="margin-right:8px;">${formattedAmt}</div>
                             <i class="fa-solid fa-chevron-down debt-chevron"></i>
                         </div>
                     </div>
-                    
-                    <div id="${uniqueId}" class="debt-history">
-                        <div class="debt-history-scroll">
-                            ${histHtml}
-                        </div>
-                        <div class="debt-actions">
-                            <button class="btn-settle" onclick="event.stopPropagation(); settleDebt('${p}', ${val})">
-                                <i class="fa-solid fa-check"></i> Settle / Pay
+
+                    <div class="debt-action-row">
+                        <div class="debt-days-badge"><i class="fa-regular fa-clock"></i> ${dayText}</div>
+                        
+                        <div class="debt-btn-group">
+                            ${waBtn} <button class="btn-mini-action btn-settle" onclick="event.stopPropagation(); settleDebt('${p}', ${val})">
+                                <i class="fa-solid fa-check"></i> Settle
                             </button>
+                        </div>
+                    </div>
+
+                    <div class="debt-history-container">
+                        <div style="padding:10px 15px; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                            Transaction History
+                        </div>
+                        <div class="debt-history-scroll" style="max-height:200px; overflow-y:auto;">
+                            ${histHtml}
                         </div>
                     </div>
                 </div>
             `;
         });
-        
+
         const netEl = document.getElementById('debt-net-bal');
         netEl.innerText = formatMoney(totalNet);
         netEl.className = totalNet >= 0 ? "stat-val pos" : "stat-val neg";
+    }
+
+    // Helper to toggle class
+    function toggleDebt(id) {
+        document.getElementById(id).classList.toggle('open');
     }
 
     // --- UPDATED TOGGLE FUNCTION ---
