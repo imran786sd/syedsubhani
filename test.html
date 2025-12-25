@@ -437,6 +437,23 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             .top-cats-container { height: 400px; }
             .bottom-nav { bottom: 0; left: 0; transform: none; width: 100%; border-radius: 0; justify-content: space-around; padding: 12px 10px; }
         }
+        /* --- DEBT VIEW STYLES --- */
+.debt-card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    padding: 15px; border-radius: 12px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.debt-avatar { 
+    width: 40px; height: 40px; border-radius: 50%; 
+    background: rgba(255,255,255,0.05); color: var(--text-main);
+    display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;
+}
+.debt-amt { font-family: 'Consolas', monospace; font-weight: 700; font-size: 1rem; }
+.debt-amt.lent { color: var(--secondary); }   /* Money you gave (Asset) */
+.debt-amt.borrowed { color: var(--danger); } /* Money you took (Liability) */
+
+/* Calculator Debt Tab Color */
+.calc-tab.active.debt-tab { border-color: #a855f7; color: #a855f7; }
     </style>
 </head>
 <body>
@@ -482,59 +499,52 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
         <div id="calc-modal">
             <div id="calc-content">
-                <div class="calc-header">
-                    <button class="calc-action-btn btn-close" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
-                    <div style="font-size:0.9rem; font-weight:600; color:var(--text-muted)" id="calc-title">New Transaction</div>
-                    <button class="calc-action-btn btn-save" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
-                </div>
-                
-                <div class="calc-tabs">
-                    <div class="calc-tab active expense-tab" id="tab-exp" onclick="setCalcType('expense')">EXPENSE</div>
-                    <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')">INCOME</div>
-                </div>
+    <div class="calc-header">
+        <button class="calc-action-btn" style="background:none;border:none;color:var(--danger);" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+        <input type="date" id="calc-date" style="background:transparent; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:0.9rem; outline:none; text-align:center; width:130px;">
+        <button class="calc-action-btn" style="background:none;border:none;color:var(--primary);" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
+    </div>
+    
+    <div class="calc-tabs">
+        <div class="calc-tab active" id="tab-exp" onclick="setCalcType('expense')">EXPENSE</div>
+        <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')">INCOME</div>
+        <div class="calc-tab" id="tab-debt" onclick="setCalcType('debt')">DEBT</div>
+    </div>
 
-                <div class="calc-input-area">
-                    <div class="input-row">
-                        <select id="calc-cat" class="calc-pill-select">
-                            </select>
-                        <select id="calc-method" class="calc-pill-select" style="flex:0.8;">
-                            <option value="Card">Card</option>
-                            <option value="PhonePe">PhonePe</option>
-                            <option value="GPay">GPay</option>
-                            <option value="Paytm">Paytm</option>
-                            <option value="NetBanking">NetBanking</option>
-                            <option value="Cash">Cash</option>
-                        </select>
-                    </div>
-                    <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (e.g. Vegetables)...">
-                </div>
+    <div class="calc-input-area">
+        <div class="input-row">
+            <select id="calc-cat" class="calc-pill-select" style="width:100%; font-weight:bold;"></select>
+            
+            <input type="text" id="calc-person" class="calc-pill-select" style="display:none; width:100%; font-weight:bold;" placeholder="Person Name (e.g. Raju)">
+        </div>
+        
+        <div id="debt-toggle" class="input-row" style="display:none; margin-top:10px;">
+            <select id="debt-dir" class="calc-pill-select">
+                <option value="lent">I Gave (Lent)</option>
+                <option value="borrowed">I Took (Borrowed)</option>
+            </select>
+        </div>
 
-                <div class="calc-display-wrapper">
-                    <div id="calc-display" class="calc-display">0</div>
-                </div>
+        <div class="input-row" style="margin-top:10px;">
+            <select id="calc-method" class="calc-pill-select" style="flex:1;">
+                <option value="Cash">Cash</option><option value="Card">Card</option><option value="PhonePe">PhonePe</option><option value="GPay">GPay</option><option value="NetBanking">NetBanking</option>
+            </select>
+        </div>
+        <input type="text" id="calc-note" class="calc-note-input" placeholder="Note..." style="margin-top:10px;">
+    </div>
 
-                <div class="calc-keypad">
-                    <button class="key op" onclick="calcInput('/')">÷</button>
-                    <button class="key" onclick="calcInput('7')">7</button>
-                    <button class="key" onclick="calcInput('8')">8</button>
-                    <button class="key" onclick="calcInput('9')">9</button>
-                    
-                    <button class="key op" onclick="calcInput('*')">×</button>
-                    <button class="key" onclick="calcInput('4')">4</button>
-                    <button class="key" onclick="calcInput('5')">5</button>
-                    <button class="key" onclick="calcInput('6')">6</button>
-                    
-                    <button class="key op" onclick="calcInput('-')">-</button>
-                    <button class="key" onclick="calcInput('1')">1</button>
-                    <button class="key" onclick="calcInput('2')">2</button>
-                    <button class="key" onclick="calcInput('3')">3</button>
-                    
-                    <button class="key op" onclick="calcInput('+')">+</button>
-                    <button class="key" onclick="calcInput('.')">.</button>
-                    <button class="key" onclick="calcInput('0')">0</button>
-                    <button class="key del" onclick="calcInput('del')"><i class="fa-solid fa-delete-left"></i></button>
-                </div>
-            </div>
+    <div class="calc-display-wrapper"><div id="calc-display" class="calc-display">0</div></div>
+    
+    <div class="calc-keypad">
+        <button class="key" onclick="calcInput('7')">7</button><button class="key" onclick="calcInput('8')">8</button><button class="key" onclick="calcInput('9')">9</button><button class="key op" onclick="calcInput('/')">÷</button>
+        <button class="key" onclick="calcInput('4')">4</button><button class="key" onclick="calcInput('5')">5</button><button class="key" onclick="calcInput('6')">6</button><button class="key op" onclick="calcInput('*')">×</button>
+        <button class="key" onclick="calcInput('1')">1</button><button class="key" onclick="calcInput('2')">2</button><button class="key" onclick="calcInput('3')">3</button><button class="key op" onclick="calcInput('-')">-</button>
+        <button class="key clear" onclick="calcInput('clear')">C</button>
+        <button class="key" onclick="calcInput('0')">0</button><button class="key" onclick="calcInput('.')">.</button><button class="key op" onclick="calcInput('+')">+</button>
+        <button class="key del" onclick="calcInput('del')">⌫</button>
+        <button class="key eq" style="grid-column: span 3; background:var(--primary); color:black;" onclick="saveCalc()">ENTER</button>
+    </div>
+</div>
         </div>
 
         <div id="main">
@@ -662,6 +672,14 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                 <div class="cat-section-title">Expense Categories</div>
                 <div id="cat-list-expense"></div>
             </div>
+            <div id="view-debts" class="view-container">
+    <div class="stat-card" style="margin-bottom:20px; background:rgba(168, 85, 247, 0.1); border-color:#a855f7;">
+        <span class="stat-title" style="color:#a855f7">Net Outstanding</span>
+        <span class="stat-val" style="color:#a855f7" id="debt-net-bal">...</span>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;">Positive = People owe you</div>
+    </div>
+    <div id="debts-list-container"></div>
+</div>
 
             <div id="view-income" class="view-container">
                 <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
@@ -746,6 +764,9 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
                 <button class="nav-btn" onclick="switchTab('categories', this)">
                     <i class="fa-solid fa-tags"></i> Cats
+                </button>
+                <button class="nav-btn" onclick="switchTab('debts', this)">
+                    <i class="fa-solid fa-handshake"></i> Debts
                 </button>
 
                 <button class="nav-btn" onclick="switchTab('profile', this)">
@@ -1066,18 +1087,35 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
     function closeCalc() { document.getElementById('calc-modal').style.display = 'none'; editingId = null; }
 
-    function setCalcType(type) {
+    window.setCalcType = function(type) {
         calcType = type;
-        document.getElementById('tab-exp').classList.toggle('active', type === 'expense');
-        document.getElementById('tab-inc').classList.toggle('active', type === 'income');
-        const select = document.getElementById('calc-cat');
-        const currentVal = select.value;
-        select.innerHTML = "";
-        const list = type === 'expense' ? expCategories : incCategories;
-        list.forEach(c => {
-            const opt = document.createElement('option'); opt.value = c; opt.innerText = c; select.appendChild(opt);
-        });
-        if(list.includes(currentVal)) select.value = currentVal;
+        // Update Tabs
+        document.getElementById('tab-exp').className = type==='expense'?'calc-tab active expense-tab':'calc-tab';
+        document.getElementById('tab-inc').className = type==='income'?'calc-tab active':'calc-tab';
+        document.getElementById('tab-debt').className = type==='debt'?'calc-tab active debt-tab':'calc-tab';
+
+        // Toggle Inputs
+        const catSelect = document.getElementById('calc-cat');
+        const personInput = document.getElementById('calc-person');
+        const debtToggle = document.getElementById('debt-toggle');
+
+        if(type === 'debt') {
+            catSelect.style.display = 'none';
+            personInput.style.display = 'block'; // Show Text Input
+            debtToggle.style.display = 'flex';   // Show Gave/Took
+        } else {
+            catSelect.style.display = 'block';
+            personInput.style.display = 'none';
+            debtToggle.style.display = 'none';
+            
+            // Reload Categories
+            catSelect.innerHTML = "";
+            const list = type === 'expense' ? expCategories : incCategories;
+            list.forEach(c => {
+                const opt = document.createElement('option'); opt.value = c; opt.innerText = c; catSelect.appendChild(opt);
+            });
+        }
+        updateCalcDisplay();
     }
 
     function calcInput(val) {
@@ -1105,31 +1143,79 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         document.getElementById('calc-display').style.color = calcType === 'income' ? 'var(--primary)' : 'var(--secondary)';
     }
 
-    function saveCalc() {
-        calcEval(); 
+    window.saveCalc = function() {
+        try { calcString = eval(calcString).toString(); } catch {}
         const amount = parseFloat(calcString);
+        if(!amount || amount <= 0) return alert("Invalid Amount");
         
-        if(isNaN(amount) || amount <= 0) { 
-            alert("Please enter a valid amount greater than 0"); 
-            return; 
-        }
-        
-        const cat = document.getElementById('calc-cat').value;
+        const dateVal = document.getElementById('calc-date').value || new Date().toISOString().split('T')[0];
         const method = document.getElementById('calc-method').value;
         const note = document.getElementById('calc-note').value.trim();
-        const desc = note ? `${cat} (${note})` : cat;
+        let desc = "", type = calcType;
+
+        if(calcType === 'debt') {
+            const person = document.getElementById('calc-person').value.trim();
+            if(!person) return alert("Enter Person Name");
+            desc = person; // Store Name
+            const dir = document.getElementById('debt-dir').value;
+            // Lent = Expense-like behavior, Borrowed = Income-like behavior
+            type = dir === 'lent' ? 'debt_lent' : 'debt_borrowed';
+        } else {
+            const cat = document.getElementById('calc-cat').value;
+            desc = note ? `${cat} (${note})` : cat;
+        }
+
         const amtUSD = amount / currentRate;
+        const txObj = { id: editingId || Date.now(), date: dateVal, desc, amount: amtUSD, type, method };
 
         if(editingId) {
-            const idx = transactions.findIndex(t => t.id === editingId);
-            if(idx > -1) transactions[idx] = { ...transactions[idx], desc, amount: amtUSD, type: calcType, method };
+            const idx = window.transactions.findIndex(t => t.id === editingId);
+            if(idx > -1) window.transactions[idx] = txObj;
         } else {
-            const dateStr = new Date().toLocaleDateString('en-CA');
-            transactions.push({ id: Date.now(), date: dateStr, desc: desc, amount: amtUSD, type: calcType, method: method });
+            window.transactions.push(txObj);
         }
-        saveData(); closeCalc();
+        window.saveData();
+        closeCalc();
     }
+function renderDebts(data) {
+        const container = document.getElementById('debts-list-container');
+        container.innerHTML = "";
+        
+        const people = {};
+        // Aggregate debts (Using full history)
+        window.transactions.forEach(t => {
+            if(t.type !== 'debt_lent' && t.type !== 'debt_borrowed') return;
+            const person = t.desc;
+            if(!people[person]) people[person] = 0;
+            if(t.type === 'debt_lent') people[person] += t.amount; // You gave
+            else people[person] -= t.amount; // You took
+        });
 
+        let totalNet = 0;
+        Object.keys(people).forEach(p => {
+            const val = people[p];
+            totalNet += val;
+            if(Math.abs(val) < 0.01) return; 
+
+            const isLent = val > 0;
+            const subText = isLent ? "Owes you" : "You owe";
+            const colorClass = isLent ? "lent" : "borrowed";
+            
+            container.innerHTML += `
+                <div class="debt-card">
+                    <div style="display:flex; align-items:center;">
+                        <div class="debt-avatar">${p.charAt(0).toUpperCase()}</div>
+                        <div>
+                            <div style="font-weight:600;">${p}</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">${subText}</div>
+                        </div>
+                    </div>
+                    <div class="debt-amt ${colorClass}">${formatMoney(Math.abs(val))}</div>
+                </div>
+            `;
+        });
+        document.getElementById('debt-net-bal').innerText = formatMoney(totalNet);
+    }
     // --- FILTER ---
     function filterData() {
         const year = parseInt(document.getElementById('year-select').value);
@@ -1173,7 +1259,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     }
 
     // --- UI RENDERING ---
-    function updateUI() {
+    window.updateUI = function() {
         const filtered = filterData();
         
         let inc=0, exp=0;
@@ -1188,7 +1274,9 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             renderExpenseFlow(filtered);
             if(currentChartType === 'donut') renderSpendingDonut(filtered);
             else renderSpendingSunburst(filtered);
-        } else if (currentTab === 'records') renderRecordsList(filtered);
+        } 
+        else if (currentTab === 'debts') renderDebts(window.transactions); // NEW TAB
+        else if (currentTab === 'records') renderRecordsList(filtered);
         else if (currentTab === 'income') renderDetailList(filtered, 'income');
         else if (currentTab === 'expenses') renderDetailList(filtered, 'expense');
         else if (currentTab === 'categories') renderCategories(filtered);
