@@ -1222,39 +1222,117 @@ function renderDebts(data) {
         container.innerHTML = "";
         
         const people = {};
-        // Aggregate debts (Using full history)
+        
+        // 1. Group transactions by Person
         window.transactions.forEach(t => {
             if(t.type !== 'debt_lent' && t.type !== 'debt_borrowed') return;
-            const person = t.desc;
-            if(!people[person]) people[person] = 0;
-            if(t.type === 'debt_lent') people[person] += t.amount; // You gave
-            else people[person] -= t.amount; // You took
+            const person = t.desc; // Name is stored here
+            if(!people[person]) people[person] = { bal: 0, txs: [] };
+            
+            // Lent = Positive (Asset), Borrowed = Negative (Liability)
+            if(t.type === 'debt_lent') people[person].bal += t.amount;
+            else people[person].bal -= t.amount;
+            
+            people[person].txs.push(t);
         });
 
         let totalNet = 0;
-        Object.keys(people).forEach(p => {
-            const val = people[p];
+        
+        // 2. Build the List
+        Object.keys(people).forEach((p, index) => {
+            const personData = people[p];
+            const val = personData.bal;
             totalNet += val;
-            if(Math.abs(val) < 0.01) return; 
-
-            const isLent = val > 0;
+            
+            const isLent = val >= 0;
             const subText = isLent ? "Owes you" : "You owe";
             const colorClass = isLent ? "lent" : "borrowed";
-            
+            const uniqueId = `debt-hist-${index}`;
+
+            // Create History List (Recent first)
+            let histHtml = '';
+            personData.txs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(t => {
+                const tColor = t.type === 'debt_lent' ? 'var(--secondary)' : 'var(--danger)';
+                const tSign = t.type === 'debt_lent' ? '+' : '-';
+                
+                // Note logic: If note exists show it, else show generic "Lent/Borrowed"
+                let metaText = t.note || (t.type==='debt_lent'?'Gave Money':'Got Money');
+
+                histHtml += `
+                    <div class="debt-hist-item">
+                        <div style="flex:1;">
+                            <div class="debt-hist-date">${t.date}</div>
+                            <div style="color:var(--text-main);">${metaText}</div>
+                        </div>
+                        <div style="text-align:right; display:flex; gap:15px; align-items:center;">
+                            <div style="font-weight:bold; color:${tColor}; font-family:'Consolas';">${tSign}${formatMoney(t.amount)}</div>
+                            
+                            <div style="display:flex; gap:10px;">
+                                <button onclick="event.stopPropagation(); editTx(${t.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer; padding:5px;">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteTx(${t.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:5px;">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+
             container.innerHTML += `
-                <div class="debt-card">
-                    <div style="display:flex; align-items:center;">
-                        <div class="debt-avatar">${p.charAt(0).toUpperCase()}</div>
-                        <div>
-                            <div style="font-weight:600;">${p}</div>
-                            <div style="font-size:0.75rem; color:var(--text-muted);">${subText}</div>
+                <div class="debt-card" onclick="toggleHistory('${uniqueId}')">
+                    <div class="debt-card-header">
+                        <div style="display:flex; align-items:center;">
+                            <div class="debt-avatar">${p.charAt(0).toUpperCase()}</div>
+                            <div>
+                                <div style="font-weight:600;">${p}</div>
+                                <div style="font-size:0.75rem; color:var(--text-muted);">${subText}</div>
+                            </div>
+                        </div>
+                        <div class="debt-amt ${colorClass}">${formatMoney(Math.abs(val))}</div>
+                    </div>
+                    
+                    <div id="${uniqueId}" class="debt-history">
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:bold;">Transaction Log</div>
+                        ${histHtml}
+                        <div class="debt-actions">
+                            <button class="btn-settle" onclick="event.stopPropagation(); settleDebt('${p}', ${val})">
+                                <i class="fa-solid fa-hand-holding-dollar"></i> ADD PAYMENT / SETTLE
+                            </button>
                         </div>
                     </div>
-                    <div class="debt-amt ${colorClass}">${formatMoney(Math.abs(val))}</div>
                 </div>
             `;
         });
-        document.getElementById('debt-net-bal').innerText = formatMoney(totalNet);
+        
+        const netEl = document.getElementById('debt-net-bal');
+        netEl.innerText = formatMoney(totalNet);
+        netEl.className = totalNet >= 0 ? "stat-val pos" : "stat-val neg";
+    }
+
+    // Keep these helpers!
+    function toggleHistory(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function settleDebt(person, balance) {
+        openCalc(); 
+        setCalcType('debt');
+        
+        // 1. Fill Name
+        document.getElementById('calc-input-main').value = person;
+        document.getElementById('calc-person').value = person; 
+        
+        // 2. Fill Amount (Positive value)
+        calcString = Math.abs(balance * currentRate).toFixed(2); 
+        updateCalcDisplay();
+        
+        // 3. Set Logic: If Balance is Positive (They Owe), we are "receiving" (Borrow logic to reduce bal)
+        const dir = balance > 0 ? 'borrowed' : 'lent';
+        document.getElementById('debt-dir').value = dir;
+        
+        document.getElementById('calc-note').value = "Partial Payment / Settlement";
     }
     // --- FILTER ---
     function filterData() {
