@@ -12,15 +12,12 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     
     <script type="module">
-        // Using the specific version you provided
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        // FIXED: Changed version from 12.7.0 to 11.2.0
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
         
-        // Expose Firebase functions to global scope for the app logic
         window.firebaseModules = { initializeApp, getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, getFirestore, doc, getDoc, setDoc };
-        
-        // Dispatch event to signal Firebase is ready to load
         window.dispatchEvent(new Event('firebase-modules-loaded'));
     </script>
 
@@ -777,12 +774,20 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     }
 
     // Google Login Function
-    async function handleGoogleLogin() {
-        const provider = new window.firebaseModules.GoogleAuthProvider();
+   async function handleGoogleLogin() {
         try {
+            // 1. Check if Firebase actually loaded
+            if (!window.firebaseModules) {
+                throw new Error("Firebase SDK not loaded yet. Check your internet or version number.");
+            }
+            
+            // 2. Now it is safe to use
+            const provider = new window.firebaseModules.GoogleAuthProvider();
             await window.firebaseModules.signInWithPopup(auth, provider);
         } catch (error) {
+            // 3. This will now actually show you the alert instead of doing nothing
             alert("Login Failed: " + error.message);
+            console.error(error);
         }
     }
 
