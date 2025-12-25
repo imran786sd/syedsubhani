@@ -1457,7 +1457,7 @@
         let csvContent = "Date,Description,Amount (USD),Type,Method\n";
         window.transactions.forEach(t => {
             let cleanDesc = t.desc.replace(/,/g, " "); 
-            let amt = Number(t.amount).toFixed(2);
+            let amt = (t.amount * currentRate).toFixed(2);
             let row = `${t.date},${cleanDesc},${amt},${t.type},${t.method || ''}`;
             csvContent += row + "\n";
         });
