@@ -779,7 +779,7 @@
             const docSnap = await window.firebaseModules.getDoc(docRef);
             
             if (docSnap.exists()) {
-                transactions = docSnap.data().transactions || [];
+window.transactions = docSnap.data().transactions || [];
             } else {
                 generateDummyData(); // First time login
             }
@@ -890,7 +890,7 @@
     }
 
     // --- CORE LOGIC ---
-    let transactions = [];
+    window.transactions = [];
     let currentTab = 'dashboard';
     let editingId = null;
 
