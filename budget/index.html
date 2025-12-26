@@ -1553,11 +1553,25 @@ function setDailyReminder() {
         window.open(url, '_blank');
     }
     // --- UI RENDERING ---
-    window.updateUI = function() {
+   window.updateUI = function() {
         const filtered = filterData();
         
-        let inc=0, exp=0;
-        filtered.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
+        let inc = 0;
+        let exp = 0;
+        
+        // --- FIXED LOGIC START ---
+        filtered.forEach(t => {
+            if (t.type === 'income') {
+                inc += t.amount;
+            } 
+            else if (t.type === 'expense') {
+                exp += t.amount;
+            }
+            // We explicitly ignore 'debt_lent' and 'debt_borrowed' here 
+            // so they don't mess up your dashboard totals.
+        });
+        // --- FIXED LOGIC END ---
+
         document.getElementById('total-inc').innerText = formatMoney(inc);
         document.getElementById('total-exp').innerText = formatMoney(exp);
         document.getElementById('balance').innerText = formatMoney(inc - exp);
@@ -1569,11 +1583,12 @@ function setDailyReminder() {
             if(currentChartType === 'donut') renderSpendingDonut(filtered);
             else renderSpendingSunburst(filtered);
         } 
-        else if (currentTab === 'debts') renderDebts(window.transactions); // NEW TAB
+        else if (currentTab === 'debts') renderDebts(window.transactions); 
         else if (currentTab === 'records') renderRecordsList(filtered);
         else if (currentTab === 'income') renderDetailList(filtered, 'income');
         else if (currentTab === 'expenses') renderDetailList(filtered, 'expense');
         else if (currentTab === 'categories') renderCategories(filtered);
+        else if (currentTab === 'goals') renderGoals(); // Added Goals Tab support
     }
 
     function switchChartType(type, btn) {
