@@ -3332,7 +3332,7 @@ function setDailyReminder() {
             sel.innerHTML = "";
             for(let i=1; i<=31; i++) {
                 // Now uses the helper to generate 1st, 2nd...
-                sel.innerHTML += `<option value="${i}">${getOrdinal(i)} of Month</option>`;
+                sel.innerHTML += `<option value="${i}">${getOrdinal(i)}</option>`;
             }
         }
     })();
