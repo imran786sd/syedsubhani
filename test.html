@@ -1127,17 +1127,17 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         // 1. LOAD LOCAL (Instant Display)
         const localData = localStorage.getItem('budget_data_local');
         
-        // Initialize Default Empty State
+        // --- 1. Initialize Defaults (Safe fallback) ---
         window.transactions = [];
         window.goals = [];
         window.bills = [];
-        window.accounts = ["Cash", "Card", "PhonePe", "GPay", "NetBanking"]; // Default
+        window.accounts = ["Cash", "Card", "PhonePe", "GPay", "NetBanking"];
 
         if (localData) {
             try {
                 const parsed = JSON.parse(localData);
                 
-                // --- FIX: Load data safely ---
+                // --- 2. Load Data from Storage ---
                 window.transactions = parsed.transactions || [];
                 window.goals = parsed.goals || [];
                 window.bills = parsed.bills || [];
@@ -1166,6 +1166,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                 // Sync Arrays
                 window.goals = cloudData.goals || [];
                 window.bills = cloudData.bills || [];
+                
                 if(cloudData.accounts && cloudData.accounts.length > 0) {
                     window.accounts = cloudData.accounts;
                 }
