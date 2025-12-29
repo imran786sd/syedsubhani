@@ -1112,7 +1112,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         </div>
 
     <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
-        <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;">
+        <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;"onkeyup="autoDetectBillIcon()">
         <div class="input-row">
             <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
             <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
@@ -3156,6 +3156,58 @@ function setDailyReminder() {
             window.goals.splice(index, 1);
             saveData(); // <--- Updates Local + Cloud
             renderGoals();
+        }
+    }
+    // ==========================================
+    // AUTO-DETECT ICONS & COLORS
+    // ==========================================
+    window.autoDetectBillIcon = function() {
+        const name = document.getElementById('bill-name').value.toLowerCase();
+        const iconSel = document.getElementById('bill-icon');
+        const colorSel = document.getElementById('bill-color');
+
+        // 1. Movies / Streaming
+        if(name.includes('netflix') || name.includes('youtube')) {
+            iconSel.value = "fa-film"; 
+            colorSel.value = "#e50914"; // Netflix Red
+        }
+        else if(name.includes('prime') || name.includes('disney') || name.includes('hulu') || name.includes('tv') || name.includes('hotstar')) {
+            iconSel.value = "fa-film"; 
+            colorSel.value = "#00a8e8"; // Prime Blue
+        }
+        
+        // 2. Music
+        else if(name.includes('spotify') || name.includes('music') || name.includes('sound') || name.includes('gaana') || name.includes('jiosaavn')) {
+            iconSel.value = "fa-music"; 
+            colorSel.value = "#1db954"; // Spotify Green
+        }
+        else if(name.includes('apple')) {
+            iconSel.value = "fa-music"; 
+            colorSel.value = "#ffffff"; // Apple White
+        }
+
+        // 3. Internet / Wifi
+        else if(name.includes('wifi') || name.includes('net') || name.includes('fiber') || name.includes('airtel') || name.includes('act') || name.includes('jio')) {
+            iconSel.value = "fa-wifi"; 
+            colorSel.value = "#8b5cf6"; // Purple
+        }
+
+        // 4. Utilities (Power/Water)
+        else if(name.includes('electric') || name.includes('power') || name.includes('bill') || name.includes('bescom') || name.includes('water') || name.includes('gas')) {
+            iconSel.value = "fa-bolt"; 
+            colorSel.value = "#f59e0b"; // Orange
+        }
+
+        // 5. Phone
+        else if(name.includes('phone') || name.includes('mobile') || name.includes('recharge') || name.includes('prepaid') || name.includes('postpaid')) {
+            iconSel.value = "fa-mobile-screen"; 
+            colorSel.value = "#00a8e8"; // Blue
+        }
+
+        // 6. Gym / Health
+        else if(name.includes('gym') || name.includes('fitness') || name.includes('health') || name.includes('cult') || name.includes('yoga')) {
+            iconSel.value = "fa-dumbbell"; 
+            colorSel.value = "#f59e0b"; // Orange/Gold
         }
     }
 
