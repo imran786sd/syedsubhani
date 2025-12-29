@@ -2766,9 +2766,16 @@ function setDailyReminder() {
     let billViewDate = new Date();
 
     // Helper: Ordinal Dates (1st, 2nd...)
-    function getOrdinal(n) { 
-        return ["th","st","nd","rd"][(n%100>10&&n%100<20)?0:(n%10<4)?n%10:0]; 
-    }
+    // FIX: Helper to get DATE SUFFIX ONLY (st, nd, rd, th)
+    window.getOrdinal = function(n) {
+        if (n > 3 && n < 21) return "th"; // 11th, 12th, 13th
+        switch (n % 10) {
+            case 1:  return "st";
+            case 2:  return "nd";
+            case 3:  return "rd";
+            default: return "th";
+        }
+    };
 
     // MAIN RENDER FUNCTION
    // Global Filter State (Keep outside the function)
