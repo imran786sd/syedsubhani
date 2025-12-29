@@ -1639,16 +1639,26 @@ function setDailyReminder() {
         window.open(url, '_blank');
     }
     // --- UI RENDERING ---
-    window.updateUI = function() {
+   window.updateUI = function() {
+        // --- 1. UI LOGIC: HIDE YEAR IF 'ALL TIME' ---
+        const period = document.getElementById('period-select').value;
+        const yearSelect = document.getElementById('year-select');
+        
+        if (period === 'all_time') {
+            yearSelect.style.display = 'none'; 
+        } else {
+            yearSelect.style.display = 'block';
+        }
+
+        // --- 2. DATA FILTERING ---
         const filtered = filterData();
         
-        // 1. Setup Variables
+        // --- 3. CALCULATE TOTALS ---
         let realIncome = 0;   
         let realExpense = 0;  
         let cashIn = 0;       
         let cashOut = 0;
         
-        // Variables for the new "Net Outstanding" card
         let totalLent = 0;
         let totalBorrowed = 0;
         
@@ -1673,31 +1683,29 @@ function setDailyReminder() {
             }
         });
 
-        // 2. Update the 2x2 Grid HTML
+        // --- 4. UPDATE HTML CARDS ---
         document.getElementById('total-inc').innerText = formatMoney(realIncome);
         document.getElementById('total-exp').innerText = formatMoney(realExpense);
         
-        // Card 3: Wallet Balance (Cash in hand)
+        // Card 3: Wallet Balance
         const netBal = cashIn - cashOut;
         document.getElementById('balance').innerText = formatMoney(netBal);
         
-        // Card 4: Net Outstanding (The new box!)
+        // Card 4: Net Outstanding
         const netOutstanding = totalLent - totalBorrowed;
         const outEl = document.getElementById('total-outstanding');
         
-        // Add a "+" sign if positive to look cool
         const prefix = netOutstanding > 0 ? "+" : ""; 
         outEl.innerText = prefix + formatMoney(netOutstanding);
         
-        // Color Logic: Green if people owe you, Red if you owe them
+        // Color Logic
         if (netOutstanding > 0) outEl.style.color = "#10b981"; // Green
         else if (netOutstanding < 0) outEl.style.color = "#ef4444"; // Red
         else outEl.style.color = "var(--text-main)"; // Gray
 
-        // 3. Update Profile Counter
         document.getElementById('profile-total-tx').innerText = filtered.length;
 
-        // 4. Render Charts & Lists based on active tab
+        // --- 5. RENDER ACTIVE TAB ---
         if(currentTab === 'dashboard') {
             const chartData = filtered.filter(t => t.type === 'income' || t.type === 'expense');
             renderExpenseFlow(chartData);
