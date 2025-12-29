@@ -2866,6 +2866,109 @@ function setDailyReminder() {
         }
     };
 
+    // ==========================================
+    // 5. GOALS LOGIC (FIXED SAVING)
+    // ==========================================
+    window.goals = window.goals || []; // Ensure array exists
+
+    window.renderGoals = function() {
+        const container = document.getElementById('goals-list-container');
+        if(!container) return;
+        
+        container.innerHTML = "";
+        
+        if(!window.goals || window.goals.length === 0) {
+            container.innerHTML = "<div class='empty-state'>No goals yet. Click + to add one!</div>";
+            return;
+        }
+
+        window.goals.forEach((g, index) => {
+            // Safety check for numbers
+            const saved = parseFloat(g.saved) || 0;
+            const target = parseFloat(g.target) || 1;
+            const percent = Math.min(100, (saved / target) * 100).toFixed(1);
+            
+            container.innerHTML += `
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <div class="goal-title">
+                            <div class="goal-icon-box"><i class="fa-solid fa-bullseye"></i></div>
+                            ${g.name}
+                        </div>
+                        <div style="font-size:0.9rem; font-weight:bold; color:var(--primary);">
+                            ${percent}%
+                        </div>
+                    </div>
+                    
+                    <div class="goal-progress-bg">
+                        <div class="goal-progress-fill" style="width:${percent}%"></div>
+                    </div>
+                    
+                    <div class="goal-stats">
+                        <div>Saved: <span class="goal-current">${formatMoney(saved)}</span></div>
+                        <div>Target: ${formatMoney(target)}</div>
+                    </div>
+
+                    <button class="btn-goal-add" onclick="addMoneyToGoal(${index})">
+                        <i class="fa-solid fa-circle-plus"></i> Add Money
+                    </button>
+                    
+                    <div style="text-align:center; margin-top:10px;">
+                         <span style="font-size:0.7rem; color:var(--danger); cursor:pointer;" onclick="deleteGoal(${index})">Delete Goal</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    window.toggleGoalForm = function() {
+        const f = document.getElementById('add-goal-form');
+        if(f) f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    }
+
+    window.saveNewGoal = function() {
+        const name = document.getElementById('goal-name').value;
+        const target = parseFloat(document.getElementById('goal-target').value);
+        
+        if(!name || !target) return alert("Please fill details");
+        
+        // Convert to USD for storage
+        const targetUSD = target / currentRate;
+        
+        if(!window.goals) window.goals = [];
+        window.goals.push({ name, target: targetUSD, saved: 0 });
+        
+        // --- THE FIX ---
+        saveData(); // Uses the MAIN save function (Local + Cloud)
+        // ----------------
+        
+        document.getElementById('goal-name').value = "";
+        document.getElementById('goal-target').value = "";
+        toggleGoalForm();
+        renderGoals();
+    }
+
+    window.addMoneyToGoal = function(index) {
+        const amount = prompt("How much to add?");
+        if(amount) {
+            const val = parseFloat(amount);
+            if(val > 0) {
+                // Store in USD
+                window.goals[index].saved += (val / currentRate);
+                saveData(); // <--- Updates Local + Cloud
+                renderGoals();
+            }
+        }
+    }
+    
+    window.deleteGoal = function(index) {
+        if(confirm("Delete this goal?")) {
+            window.goals.splice(index, 1);
+            saveData(); // <--- Updates Local + Cloud
+            renderGoals();
+        }
+    }
+
 </script>
 </body>
 </html>
