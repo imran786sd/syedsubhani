@@ -735,7 +735,44 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
 /* Empty slots for spacing */
 .cal-day.empty { pointer-events: none; }
-        
+
+        /* --- DESKTOP OPTIMIZATIONS --- */
+@media (min-width: 768px) {
+    
+    /* 1. Restrict Calendar Width */
+    .calendar-wrapper {
+        max-width: 350px;  /* Stop it from stretching */
+        margin: 0 auto 25px auto; /* Center it */
+        padding: 15px;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    /* 2. Smaller Text & Gaps */
+    .calendar-header { margin-bottom: 10px; }
+    #cal-month-title { font-size: 1rem; }
+    .calendar-grid { gap: 4px; }
+    .cal-day-label { font-size: 0.7rem; margin-bottom: 5px; }
+
+    /* 3. Smaller Day Circles (Mouse friendly) */
+    .cal-day {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+        border-radius: 8px; /* Slightly squarer looks better small */
+    }
+
+    /* 4. Tiny Dots */
+    .cal-dot-container { bottom: 2px; gap: 1px; }
+    .cal-icon-dot { width: 3px; height: 3px; }
+    
+    /* 5. Make the Bill List a Grid on Desktop */
+    #bills-list-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 2 Columns */
+        gap: 15px;
+    }
+}
     </style>
 </head>
 <body>
