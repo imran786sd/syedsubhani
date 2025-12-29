@@ -810,6 +810,49 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     font-size: 1rem;
     color: var(--text-main);
 }
+/* --- CALENDAR SUMMARY (Inside the dark card) --- */
+.cal-summary-line {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.cal-sum-item { display: flex; align-items: center; gap: 6px; }
+
+/* --- FILTER TABS (Pills below calendar) --- */
+.bill-filter-tabs {
+    display: flex;
+    background: var(--glass-bg);
+    padding: 5px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--glass-border);
+}
+
+.bill-filter-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.bill-filter-btn.active {
+    background: var(--bg-body); /* Or a highlight color */
+    color: var(--text-main);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+        
     </style>
 </head>
 <body>
@@ -1066,7 +1109,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleBillForm()">
             <i class="fa-solid fa-plus"></i>
         </button>
-    </div>
+        </div>
 
     <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
         <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;">
@@ -1076,20 +1119,20 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         </div>
         <div class="input-row" style="margin-top:10px;">
             <select id="bill-color" class="calc-pill-select" style="flex:1;">
-                <option value="#e50914">Netflix Red</option>
-                <option value="#1db954">Spotify Green</option>
-                <option value="#ffffff">Apple White</option>
-                <option value="#00a8e8">Prime Blue</option>
+                <option value="#e50914">Red</option>
+                <option value="#1db954">Green</option>
+                <option value="#ffffff">White</option>
+                <option value="#00a8e8">Blue</option>
                 <option value="#f59e0b">Orange</option>
                 <option value="#8b5cf6">Purple</option>
             </select>
             <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
-                <option value="fa-film">&#xf008; Movie</option>
-                <option value="fa-bolt">&#xf0e7; Utility</option>
-                <option value="fa-wifi">&#xf1eb; Net</option>
-                <option value="fa-mobile-screen">&#xf3cd; Phone</option>
-                <option value="fa-dumbbell">&#xf44b; Gym</option>
-                <option value="fa-music">&#xf001; Music</option>
+                <option value="fa-film">&#xf008;</option>
+                <option value="fa-bolt">&#xf0e7;</option>
+                <option value="fa-wifi">&#xf1eb;</option>
+                <option value="fa-mobile-screen">&#xf3cd;</option>
+                <option value="fa-dumbbell">&#xf44b;</option>
+                <option value="fa-music">&#xf001;</option>
             </select>
         </div>
         <button class="btn-goal-add" onclick="saveNewBill()" style="margin-top:10px; background:var(--primary); color:black;">Save Subscription</button>
@@ -1121,18 +1164,15 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         
         <div id="calendar-grid" class="calendar-grid"></div>
 
-        <div style="display:flex; gap:15px; margin-top:20px; justify-content:center; font-size:0.75rem; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
-            <div style="display:flex; align-items:center; gap:5px;">
-                <div class="cal-icon-dot dot-overdue" style="width:8px; height:8px;"></div> Overdue
+        <div id="cal-summary" class="cal-summary-line">
             </div>
-            <div style="display:flex; align-items:center; gap:5px;">
-                <div class="cal-icon-dot dot-due" style="width:8px; height:8px;"></div> Upcoming
-            </div>
-            <div style="display:flex; align-items:center; gap:5px;">
-                <div class="cal-icon-dot dot-paid" style="width:8px; height:8px;"></div> Paid
-            </div>
-        </div>
+    </div>
 
+    <div class="bill-filter-tabs">
+        <button class="bill-filter-btn active" onclick="setBillFilter('all', this)">All</button>
+        <button class="bill-filter-btn" onclick="setBillFilter('upcoming', this)">Upcoming</button>
+        <button class="bill-filter-btn" onclick="setBillFilter('overdue', this)">Overdue</button>
+        <button class="bill-filter-btn" onclick="setBillFilter('paid', this)">Paid</button>
     </div>
 
     <div id="bills-list-container"></div>
@@ -2701,35 +2741,44 @@ function setDailyReminder() {
     }
 
     // MAIN RENDER FUNCTION
-   // MAIN RENDER FUNCTION (Stylized & Aligned)
+   // Global Filter State (Keep outside the function)
+    let currentBillFilter = 'all';
+
+    window.setBillFilter = function(filter, btn) {
+        currentBillFilter = filter;
+        const parent = btn.parentNode;
+        parent.querySelectorAll('.bill-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderBills(); 
+    }
+
+    // MAIN RENDER FUNCTION (Aligned + Filters + Counts)
     window.renderBills = function() {
         const container = document.getElementById('calendar-grid');
         const listContainer = document.getElementById('bills-list-container');
         const title = document.getElementById('cal-month-title');
+        const summaryContainer = document.getElementById('cal-summary');
         
         if(!container) return; 
         
         container.innerHTML = ""; 
         listContainer.innerHTML = "";
         
-        // 1. Update Month Title
+        // 1. Setup Dates
         const year = billViewDate.getFullYear();
         const month = billViewDate.getMonth();
         if(title) title.innerText = billViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-        // 2. Calendar Math
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const today = new Date();
         const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
         const currentDay = today.getDate();
 
-        // 3. Draw Empty Slots
-        for(let i=0; i<firstDay; i++) {
-            container.innerHTML += `<div class="cal-day empty"></div>`;
-        }
+        // 2. Draw Calendar Empty Slots
+        for(let i=0; i<firstDay; i++) container.innerHTML += `<div class="cal-day empty"></div>`;
 
-        // 4. Draw Days
+        // 3. Draw Calendar Days
         for(let d=1; d<=daysInMonth; d++) {
             let dayHtml = `<div class="cal-day ${isCurrentMonth && d === currentDay ? 'today' : ''}">
                               <div>${d}</div>
@@ -2738,10 +2787,14 @@ function setDailyReminder() {
             container.innerHTML += dayHtml;
         }
 
-        // 5. Draw Bills (Aligned Version)
+        // --- 4. CALCULATE STATUS & COUNTS ---
         const safeBills = window.bills || [];
-        
-        safeBills.sort((a,b) => a.day - b.day).forEach(b => {
+        let countPaid = 0;
+        let countOverdue = 0;
+        let countUpcoming = 0;
+
+        // Process bills (Check status)
+        const processedBills = safeBills.sort((a,b) => a.day - b.day).map(b => {
             const paidTx = window.transactions.find(t => {
                 const txDate = new Date(t.date);
                 return txDate.getMonth() === month && 
@@ -2752,51 +2805,83 @@ function setDailyReminder() {
 
             const isPaid = !!paidTx;
             const isOverdue = !isPaid && isCurrentMonth && b.day < currentDay;
+            const isUpcoming = !isPaid && !isOverdue;
 
-            // Calendar Dot
+            if(isPaid) countPaid++;
+            else if(isOverdue) countOverdue++;
+            else countUpcoming++;
+
+            return { ...b, isPaid, isOverdue, isUpcoming };
+        });
+
+        // 5. Update Summary Text
+        if(summaryContainer) {
+            summaryContainer.innerHTML = `
+                <div class="cal-sum-item"><div class="cal-icon-dot dot-due"></div> ${countUpcoming} Upcoming</div>
+                <div class="cal-sum-item"><div class="cal-icon-dot dot-overdue"></div> ${countOverdue} Overdue</div>
+                <div class="cal-sum-item"><div class="cal-icon-dot dot-paid"></div> ${countPaid} Paid</div>
+            `;
+        }
+
+        // 6. Render Dots & List
+        processedBills.forEach(b => {
+            // A. Draw Dot
             const dotContainer = document.getElementById(`day-dots-${b.day}`);
             if(dotContainer) {
                 let dotClass = 'dot-due';
-                if(isPaid) dotClass = 'dot-paid';
-                else if(isOverdue) dotClass = 'dot-overdue';
+                if(b.isPaid) dotClass = 'dot-paid';
+                else if(b.isOverdue) dotClass = 'dot-overdue';
                 dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
             }
 
-            // List Card Status
-            const statusText = isPaid ? "Paid" : (isOverdue ? "Overdue" : "Due");
-            const statusClass = isPaid ? "status-paid" : (isOverdue ? "status-overdue" : "status-due");
-            
-            // --- NEW ALIGNED HTML STRUCTURE ---
-            listContainer.innerHTML += `
-                <div class="bill-card">
-                    <div class="bill-left">
-                        <div style="width:42px; height:42px; border-radius:12px; background:${b.color}; display:flex; align-items:center; justify-content:center; color:white; font-size:1.1rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
-                            <i class="fa-solid ${b.icon}"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight:700; font-size:0.95rem; margin-bottom:2px;">${b.name}</div>
-                            <div class="${statusClass}" style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.7rem;">
-                                ${statusText} • ${b.day}${getOrdinal(b.day)}
+            // B. Filter List
+            let shouldShow = false;
+            if(currentBillFilter === 'all') shouldShow = true;
+            if(currentBillFilter === 'paid' && b.isPaid) shouldShow = true;
+            if(currentBillFilter === 'overdue' && b.isOverdue) shouldShow = true;
+            if(currentBillFilter === 'upcoming' && b.isUpcoming) shouldShow = true;
+
+            if(shouldShow) {
+                const statusText = b.isPaid ? "Paid" : (b.isOverdue ? "Overdue" : "Due");
+                const statusClass = b.isPaid ? "status-paid" : (b.isOverdue ? "status-overdue" : "status-due");
+
+                // C. Render Card (WITH NEW FLEXBOX STYLING)
+                listContainer.innerHTML += `
+                    <div class="bill-card">
+                        <div class="bill-left">
+                            <div style="width:42px; height:42px; border-radius:12px; background:${b.color}; display:flex; align-items:center; justify-content:center; color:white; font-size:1.1rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                                <i class="fa-solid ${b.icon}"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:700; font-size:0.95rem; margin-bottom:2px;">${b.name}</div>
+                                <div class="${statusClass}" style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.7rem;">
+                                    ${statusText} • ${b.day}${getOrdinal(b.day)}
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="bill-right">
-                        <div class="bill-amount">${formatMoney(b.amount)}</div>
-                        
-                        ${!isPaid ? 
-                            `<button onclick="payBill('${b.name}', ${b.amount})" style="margin-top:6px; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); padding:4px 10px; border-radius:6px; font-size:0.75rem; color:var(--text-main); cursor:pointer;">Pay</button>` 
-                            : 
-                            `<div style="margin-top:6px; font-size:0.75rem; color:#10b981;"><i class="fa-solid fa-check"></i> Done</div>`
-                        }
-                        
-                        ${!isPaid ? 
-                            `<div onclick="deleteBill('${b.name}')" style="font-size:0.65rem; color:var(--danger); margin-top:5px; opacity:0.6; cursor:pointer;">Remove</div>` 
-                            : ''
-                        }
-                    </div>
-                </div>`;
+                        <div class="bill-right">
+                            <div class="bill-amount">${formatMoney(b.amount)}</div>
+                            
+                            ${!b.isPaid ? 
+                                `<button onclick="payBill('${b.name}', ${b.amount})" style="margin-top:6px; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); padding:4px 10px; border-radius:6px; font-size:0.75rem; color:var(--text-main); cursor:pointer;">Pay</button>` 
+                                : 
+                                `<div style="margin-top:6px; font-size:0.75rem; color:#10b981;"><i class="fa-solid fa-check"></i> Done</div>`
+                            }
+                            
+                            ${!b.isPaid ? 
+                                `<div onclick="deleteBill('${b.name}')" style="font-size:0.65rem; color:var(--danger); margin-top:5px; opacity:0.6; cursor:pointer;">Remove</div>` 
+                                : ''
+                            }
+                        </div>
+                    </div>`;
+            }
         });
+        
+        // Empty State
+        if(listContainer.innerHTML === "") {
+            listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.9rem;">No bills in this category.</div>`;
+        }
     };
 
     // Change Month Function
