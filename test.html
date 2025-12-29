@@ -852,6 +852,15 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     color: var(--text-main);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+.presets-scroll {
+    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;
+}
+.preset-chip {
+    flex: 0 0 auto; background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 20px; padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 0.75rem; color: var(--text-main); transition: 0.2s;
+}
+.preset-chip:hover { background: rgba(255,255,255,0.05); }
         
     </style>
 </head>
@@ -1112,31 +1121,46 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         </div>
 
     <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
-        <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;"onkeyup="autoDetectBillIcon()">
-        <div class="input-row">
-            <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
-            <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
-        </div>
-        <div class="input-row" style="margin-top:10px;">
-            <select id="bill-color" class="calc-pill-select" style="flex:1;">
-                <option value="#e50914">Red</option>
-                <option value="#1db954">Green</option>
-                <option value="#ffffff">White</option>
-                <option value="#00a8e8">Blue</option>
-                <option value="#f59e0b">Orange</option>
-                <option value="#8b5cf6">Purple</option>
-            </select>
-            <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
-                <option value="fa-film">&#xf008;</option>
-                <option value="fa-bolt">&#xf0e7;</option>
-                <option value="fa-wifi">&#xf1eb;</option>
-                <option value="fa-mobile-screen">&#xf3cd;</option>
-                <option value="fa-dumbbell">&#xf44b;</option>
-                <option value="fa-music">&#xf001;</option>
-            </select>
-        </div>
-        <button class="btn-goal-add" onclick="saveNewBill()" style="margin-top:10px; background:var(--primary); color:black;">Save Subscription</button>
+    
+    <select id="preset-cat-select" class="calc-pill-select" style="width:100%; margin-bottom:10px; font-weight:bold; color:var(--primary);" onchange="renderCategoryPresets()">
+        <option value="" disabled selected>✨ Select Category to Auto-fill</option>
+        <option value="ott">🎬 Movies & OTT</option>
+        <option value="music">🎵 Music & Audio</option>
+        <option value="utilities">⚡ Utilities & Bills</option>
+        <option value="internet">🛜 Internet & Phone</option>
+        <option value="manual">✏️ Custom / Manual</option>
+    </select>
+
+    <div id="preset-options" class="presets-scroll" style="margin-bottom:15px; display:none;"></div>
+
+    <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;" onkeyup="autoDetectBillIcon()">
+    
+    <div class="input-row">
+        <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
+        <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
     </div>
+
+    <div class="input-row" style="margin-top:10px;">
+        <select id="bill-color" class="calc-pill-select" style="flex:1;">
+            <option value="#e50914">Red</option>
+            <option value="#1db954">Green</option>
+            <option value="#ffffff">White</option>
+            <option value="#00a8e8">Blue</option>
+            <option value="#f59e0b">Orange</option>
+            <option value="#8b5cf6">Purple</option>
+        </select>
+        <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+            <option value="fa-film">&#xf008;</option>
+            <option value="fa-bolt">&#xf0e7;</option>
+            <option value="fa-wifi">&#xf1eb;</option>
+            <option value="fa-mobile-screen">&#xf3cd;</option>
+            <option value="fa-dumbbell">&#xf44b;</option>
+            <option value="fa-music">&#xf001;</option>
+        </select>
+    </div>
+
+    <button class="btn-goal-add" onclick="saveNewBill()" style="margin-top:10px; background:var(--primary); color:black;">Save Subscription</button>
+</div>
 
     <div class="calendar-wrapper">
         
@@ -3209,6 +3233,80 @@ function setDailyReminder() {
             iconSel.value = "fa-dumbbell"; 
             colorSel.value = "#f59e0b"; // Orange/Gold
         }
+    }
+
+    // ==========================================
+    // CATEGORY-WISE PRESETS
+    // ==========================================
+    
+    const presetData = {
+        'ott': [
+            { name: "Netflix Mobile", price: 149, icon: "fa-film", color: "#E50914" },
+            { name: "Netflix Basic", price: 199, icon: "fa-film", color: "#E50914" },
+            { name: "Prime Video", price: 299, icon: "fa-film", color: "#00A8E1" },
+            { name: "Disney+ Hotstar", price: 149, icon: "fa-tv", color: "#1f80e0" },
+            { name: "SonyLiv", price: 299, icon: "fa-play", color: "#f05a28" },
+            { name: "Zee5", price: 119, icon: "fa-closed-captioning", color: "#ff0095" }
+        ],
+        'music': [
+            { name: "Spotify Individual", price: 119, icon: "fa-music", color: "#1DB954" },
+            { name: "Spotify Duo", price: 149, icon: "fa-music", color: "#1DB954" },
+            { name: "YouTube Music", price: 99, icon: "fa-play", color: "#FF0000" },
+            { name: "Apple Music", price: 99, icon: "fa-music", color: "#FA243C" },
+            { name: "JioSaavn", price: 99, icon: "fa-music", color: "#2bc5b4" }
+        ],
+        'utilities': [
+            { name: "Electricity Bill", price: 0, icon: "fa-bolt", color: "#F59E0B" },
+            { name: "Water Bill", price: 0, icon: "fa-faucet-drip", color: "#3B82F6" },
+            { name: "Gas Cylinder", price: 900, icon: "fa-fire", color: "#EF4444" },
+            { name: "Rent", price: 0, icon: "fa-house", color: "#10B981" }
+        ],
+        'internet': [
+            { name: "JioFiber", price: 699, icon: "fa-wifi", color: "#0f62fe" },
+            { name: "Airtel Xstream", price: 499, icon: "fa-wifi", color: "#ed1c24" },
+            { name: "ACT Fibernet", price: 799, icon: "fa-network-wired", color: "#10b981" },
+            { name: "Mobile Recharge", price: 299, icon: "fa-mobile-screen", color: "#8B5CF6" }
+        ]
+    };
+
+    window.renderCategoryPresets = function() {
+        const cat = document.getElementById('preset-cat-select').value;
+        const container = document.getElementById('preset-options');
+        
+        // Clear previous options
+        container.innerHTML = "";
+        
+        // If Manual, hide chips and clear fields
+        if(cat === 'manual' || !presetData[cat]) {
+            container.style.display = 'none';
+            document.getElementById('bill-name').value = "";
+            document.getElementById('bill-amount').value = "";
+            return;
+        }
+
+        // Show Container
+        container.style.display = 'flex';
+
+        // Loop through data and create chips
+        presetData[cat].forEach(sub => {
+            const chip = document.createElement('div');
+            chip.className = 'preset-chip';
+            chip.innerHTML = `<i class="fa-solid ${sub.icon}" style="color:${sub.color}"></i> ${sub.name}`;
+            
+            chip.onclick = function() {
+                // Auto-fill Form
+                document.getElementById('bill-name').value = sub.name;
+                document.getElementById('bill-amount').value = sub.price > 0 ? sub.price : ""; // Leave empty if 0 (like Bill)
+                document.getElementById('bill-icon').value = sub.icon;
+                document.getElementById('bill-color').value = sub.color;
+                
+                // Highlight Effect
+                document.querySelectorAll('.preset-chip').forEach(c => c.style.borderColor = "var(--glass-border)");
+                this.style.borderColor = "var(--primary)";
+            };
+            
+            container.appendChild(chip);
+        });
     }
 
 </script>
