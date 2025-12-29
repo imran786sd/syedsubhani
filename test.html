@@ -1631,35 +1631,57 @@ function setDailyReminder() {
     }
     // --- UI RENDERING ---
     window.updateUI = function() {
-        // 1. Logic to Hide/Show Year Dropdown
-        const period = document.getElementById('period-select').value;
-        const yearSelect = document.getElementById('year-select');
-        
-        if (period === 'all_time') {
-            yearSelect.style.display = 'none'; // Hide Year
-        } else {
-            yearSelect.style.display = 'block'; // Show Year
-        }
         const filtered = filterData();
         
-        let inc=0, exp=0;
-        filtered.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
-        document.getElementById('total-inc').innerText = formatMoney(inc);
-        document.getElementById('total-exp').innerText = formatMoney(exp);
-        document.getElementById('balance').innerText = formatMoney(inc - exp);
+        let realIncome = 0;   // Salary, Business, etc.
+        let realExpense = 0;  // Food, Fuel, Rent
+        let cashIn = 0;       // Income + Borrowed
+        let cashOut = 0;      // Expense + Lent
+        
+        filtered.forEach(t => {
+            // 1. CALCULATE DISPLAY TOTALS (Pure Income vs Expense)
+            if (t.type === 'income') {
+                realIncome += t.amount;
+                cashIn += t.amount;
+            } 
+            else if (t.type === 'expense') {
+                realExpense += t.amount;
+                cashOut += t.amount;
+            }
+            // 2. CALCULATE CASH FLOW (Debts affect Balance, but not "Expense" totals)
+            else if (t.type === 'debt_lent') {
+                cashOut += t.amount; // Money left your pocket
+            }
+            else if (t.type === 'debt_borrowed') {
+                cashIn += t.amount;  // Money entered your pocket
+            }
+        });
+
+        // UPDATE TOP CARDS
+        // We show "Real Income" and "Real Expense" so you know your actual earnings/spending
+        document.getElementById('total-inc').innerText = formatMoney(realIncome);
+        document.getElementById('total-exp').innerText = formatMoney(realExpense);
+        
+        // UPDATE BALANCE (This now matches your physical wallet)
+        // Formula: (Income + Borrowed) - (Expense + Lent)
+        const netBal = cashIn - cashOut;
+        document.getElementById('balance').innerText = formatMoney(netBal);
         
         document.getElementById('profile-total-tx').innerText = filtered.length;
 
+        // CHARTS (Only show Real Expenses/Income, ignore debts)
         if(currentTab === 'dashboard') {
-            renderExpenseFlow(filtered);
-            if(currentChartType === 'donut') renderSpendingDonut(filtered);
-            else renderSpendingSunburst(filtered);
+            const chartData = filtered.filter(t => t.type === 'income' || t.type === 'expense');
+            renderExpenseFlow(chartData);
+            if(currentChartType === 'donut') renderSpendingDonut(chartData);
+            else renderSpendingSunburst(chartData);
         } 
-        else if (currentTab === 'debts') renderDebts(window.transactions); // NEW TAB
+        else if (currentTab === 'debts') renderDebts(window.transactions); 
         else if (currentTab === 'records') renderRecordsList(filtered);
         else if (currentTab === 'income') renderDetailList(filtered, 'income');
         else if (currentTab === 'expenses') renderDetailList(filtered, 'expense');
         else if (currentTab === 'categories') renderCategories(filtered);
+        else if (currentTab === 'goals') renderGoals();
     }
 
     function switchChartType(type, btn) {
