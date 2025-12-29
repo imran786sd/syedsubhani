@@ -748,20 +748,29 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             </div>
 
             <div id="view-dashboard" class="view-container active">
-                <div class="summary-grid">
-                    <div class="stat-card">
-                        <div class="stat-title">Income</div>
-                        <div class="stat-val pos" id="total-inc">...</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-title">Spend</div>
-                        <div class="stat-val neg" id="total-exp">...</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-title">Net Balance</div>
-                        <div class="stat-val" id="balance">...</div>
-                    </div>
-                </div>
+                <div class="stats-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        
+        <div class="stat-card" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 15px;">
+            <div class="stat-title" style="color:#10b981; font-size:0.7rem;">Income</div>
+            <div class="stat-val" id="total-inc" style="font-size:1.2rem;">...</div>
+        </div>
+
+        <div class="stat-card" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 15px;">
+            <div class="stat-title" style="color:#ef4444; font-size:0.7rem;">Spend</div>
+            <div class="stat-val" id="total-exp" style="font-size:1.2rem;">...</div>
+        </div>
+
+        <div class="stat-card" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 15px;">
+            <div class="stat-title" style="color:#3b82f6; font-size:0.7rem;">Wallet Balance</div>
+            <div class="stat-val" id="balance" style="font-size:1.2rem;">...</div>
+        </div>
+
+        <div class="stat-card" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px;">
+            <div class="stat-title" style="color:#f59e0b; font-size:0.7rem;">Net Outstanding</div>
+            <div class="stat-val" id="total-outstanding" style="font-size:1.2rem;">...</div>
+        </div>
+
+    </div>
 
                 <div class="dashboard-lower">
                     <div class="flow-container">
@@ -1633,13 +1642,17 @@ function setDailyReminder() {
     window.updateUI = function() {
         const filtered = filterData();
         
-        let realIncome = 0;   // Salary, Business, etc.
-        let realExpense = 0;  // Food, Fuel, Rent
-        let cashIn = 0;       // Income + Borrowed
-        let cashOut = 0;      // Expense + Lent
+        let realIncome = 0;   
+        let realExpense = 0;  
+        let cashIn = 0;       
+        let cashOut = 0;
+        
+        // New Variables for the 4th Card
+        let totalLent = 0;
+        let totalBorrowed = 0;
         
         filtered.forEach(t => {
-            // 1. CALCULATE DISPLAY TOTALS (Pure Income vs Expense)
+            // 1. Income & Expense
             if (t.type === 'income') {
                 realIncome += t.amount;
                 cashIn += t.amount;
@@ -1648,28 +1661,42 @@ function setDailyReminder() {
                 realExpense += t.amount;
                 cashOut += t.amount;
             }
-            // 2. CALCULATE CASH FLOW (Debts affect Balance, but not "Expense" totals)
+            // 2. Debts (Cash Flow + Outstanding Calc)
             else if (t.type === 'debt_lent') {
-                cashOut += t.amount; // Money left your pocket
+                cashOut += t.amount; 
+                totalLent += t.amount; // Add to "People owe me"
             }
             else if (t.type === 'debt_borrowed') {
-                cashIn += t.amount;  // Money entered your pocket
+                cashIn += t.amount;  
+                totalBorrowed += t.amount; // Add to "I owe people"
             }
         });
 
-        // UPDATE TOP CARDS
-        // We show "Real Income" and "Real Expense" so you know your actual earnings/spending
+        // UPDATE UI CARDS
         document.getElementById('total-inc').innerText = formatMoney(realIncome);
         document.getElementById('total-exp').innerText = formatMoney(realExpense);
         
-        // UPDATE BALANCE (This now matches your physical wallet)
-        // Formula: (Income + Borrowed) - (Expense + Lent)
+        // 1. Wallet Balance (Cash you have right now)
         const netBal = cashIn - cashOut;
         document.getElementById('balance').innerText = formatMoney(netBal);
         
+        // 2. Net Outstanding (Assets vs Liabilities)
+        const netOutstanding = totalLent - totalBorrowed;
+        const outEl = document.getElementById('total-outstanding');
+        outEl.innerText = (netOutstanding > 0 ? "+" : "") + formatMoney(netOutstanding);
+        
+        // Color Logic for Outstanding
+        if (netOutstanding > 0) {
+            outEl.style.color = "#10b981"; // Green (Good, people owe you)
+        } else if (netOutstanding < 0) {
+            outEl.style.color = "#ef4444"; // Red (Bad, you owe people)
+        } else {
+            outEl.style.color = "var(--text-main)"; // Neutral
+        }
+
         document.getElementById('profile-total-tx').innerText = filtered.length;
 
-        // CHARTS (Only show Real Expenses/Income, ignore debts)
+        // RENDER TABS
         if(currentTab === 'dashboard') {
             const chartData = filtered.filter(t => t.type === 'income' || t.type === 'expense');
             renderExpenseFlow(chartData);
