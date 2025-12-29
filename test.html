@@ -1763,13 +1763,13 @@ function setDailyReminder() {
     // --- UI RENDERING ---
    window.updateUI = function() {
         // --- 1. UI LOGIC: HIDE YEAR IF 'ALL TIME' ---
-        const period = document.getElementById('period-select').value;
+        const periodEl = document.getElementById('period-select');
         const yearSelect = document.getElementById('year-select');
         
-        if (period === 'all_time') {
-            yearSelect.style.display = 'none'; 
-        } else {
-            yearSelect.style.display = 'block';
+        // Safety check if elements exist
+        if(periodEl && yearSelect) {
+            const period = periodEl.value;
+            yearSelect.style.display = (period === 'all_time') ? 'none' : 'block';
         }
 
         // --- 2. DATA FILTERING ---
@@ -1784,8 +1784,9 @@ function setDailyReminder() {
         let totalLent = 0;
         let totalBorrowed = 0;
         
+        // --- MAIN LOOP (CALCULATE ONLY) ---
         filtered.forEach(t => {
-            // A. Income & Expense (Chart Data)
+            // A. Income & Expense
             if (t.type === 'income') {
                 realIncome += t.amount;
                 cashIn += t.amount;
@@ -1803,37 +1804,33 @@ function setDailyReminder() {
                 cashIn += t.amount;        // Money entered wallet
                 totalBorrowed += t.amount; // Liability (You owe people)
             }
-            else if (currentTab === 'categories') {
-        // Check which sub-tab is open and refresh ONLY that one
-        if (currentManageTab === 'cats') renderCategories(filtered);
-        else if (currentManageTab === 'bills') renderBills();
-        else if (currentManageTab === 'accounts') renderAccounts();
-    }
         });
 
         // --- 4. UPDATE HTML CARDS ---
-        document.getElementById('total-inc').innerText = formatMoney(realIncome);
-        document.getElementById('total-exp').innerText = formatMoney(realExpense);
-        
-        // Card 3: Wallet Balance
-        const netBal = cashIn - cashOut;
-        document.getElementById('balance').innerText = formatMoney(netBal);
-        
-        // Card 4: Net Outstanding
-        const netOutstanding = totalLent - totalBorrowed;
-        const outEl = document.getElementById('total-outstanding');
-        
-        const prefix = netOutstanding > 0 ? "+" : ""; 
-        outEl.innerText = prefix + formatMoney(netOutstanding);
-        
-        // Color Logic
-        if (netOutstanding > 0) outEl.style.color = "#10b981"; // Green
-        else if (netOutstanding < 0) outEl.style.color = "#ef4444"; // Red
-        else outEl.style.color = "var(--text-main)"; // Gray
+        if(document.getElementById('total-inc')) {
+            document.getElementById('total-inc').innerText = formatMoney(realIncome);
+            document.getElementById('total-exp').innerText = formatMoney(realExpense);
+            
+            // Wallet Balance
+            const netBal = cashIn - cashOut;
+            document.getElementById('balance').innerText = formatMoney(netBal);
+            
+            // Net Outstanding
+            const netOutstanding = totalLent - totalBorrowed;
+            const outEl = document.getElementById('total-outstanding');
+            const prefix = netOutstanding > 0 ? "+" : ""; 
+            outEl.innerText = prefix + formatMoney(netOutstanding);
+            
+            // Color Logic
+            if (netOutstanding > 0) outEl.style.color = "#10b981"; // Green
+            else if (netOutstanding < 0) outEl.style.color = "#ef4444"; // Red
+            else outEl.style.color = "var(--text-main)"; // Gray
 
-        document.getElementById('profile-total-tx').innerText = filtered.length;
+            document.getElementById('profile-total-tx').innerText = filtered.length;
+        }
 
-        // --- 5. RENDER ACTIVE TAB ---
+        // --- 5. RENDER ACTIVE TAB (DISPLAY LOGIC) ---
+        // This MUST be outside the loop!
         if(currentTab === 'dashboard') {
             const chartData = filtered.filter(t => t.type === 'income' || t.type === 'expense');
             renderExpenseFlow(chartData);
@@ -1844,7 +1841,14 @@ function setDailyReminder() {
         else if (currentTab === 'records') renderRecordsList(filtered);
         else if (currentTab === 'income') renderDetailList(filtered, 'income');
         else if (currentTab === 'expenses') renderDetailList(filtered, 'expense');
-        else if (currentTab === 'categories') renderCategories(filtered);
+        else if (currentTab === 'categories') {
+            // Check which sub-tab is open and refresh ONLY that one
+            if (!currentManageTab) currentManageTab = 'cats'; // Safety Default
+            
+            if (currentManageTab === 'cats') renderCategories(filtered);
+            else if (currentManageTab === 'bills') renderBills();
+            else if (currentManageTab === 'accounts') renderAccounts();
+        }
         else if (currentTab === 'goals') renderGoals();
     }
 
