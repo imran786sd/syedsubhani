@@ -1026,6 +1026,19 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
     // --- DATA LOGIC (CLOUD) ---
     async function loadData() {
+        // --- A. LOAD LOCAL FIRST (Instant) ---
+        const localData = localStorage.getItem('budget_data_local');
+        if (localData) {
+            try {
+                const parsed = JSON.parse(localData);
+                window.transactions = parsed.transactions || [];
+                window.goals = parsed.goals || [];
+                updateUI(); // Show data immediately!
+                console.log("Loaded from Local Storage");
+            } catch(e) { console.error("Local Parse Error", e); }
+        }
+
+        // --- B. THEN CHECK CLOUD (Sync) ---
         if(!currentUserUID) return;
         
         document.getElementById('loader').style.display = 'inline-block';
@@ -1034,43 +1047,75 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             const docSnap = await window.firebaseModules.getDoc(docRef);
             
             if (docSnap.exists()) {
-                const data = docSnap.data();
-            window.transactions = data.transactions || [];
-            window.goals = data.goals || []; // <--- LOAD GOALS
-            } else {
-                generateDummyData(); // First time login
-            }
+                const cloudData = docSnap.data();
+                
+                // Simple Merge Strategy: Cloud wins if it exists
+                // (You can make this smarter later, but this is safest for now)
+                window.transactions = cloudData.transactions || [];
+                window.goals = cloudData.goals || [];
+                
+                // Update Local Storage with the fresh Cloud data
+                localStorage.setItem('budget_data_local', JSON.stringify({
+                    transactions: window.transactions,
+                    goals: window.goals,
+                    lastUpdated: new Date().toISOString()
+                }));
+                
+                updateUI(); // Refresh UI with Cloud Data
+                console.log("Synced with Cloud");
+            } 
         } catch (e) {
-            console.error("Load Error", e);
+            console.error("Cloud Load Error (Offline?)", e);
         }
         document.getElementById('loader').style.display = 'none';
+        
+        // Init other settings
         initCurrency();
         updateUI();
     }
 
     async function saveData() {
-        // Optimistic UI Update (Update screen first)
+        // 1. Update UI immediately (Optimistic UI)
         updateUI(); 
         
-        // Background Cloud Save
+        // 2. SAVE LOCAL (Instant & Offline backup)
+        const localObj = {
+            transactions: window.transactions,
+            goals: window.goals,
+            lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('budget_data_local', JSON.stringify(localObj));
+        console.log("Local Save Complete");
+
+        // 3. SAVE CLOUD (If logged in)
         if(currentUserUID) {
             try {
                 await window.firebaseModules.setDoc(window.firebaseModules.doc(db, "users", currentUserUID), { 
-                    transactions: transactions,
+                    transactions: window.transactions,
+                    goals: window.goals || [],
                     lastUpdated: new Date()
-                });
-                console.log("Cloud Saved");
-            } catch(e) {
-                console.error("Save Failed", e);
-                // Silent fail or alert("Cloud Save Failed. Check console.");
+                }, { merge: true });
+                console.log("Cloud Sync Complete");
+            } catch(e) { 
+                console.warn("Cloud Save Failed (Offline?):", e); 
+                // Optional: You could add a 'dirty' flag here to retry later
             }
         }
     }
 
     function resetData() {
-        if(confirm("Are you sure? This will delete all data from the Cloud.")) {
-            transactions = [];
-            saveData();
+        if(confirm("Are you sure? This deletes ALL data from Cloud & Device.")) {
+            // 1. Clear Memory
+            window.transactions = [];
+            window.goals = [];
+            
+            // 2. Clear Local
+            localStorage.removeItem('budget_data_local');
+            
+            // 3. Clear Cloud (via empty save)
+            saveData(); 
+            
+            alert("All data reset.");
         }
     }
 
