@@ -1123,21 +1123,26 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     }
 
     // --- DATA LOGIC (CLOUD) ---
-    async function loadData() {
+    async function loadData() async function loadData() {
         // 1. LOAD LOCAL (Instant Display)
         const localData = localStorage.getItem('budget_data_local');
         
-        // --- FIX: Default initialization first ---
-        window.accounts = ["Cash", "Card", "PhonePe", "GPay", "NetBanking"];
+        // Initialize Default Empty State
+        window.transactions = [];
+        window.goals = [];
         window.bills = [];
+        window.accounts = ["Cash", "Card", "PhonePe", "GPay", "NetBanking"]; // Default
 
         if (localData) {
             try {
                 const parsed = JSON.parse(localData);
+                
+                // --- FIX: Load data safely ---
                 window.transactions = parsed.transactions || [];
                 window.goals = parsed.goals || [];
-                // --- FIX: Load these AFTER parsing ---
                 window.bills = parsed.bills || [];
+                
+                // Only overwrite accounts if they exist in storage
                 if(parsed.accounts && parsed.accounts.length > 0) {
                     window.accounts = parsed.accounts;
                 }
@@ -1157,15 +1162,15 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             if (docSnap.exists()) {
                 const cloudData = docSnap.data();
                 const cloudTx = cloudData.transactions || [];
-                const cloudGoals = cloudData.goals || [];
                 
-                // --- FIX: Load Cloud Bills & Accounts ---
+                // Sync Arrays
+                window.goals = cloudData.goals || [];
                 window.bills = cloudData.bills || [];
                 if(cloudData.accounts && cloudData.accounts.length > 0) {
                     window.accounts = cloudData.accounts;
                 }
 
-                // --- MERGE LOGIC START ---
+                // Sync Transactions (Smart Merge)
                 const txMap = new Map();
                 cloudTx.forEach(t => txMap.set(t.id, t));
                 
@@ -1174,15 +1179,13 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                 });
 
                 window.transactions = Array.from(txMap.values());
-                window.goals = cloudGoals; 
-                // --- MERGE LOGIC END ---
 
                 // Update Local Storage
                 localStorage.setItem('budget_data_local', JSON.stringify({
                     transactions: window.transactions,
                     goals: window.goals,
-                    bills: window.bills,     // Save Bills
-                    accounts: window.accounts, // Save Accounts
+                    bills: window.bills,
+                    accounts: window.accounts,
                     lastUpdated: new Date().toISOString()
                 }));
                 
