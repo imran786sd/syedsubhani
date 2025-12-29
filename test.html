@@ -2786,6 +2786,21 @@ function setDailyReminder() {
         if(!window.accounts) window.accounts = ["Cash"];
 
         window.accounts.forEach((acc) => {
+            // 1. Calculate Balance for this Account
+            // We look at all transactions matching this method
+            const balanceUSD = window.transactions.reduce((sum, t) => {
+                if (t.method !== acc) return sum;
+                
+                // Add Income & Borrowed Money
+                if (t.type === 'income' || t.type === 'debt_borrowed') return sum + t.amount;
+                
+                // Subtract Expense & Lent Money
+                if (t.type === 'expense' || t.type === 'debt_lent') return sum - t.amount;
+                
+                return sum;
+            }, 0);
+
+            // 2. Determine Icon
             let icon = "fa-wallet";
             const lower = acc.toLowerCase();
             if(lower.includes("bank")||lower.includes("hdfc")||lower.includes("sbi")) icon="fa-building-columns";
@@ -2793,14 +2808,23 @@ function setDailyReminder() {
             if(lower.includes("cash")) icon="fa-money-bill-1";
             if(lower.includes("pay")) icon="fa-mobile-screen-button";
 
+            // 3. Render (Added Balance Div)
             container.innerHTML += `
                 <div class="cat-list-item">
                     <div class="cat-left">
-                        <div class="cat-icon-circle" style="background:rgba(251, 191, 36, 0.1); color:var(--secondary);"><i class="fa-solid ${icon}"></i></div>
+                        <div class="cat-icon-circle" style="background:rgba(251, 191, 36, 0.1); color:var(--secondary);">
+                            <i class="fa-solid ${icon}"></i>
+                        </div>
                         <div class="cat-name">${acc}</div>
                     </div>
-                    <div class="cat-right">
-                        <button onclick="deleteAccount('${acc}')" style="background:none; border:none; color:var(--danger); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                    <div class="cat-right" style="display:flex; align-items:center; gap:10px;">
+                        <div style="font-weight:700; font-family:'Consolas'; font-size:0.95rem; color:${balanceUSD >= 0 ? 'var(--text-main)' : 'var(--danger)'}">
+                            ${formatMoney(balanceUSD)}
+                        </div>
+                        
+                        <button onclick="deleteAccount('${acc}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; opacity:0.6;">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </div>`;
         });
