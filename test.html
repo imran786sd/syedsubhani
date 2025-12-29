@@ -2757,6 +2757,64 @@ function setDailyReminder() {
             renderBills();
         }
     }
+    // ==========================================
+    // 4. MISSING BILL ACTIONS (Paste at bottom)
+    // ==========================================
+
+    // Toggle the "Add Bill" form
+    window.toggleBillForm = function() {
+        const f = document.getElementById('add-bill-form');
+        if(f) {
+            f.style.display = (f.style.display === 'block') ? 'none' : 'block';
+        }
+    }
+
+    // Save a new subscription
+    window.saveNewBill = function() {
+        const name = document.getElementById('bill-name').value;
+        const amount = parseFloat(document.getElementById('bill-amount').value);
+        const day = parseInt(document.getElementById('bill-day').value);
+        const color = document.getElementById('bill-color').value;
+        const icon = document.getElementById('bill-icon').value;
+
+        if(!name || !amount) return alert("Please fill in Name and Amount");
+        
+        // Convert to USD for consistent storage
+        const amtUSD = amount / currentRate;
+        
+        if(!window.bills) window.bills = [];
+        window.bills.push({ name, amount: amtUSD, day, color, icon });
+        
+        saveData();      // Save to Cloud/Local
+        toggleBillForm(); // Close Form
+        renderBills();    // Refresh Calendar
+    }
+
+    // Shortcut to pay a bill (Opens Calculator)
+    window.payBill = function(name, amount) {
+        openCalc();
+        setCalcType('expense');
+        // Auto-fill details so "Smart Status" detects it later
+        const catEl = document.getElementById('calc-cat');
+        if(catEl) catEl.value = "Utilities"; 
+        
+        const noteEl = document.getElementById('calc-note');
+        if(noteEl) noteEl.value = name; 
+    }
+
+    // Delete a subscription
+    window.deleteBill = function(name) {
+        if(confirm("Stop tracking this subscription?")) {
+            window.bills = window.bills.filter(b => b.name !== name);
+            saveData();
+            renderBills();
+        }
+    }
+
+    // Helper for dates (1st, 2nd, 3rd)
+    function getOrdinal(n) { 
+        return ["th","st","nd","rd"][(n%100>10&&n%100<20)?0:(n%10<4)?n%10:0]; 
+    }
 
     function getOrdinal(n) { return ["th","st","nd","rd"][(n%100>10&&n%100<20)?0:(n%10<4)?n%10:0]; }
 
