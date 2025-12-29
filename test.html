@@ -1571,6 +1571,15 @@ function setDailyReminder() {
     }
     // --- UI RENDERING ---
     window.updateUI = function() {
+        // 1. Logic to Hide/Show Year Dropdown
+        const period = document.getElementById('period-select').value;
+        const yearSelect = document.getElementById('year-select');
+        
+        if (period === 'all_time') {
+            yearSelect.style.display = 'none'; // Hide Year
+        } else {
+            yearSelect.style.display = 'block'; // Show Year
+        }
         const filtered = filterData();
         
         let inc=0, exp=0;
