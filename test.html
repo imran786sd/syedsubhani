@@ -2586,69 +2586,15 @@ function setDailyReminder() {
     }
 
  // ==========================================
-    // 1. MANAGE HUB & TABS LOGIC
-    // ==========================================
-    window.switchManageView = function(view, btn) {
-        // Update the Tracker Variable
-        currentManageTab = view;
-
-        // 1. Reset Tab Buttons
-        // (Handle case where btn might be passed or we search for it)
-        if(btn) {
-            const parent = btn.parentNode;
-            parent.querySelectorAll('.tab-link-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-
-        // 2. Hide All Sub-Views
-        const cats = document.getElementById('subview-cats');
-        const bills = document.getElementById('subview-bills');
-        const accts = document.getElementById('subview-accounts');
-        
-        if(cats) cats.style.display = 'none';
-        if(bills) bills.style.display = 'none';
-        if(accts) accts.style.display = 'none';
-
-        // 3. Show the Selected View
-        if(view === 'cats' && cats) {
-            cats.style.display = 'block';
-            renderCategories(filterData());
-        } 
-        else if(view === 'bills' && bills) {
-            bills.style.display = 'block';
-            // FORCE CALENDAR RENDER
-            if(typeof renderBills === 'function') {
-                renderBills();
-            } else {
-                console.error("renderBills function is missing!");
-            }
-        } 
-        else if(view === 'accounts' && accts) {
-            accts.style.display = 'block';
-            if(typeof renderAccounts === 'function') renderAccounts();
-        }
-    }
-
-    // ==========================================
-    // 2. CALENDAR & SUBSCRIPTIONS LOGIC
+    // 1. CALENDAR & BILLS LOGIC (Defined First)
     // ==========================================
     window.bills = []; 
     let billViewDate = new Date();
 
-    // Change Month (+1 or -1)
-    window.changeBillMonth = function(dir) {
-        billViewDate.setMonth(billViewDate.getMonth() + dir);
-        renderBills();
+    // Helper: Ordinal Dates (1st, 2nd...)
+    function getOrdinal(n) { 
+        return ["th","st","nd","rd"][(n%100>10&&n%100<20)?0:(n%10<4)?n%10:0]; 
     }
-
-    // Initialize Day Dropdown (Runs immediately)
-    (function initBillForm() {
-        const sel = document.getElementById('bill-day');
-        if(sel) {
-            sel.innerHTML = "";
-            for(let i=1; i<=31; i++) sel.innerHTML += `<option value="${i}">${i}th</option>`;
-        }
-    })();
 
     // MAIN RENDER FUNCTION
     window.renderBills = function() {
@@ -2656,16 +2602,15 @@ function setDailyReminder() {
         const listContainer = document.getElementById('bills-list-container');
         const title = document.getElementById('cal-month-title');
         
-        // Safety Check
-        if(!container) return; 
+        if(!container) return;
         
         container.innerHTML = ""; 
         listContainer.innerHTML = "";
         
-        // 1. Update Month Title (Fixes the "..." issue)
+        // 1. Update Month Title
         const year = billViewDate.getFullYear();
         const month = billViewDate.getMonth();
-        title.innerText = billViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        if(title) title.innerText = billViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
         // 2. Calendar Math
         const firstDay = new Date(year, month, 1).getDay();
@@ -2674,7 +2619,7 @@ function setDailyReminder() {
         const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
         const currentDay = today.getDate();
 
-        // 3. Draw Empty Slots (Padding)
+        // 3. Draw Empty Slots
         for(let i=0; i<firstDay; i++) {
             container.innerHTML += `<div class="cal-day empty"></div>`;
         }
@@ -2688,11 +2633,10 @@ function setDailyReminder() {
             container.innerHTML += dayHtml;
         }
 
-        // 5. Draw Bill Dots & List Items
-        const safeBills = window.bills || []; // Safety fallback
+        // 5. Draw Bills
+        const safeBills = window.bills || [];
         
         safeBills.sort((a,b) => a.day - b.day).forEach(b => {
-            // Check Payment Status (Search Expense Transactions)
             const paidTx = window.transactions.find(t => {
                 const txDate = new Date(t.date);
                 return txDate.getMonth() === month && 
@@ -2704,17 +2648,16 @@ function setDailyReminder() {
             const isPaid = !!paidTx;
             const isOverdue = !isPaid && isCurrentMonth && b.day < currentDay;
 
-            // A. Add Dot to Calendar
+            // Dot
             const dotContainer = document.getElementById(`day-dots-${b.day}`);
             if(dotContainer) {
                 let dotClass = 'dot-due';
                 if(isPaid) dotClass = 'dot-paid';
                 else if(isOverdue) dotClass = 'dot-overdue';
-                
                 dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
             }
 
-            // B. Add Card to List
+            // List Card
             const statusText = isPaid ? "Paid" : (isOverdue ? "Overdue" : "Due");
             const statusClass = isPaid ? "status-paid" : (isOverdue ? "status-overdue" : "status-due");
             
@@ -2736,21 +2679,66 @@ function setDailyReminder() {
                     </div>
                 </div>`;
         });
-    }
+    };
+
+    // Change Month Function
+    window.changeBillMonth = function(dir) {
+        billViewDate.setMonth(billViewDate.getMonth() + dir);
+        window.renderBills();
+    };
+
+    // Initialize Day Dropdown (SAFE VERSION with semicolon)
+    ;(function initBillForm() {
+        const sel = document.getElementById('bill-day');
+        if(sel) {
+            sel.innerHTML = "";
+            for(let i=1; i<=31; i++) sel.innerHTML += `<option value="${i}">${i}th</option>`;
+        }
+    })();
 
     // ==========================================
-    // 3. BUTTON ACTIONS (Fixes 'toggleBillForm is not defined')
+    // 2. MANAGE HUB LOGIC
     // ==========================================
-    
-    // Toggle the "Add Bill" Form
+    window.switchManageView = function(view, btn) {
+        currentManageTab = view;
+
+        if(btn) {
+            const parent = btn.parentNode;
+            parent.querySelectorAll('.tab-link-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const cats = document.getElementById('subview-cats');
+        const bills = document.getElementById('subview-bills');
+        const accts = document.getElementById('subview-accounts');
+        
+        if(cats) cats.style.display = 'none';
+        if(bills) bills.style.display = 'none';
+        if(accts) accts.style.display = 'none';
+
+        if(view === 'cats' && cats) {
+            cats.style.display = 'block';
+            renderCategories(filterData());
+        } 
+        else if(view === 'bills' && bills) {
+            bills.style.display = 'block';
+            // Now renderBills is guaranteed to exist
+            if(window.renderBills) window.renderBills();
+        } 
+        else if(view === 'accounts' && accts) {
+            accts.style.display = 'block';
+            if(window.renderAccounts) window.renderAccounts();
+        }
+    };
+
+    // ==========================================
+    // 3. BUTTON ACTIONS
+    // ==========================================
     window.toggleBillForm = function() {
         const f = document.getElementById('add-bill-form');
-        if(f) {
-            f.style.display = (f.style.display === 'block') ? 'none' : 'block';
-        }
-    }
+        if(f) f.style.display = (f.style.display === 'block') ? 'none' : 'block';
+    };
 
-    // Save Logic
     window.saveNewBill = function() {
         const name = document.getElementById('bill-name').value;
         const amount = parseFloat(document.getElementById('bill-amount').value);
@@ -2758,40 +2746,32 @@ function setDailyReminder() {
         const color = document.getElementById('bill-color').value;
         const icon = document.getElementById('bill-icon').value;
 
-        if(!name || !amount) return alert("Please fill Name and Amount");
+        if(!name || !amount) return alert("Fill all fields");
         
         const amtUSD = amount / currentRate;
-        
         if(!window.bills) window.bills = [];
         window.bills.push({ name, amount: amtUSD, day, color, icon });
         
         saveData();
         toggleBillForm();
-        renderBills(); // Refresh Calendar immediately
-    }
+        window.renderBills();
+    };
 
-    // Pay Logic
     window.payBill = function(name, amount) {
         openCalc();
         setCalcType('expense');
         const catEl = document.getElementById('calc-cat');
         if(catEl) catEl.value = "Utilities"; 
         document.getElementById('calc-note').value = name; 
-    }
+    };
 
-    // Delete Logic
     window.deleteBill = function(name) {
         if(confirm("Delete subscription?")) {
             window.bills = window.bills.filter(b => b.name !== name);
             saveData();
-            renderBills();
+            window.renderBills();
         }
-    }
-
-    // Helper for dates
-    function getOrdinal(n) { 
-        return ["th","st","nd","rd"][(n%100>10&&n%100<20)?0:(n%10<4)?n%10:0]; 
-    }
+    };
 
     // ==========================================
     // 4. ACCOUNTS LOGIC
@@ -2824,12 +2804,12 @@ function setDailyReminder() {
                     </div>
                 </div>`;
         });
-    }
+    };
 
     window.toggleAcctForm = function() {
         const f = document.getElementById('add-acct-form');
         if(f) f.style.display = f.style.display === 'block' ? 'none' : 'block';
-    }
+    };
 
     window.saveNewAccount = function() {
         const name = document.getElementById('acct-name').value;
@@ -2839,7 +2819,7 @@ function setDailyReminder() {
         toggleAcctForm();
         renderAccounts();
         document.getElementById('acct-name').value = "";
-    }
+    };
 
     window.deleteAccount = function(name) {
         if(confirm(`Delete "${name}"?`)) {
@@ -2847,7 +2827,7 @@ function setDailyReminder() {
             saveData();
             renderAccounts();
         }
-    }
+    };
 
 </script>
 </body>
