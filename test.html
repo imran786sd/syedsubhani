@@ -773,6 +773,43 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         gap: 15px;
     }
 }
+
+        /* --- BILL CARD STYLING --- */
+.bill-card {
+    display: flex;
+    justify-content: space-between; /* Pushes content to edges */
+    align-items: center;
+    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    transition: transform 0.2s;
+}
+
+.bill-card:active { transform: scale(0.98); }
+
+.bill-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1; /* Takes up all empty space */
+}
+
+.bill-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 80px; /* Ensures alignment even for small/big numbers */
+}
+
+.bill-amount {
+    font-family: 'Consolas', monospace; /* Monospace aligns numbers better */
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-main);
+}
     </style>
 </head>
 <body>
@@ -2664,12 +2701,13 @@ function setDailyReminder() {
     }
 
     // MAIN RENDER FUNCTION
+   // MAIN RENDER FUNCTION (Stylized & Aligned)
     window.renderBills = function() {
         const container = document.getElementById('calendar-grid');
         const listContainer = document.getElementById('bills-list-container');
         const title = document.getElementById('cal-month-title');
         
-        if(!container) return;
+        if(!container) return; 
         
         container.innerHTML = ""; 
         listContainer.innerHTML = "";
@@ -2700,7 +2738,7 @@ function setDailyReminder() {
             container.innerHTML += dayHtml;
         }
 
-        // 5. Draw Bills
+        // 5. Draw Bills (Aligned Version)
         const safeBills = window.bills || [];
         
         safeBills.sort((a,b) => a.day - b.day).forEach(b => {
@@ -2715,7 +2753,7 @@ function setDailyReminder() {
             const isPaid = !!paidTx;
             const isOverdue = !isPaid && isCurrentMonth && b.day < currentDay;
 
-            // Dot
+            // Calendar Dot
             const dotContainer = document.getElementById(`day-dots-${b.day}`);
             if(dotContainer) {
                 let dotClass = 'dot-due';
@@ -2724,25 +2762,38 @@ function setDailyReminder() {
                 dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
             }
 
-            // List Card
+            // List Card Status
             const statusText = isPaid ? "Paid" : (isOverdue ? "Overdue" : "Due");
             const statusClass = isPaid ? "status-paid" : (isOverdue ? "status-overdue" : "status-due");
             
+            // --- NEW ALIGNED HTML STRUCTURE ---
             listContainer.innerHTML += `
                 <div class="bill-card">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="width:40px; height:40px; border-radius:10px; background:${b.color}; display:flex; align-items:center; justify-content:center; color:white; font-size:1.1rem;">
+                    <div class="bill-left">
+                        <div style="width:42px; height:42px; border-radius:12px; background:${b.color}; display:flex; align-items:center; justify-content:center; color:white; font-size:1.1rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
                             <i class="fa-solid ${b.icon}"></i>
                         </div>
                         <div>
-                            <div style="font-weight:700; font-size:0.95rem;">${b.name}</div>
-                            <div class="${statusClass}">${statusText} • ${b.day}${getOrdinal(b.day)}</div>
+                            <div style="font-weight:700; font-size:0.95rem; margin-bottom:2px;">${b.name}</div>
+                            <div class="${statusClass}" style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.7rem;">
+                                ${statusText} • ${b.day}${getOrdinal(b.day)}
+                            </div>
                         </div>
                     </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:700; font-family:'Consolas';">${formatMoney(b.amount)}</div>
-                        ${!isPaid ? `<button onclick="payBill('${b.name}', ${b.amount})" style="font-size:0.7rem; padding:5px 10px; margin-top:5px; background:rgba(255,255,255,0.1); color:var(--text-main); border:1px solid var(--glass-border); border-radius:6px; cursor:pointer;">Pay</button>` : '<div style="font-size:0.7rem; color:#10b981; margin-top:5px;"><i class="fa-solid fa-check"></i> Done</div>'}
-                        ${!isPaid ? `<div style="font-size:0.65rem; color:var(--danger); margin-top:5px; cursor:pointer; opacity:0.6;" onclick="deleteBill('${b.name}')">Remove</div>` : ''}
+
+                    <div class="bill-right">
+                        <div class="bill-amount">${formatMoney(b.amount)}</div>
+                        
+                        ${!isPaid ? 
+                            `<button onclick="payBill('${b.name}', ${b.amount})" style="margin-top:6px; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); padding:4px 10px; border-radius:6px; font-size:0.75rem; color:var(--text-main); cursor:pointer;">Pay</button>` 
+                            : 
+                            `<div style="margin-top:6px; font-size:0.75rem; color:#10b981;"><i class="fa-solid fa-check"></i> Done</div>`
+                        }
+                        
+                        ${!isPaid ? 
+                            `<div onclick="deleteBill('${b.name}')" style="font-size:0.65rem; color:var(--danger); margin-top:5px; opacity:0.6; cursor:pointer;">Remove</div>` 
+                            : ''
+                        }
                     </div>
                 </div>`;
         });
