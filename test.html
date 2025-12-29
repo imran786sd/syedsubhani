@@ -1121,7 +1121,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         </div>
 
     <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
-    
+    <input type="hidden" id="bill-logo-url" value="">
     <select id="preset-cat-select" class="calc-pill-select" style="width:100%; margin-bottom:10px; font-weight:bold; color:var(--primary);" onchange="renderCategoryPresets()">
         <option value="" disabled selected>✨ Select Category to Auto-fill</option>
         <option value="ott">🎬 Movies & OTT</option>
@@ -2972,22 +2972,44 @@ function setDailyReminder() {
         if(f) f.style.display = (f.style.display === 'block') ? 'none' : 'block';
     };
 
+    // 2. SAVE NEW BILL (With Logo Support)
+    // 2. SAVE NEW BILL (With Logo Support & UI Refresh)
     window.saveNewBill = function() {
         const name = document.getElementById('bill-name').value;
         const amount = parseFloat(document.getElementById('bill-amount').value);
         const day = parseInt(document.getElementById('bill-day').value);
         const color = document.getElementById('bill-color').value;
         const icon = document.getElementById('bill-icon').value;
+        const logo = document.getElementById('bill-logo-url').value; // Get the logo
+        
+        if(!name || !amount || !day) return alert("Please fill all details");
 
-        if(!name || !amount) return alert("Fill all fields");
-        
-        const amtUSD = amount / currentRate;
         if(!window.bills) window.bills = [];
-        window.bills.push({ name, amount: amtUSD, day, color, icon });
         
-        saveData();
-        toggleBillForm();
-        window.renderBills();
+        // Save the Bill Object
+        window.bills.push({ 
+            name, 
+            amount, 
+            day, 
+            color, 
+            icon, 
+            logo: logo 
+        });
+        
+        saveData(); // Save to storage
+
+        // --- MISSING UI CLEANUP STEPS (ADD THESE) ---
+        
+        // 1. Clear the inputs so they are empty for next time
+        document.getElementById('bill-name').value = "";
+        document.getElementById('bill-amount').value = "";
+        document.getElementById('bill-logo-url').value = "";
+        
+        // 2. Hide the form
+        document.getElementById('add-bill-form').style.display = 'none';
+        
+        // 3. Refresh the list immediately so you see the new bill
+        renderBills(); 
     };
 
     window.payBill = function(name, amount) {
@@ -3245,68 +3267,75 @@ function setDailyReminder() {
     // CATEGORY-WISE PRESETS
     // ==========================================
     
+    // ==========================================
+    // BRANDED PRESETS (Official Logos)
+    // ==========================================
     const presetData = {
         'ott': [
-            { name: "Netflix Mobile", price: 149, icon: "fa-film", color: "#E50914" },
-            { name: "Netflix Basic", price: 199, icon: "fa-film", color: "#E50914" },
-            { name: "Prime Video", price: 299, icon: "fa-film", color: "#00A8E1" },
-            { name: "Disney+ Hotstar", price: 149, icon: "fa-tv", color: "#1f80e0" },
-            { name: "SonyLiv", price: 299, icon: "fa-play", color: "#f05a28" },
-            { name: "Zee5", price: 119, icon: "fa-closed-captioning", color: "#ff0095" }
+            { name: "Netflix", price: 149, icon: "fa-film", color: "#000000", logo: "https://upload.wikimedia.org/wikipedia/commons/7/75/Netflix_icon.svg" },
+            { name: "Prime Video", price: 299, icon: "fa-film", color: "#00A8E1", logo: "https://upload.wikimedia.org/wikipedia/commons/b/b9/Amazon_Prime_Video_logo.svg" },
+            { name: "Hotstar", price: 149, icon: "fa-tv", color: "#133ba2", logo: "https://secure-media.hotstarext.com/web-assets/prod/images/brand-logos/disney-hotstar-logo-dark.svg" },
+            { name: "YouTube Prem", price: 129, icon: "fa-play", color: "#FF0000", logo: "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg" },
+            { name: "SonyLiv", price: 299, icon: "fa-play", color: "#f05a28", logo: "https://images.samsung.com/is/image/samsung/assets/in/tvs/smart-tv/apps-on-smart-tv/sonyliv.png?$ORIGIN_PNG$" }
         ],
         'music': [
-            { name: "Spotify Individual", price: 119, icon: "fa-music", color: "#1DB954" },
-            { name: "Spotify Duo", price: 149, icon: "fa-music", color: "#1DB954" },
-            { name: "YouTube Music", price: 99, icon: "fa-play", color: "#FF0000" },
-            { name: "Apple Music", price: 99, icon: "fa-music", color: "#FA243C" },
-            { name: "JioSaavn", price: 99, icon: "fa-music", color: "#2bc5b4" }
-        ],
-        'utilities': [
-            { name: "Electricity Bill", price: 0, icon: "fa-bolt", color: "#F59E0B" },
-            { name: "Water Bill", price: 0, icon: "fa-faucet-drip", color: "#3B82F6" },
-            { name: "Gas Cylinder", price: 900, icon: "fa-fire", color: "#EF4444" },
-            { name: "Rent", price: 0, icon: "fa-house", color: "#10B981" }
+            { name: "Spotify", price: 119, icon: "fa-music", color: "#1DB954", logo: "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg" },
+            { name: "Apple Music", price: 99, icon: "fa-music", color: "#FA243C", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_Music_icon.svg" }, // Fallback to generic music note if needed, but Amazon Music logo here for example
+            { name: "JioSaavn", price: 99, icon: "fa-music", color: "#2bc5b4", logo: "https://upload.wikimedia.org/wikipedia/commons/e/e8/JioSaavn_Logo.svg" }
         ],
         'internet': [
-            { name: "JioFiber", price: 699, icon: "fa-wifi", color: "#0f62fe" },
-            { name: "Airtel Xstream", price: 499, icon: "fa-wifi", color: "#ed1c24" },
-            { name: "ACT Fibernet", price: 799, icon: "fa-network-wired", color: "#10b981" },
-            { name: "Mobile Recharge", price: 299, icon: "fa-mobile-screen", color: "#8B5CF6" }
+            { name: "JioFiber", price: 699, icon: "fa-wifi", color: "#0f62fe", logo: "https://upload.wikimedia.org/wikipedia/commons/5/50/Jio_Logo.png" },
+            { name: "Airtel", price: 499, icon: "fa-wifi", color: "#ed1c24", logo: "https://upload.wikimedia.org/wikipedia/commons/b/bd/Airtel_logo_2010.svg" },
+            { name: "Google One", price: 130, icon: "fa-cloud", color: "#4285F4", logo: "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" }
+        ],
+        // Manual categories use generic icons (no logos)
+        'utilities': [
+            { name: "Electricity", price: 0, icon: "fa-bolt", color: "#F59E0B", logo: "" },
+            { name: "Rent", price: 0, icon: "fa-house", color: "#10B981", logo: "" }
         ]
     };
 
+    // 1. RENDER PRESET CHIPS (With Logos)
     window.renderCategoryPresets = function() {
         const cat = document.getElementById('preset-cat-select').value;
         const container = document.getElementById('preset-options');
         
-        // Clear previous options
         container.innerHTML = "";
         
-        // If Manual, hide chips and clear fields
         if(cat === 'manual' || !presetData[cat]) {
             container.style.display = 'none';
+            // Clear inputs
             document.getElementById('bill-name').value = "";
             document.getElementById('bill-amount').value = "";
+            document.getElementById('bill-logo-url').value = ""; // Clear logo
             return;
         }
 
-        // Show Container
         container.style.display = 'flex';
 
-        // Loop through data and create chips
         presetData[cat].forEach(sub => {
             const chip = document.createElement('div');
             chip.className = 'preset-chip';
-            chip.innerHTML = `<i class="fa-solid ${sub.icon}" style="color:${sub.color}"></i> ${sub.name}`;
+            
+            // Check: Use Image if available, else use Icon
+            if(sub.logo) {
+                chip.innerHTML = `<img src="${sub.logo}" style="width:16px; height:16px; object-fit:contain;"> ${sub.name}`;
+            } else {
+                chip.innerHTML = `<i class="fa-solid ${sub.icon}" style="color:${sub.color}"></i> ${sub.name}`;
+            }
             
             chip.onclick = function() {
-                // Auto-fill Form
                 document.getElementById('bill-name').value = sub.name;
-                document.getElementById('bill-amount').value = sub.price > 0 ? sub.price : ""; // Leave empty if 0 (like Bill)
+                document.getElementById('bill-amount').value = sub.price || "";
+                
+                // Set Icon & Color Dropdowns
                 document.getElementById('bill-icon').value = sub.icon;
                 document.getElementById('bill-color').value = sub.color;
                 
-                // Highlight Effect
+                // IMPORTANT: Save the Logo URL
+                document.getElementById('bill-logo-url').value = sub.logo || "";
+                
+                // Highlight
                 document.querySelectorAll('.preset-chip').forEach(c => c.style.borderColor = "var(--glass-border)");
                 this.style.borderColor = "var(--primary)";
             };
