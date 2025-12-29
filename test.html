@@ -2786,15 +2786,21 @@ function setDailyReminder() {
    // ==========================================
     // 1. HELPER: CORRECT DATE SUFFIXES (11th, 21st, etc.)
     // ==========================================
+    // ==========================================
+    // FIX: DATE SUFFIXES (Returns "th", "st", "nd" ONLY)
+    // ==========================================
     window.getOrdinal = function(n) {
-        if (n > 3 && n < 21) return "th"; // Fixes 11th, 12th, 13th
+        // Handle special cases (11, 12, 13 are always "th")
+        if (n > 3 && n < 21) return "th"; 
+        
+        // Handle standard cases
         switch (n % 10) {
             case 1:  return "st";
             case 2:  return "nd";
             case 3:  return "rd";
             default: return "th";
         }
-    }
+    };
 
     // ==========================================
     // 2. HELPER: CALENDAR NAVIGATION
