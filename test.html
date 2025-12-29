@@ -646,6 +646,95 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px;
     border: 1px dashed var(--glass-border); margin-bottom: 20px; display: none;
 }
+
+        /* --- PRO CALENDAR STYLES --- */
+.calendar-wrapper {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px; /* Big rounded corners like the image */
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.calendar-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px;
+    padding: 0 10px;
+}
+
+/* The Grid Container */
+.calendar-grid { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 5px; /* Tighter gap */
+    width: 100%;
+}
+
+/* Day Labels (S M T W...) */
+.cal-day-label { 
+    text-align: center; 
+    color: var(--text-muted); 
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    margin-bottom: 10px;
+    opacity: 0.7;
+}
+
+/* Individual Day Cell */
+.cal-day {
+    aspect-ratio: 1/1; /* Keeps it square */
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    border-radius: 50%; /* Circular selection like iOS */
+    font-size: 0.9rem; 
+    font-weight: 500;
+    position: relative;
+    cursor: pointer;
+    border: 2px solid transparent; /* Reserve space for border */
+    transition: all 0.2s ease;
+    color: var(--text-main);
+}
+
+/* Hover Effect */
+.cal-day:hover:not(.empty) { 
+    background: rgba(255,255,255,0.1); 
+}
+
+/* "Today" State (Solid Circle) */
+.cal-day.today { 
+    background: var(--primary); 
+    color: #000; 
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(45, 212, 191, 0.4);
+}
+
+/* "Has Bill" State (Indicator Dot) */
+.cal-dot-container {
+    position: absolute;
+    bottom: 4px;
+    display: flex;
+    gap: 2px;
+}
+
+.cal-icon-dot {
+    width: 5px; 
+    height: 5px; 
+    border-radius: 50%; 
+    background-color: var(--text-muted);
+}
+
+/* Status Colors for Dots */
+.dot-paid { background-color: #10b981; }   /* Green */
+.dot-due { background-color: var(--text-muted); } /* Gray */
+.dot-overdue { background-color: #ef4444; } /* Red */
+
+/* Empty slots for spacing */
+.cal-day.empty { pointer-events: none; }
         
     </style>
 </head>
@@ -894,53 +983,83 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     </div>
 
     <div id="subview-bills" style="display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <div class="chart-title">Recurring Bills</div>
-            <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleBillForm()">
-                <i class="fa-solid fa-plus"></i>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div class="chart-title">Recurring Bills</div>
+        <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleBillForm()">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
+
+    <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
+        <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;">
+        <div class="input-row">
+            <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
+            <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
+        </div>
+        <div class="input-row" style="margin-top:10px;">
+            <select id="bill-color" class="calc-pill-select" style="flex:1;">
+                <option value="#e50914">Netflix Red</option>
+                <option value="#1db954">Spotify Green</option>
+                <option value="#ffffff">Apple White</option>
+                <option value="#00a8e8">Prime Blue</option>
+                <option value="#f59e0b">Orange</option>
+                <option value="#8b5cf6">Purple</option>
+            </select>
+            <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+                <option value="fa-film">&#xf008; Movie</option>
+                <option value="fa-bolt">&#xf0e7; Utility</option>
+                <option value="fa-wifi">&#xf1eb; Net</option>
+                <option value="fa-mobile-screen">&#xf3cd; Phone</option>
+                <option value="fa-dumbbell">&#xf44b; Gym</option>
+                <option value="fa-music">&#xf001; Music</option>
+            </select>
+        </div>
+        <button class="btn-goal-add" onclick="saveNewBill()" style="margin-top:10px; background:var(--primary); color:black;">Save Subscription</button>
+    </div>
+
+    <div class="calendar-wrapper">
+        
+        <div class="calendar-header">
+            <button class="chart-switch-btn" onclick="changeBillMonth(-1)">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div id="cal-month-title" style="font-weight:800; font-size:1.1rem; letter-spacing:0.5px;">
+                ...
+            </div>
+            <button class="chart-switch-btn" onclick="changeBillMonth(1)">
+                <i class="fa-solid fa-chevron-right"></i>
             </button>
         </div>
-
-        <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
-            <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;">
-            <div class="input-row">
-                <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
-                <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
-            </div>
-            <div class="input-row" style="margin-top:10px;">
-                <select id="bill-color" class="calc-pill-select" style="flex:1;">
-                    <option value="#e50914">Netflix Red</option>
-                    <option value="#1db954">Spotify Green</option>
-                    <option value="#ffffff">Apple White</option>
-                    <option value="#00a8e8">Prime Blue</option>
-                    <option value="#f59e0b">Orange</option>
-                    <option value="#8b5cf6">Purple</option>
-                </select>
-                <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
-                    <option value="fa-film">&#xf008; Movie</option>
-                    <option value="fa-bolt">&#xf0e7; Utility</option>
-                    <option value="fa-wifi">&#xf1eb; Net</option>
-                    <option value="fa-mobile-screen">&#xf3cd; Phone</option>
-                </select>
-            </div>
-            <button class="btn-goal-add" onclick="saveNewBill()" style="margin-top:10px; background:var(--primary); color:black;">Save Subscription</button>
-        </div>
-
-        <div class="calendar-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <button class="chart-switch-btn" onclick="changeBillMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-            <div id="cal-month-title" style="font-weight:700; font-size:1rem;">...</div>
-            <button class="chart-switch-btn" onclick="changeBillMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
-        </div>
         
-        <div class="calendar-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; margin-bottom:5px;">
-            <div class="cal-day-label">S</div><div class="cal-day-label">M</div><div class="cal-day-label">T</div>
-            <div class="cal-day-label">W</div><div class="cal-day-label">T</div><div class="cal-day-label">F</div>
+        <div class="calendar-grid" style="margin-bottom:10px;">
+            <div class="cal-day-label">S</div>
+            <div class="cal-day-label">M</div>
+            <div class="cal-day-label">T</div>
+            <div class="cal-day-label">W</div>
+            <div class="cal-day-label">T</div>
+            <div class="cal-day-label">F</div>
             <div class="cal-day-label">S</div>
         </div>
-        <div id="calendar-grid" class="calendar-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; margin-bottom:20px;"></div>
+        
+        <div id="calendar-grid" class="calendar-grid"></div>
 
-        <div id="bills-list-container"></div>
+        <div style="display:flex; gap:15px; margin-top:20px; justify-content:center; font-size:0.75rem; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
+            <div style="display:flex; align-items:center; gap:5px;">
+                <div class="cal-icon-dot dot-overdue" style="width:8px; height:8px;"></div> Overdue
+            </div>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <div class="cal-icon-dot dot-due" style="width:8px; height:8px;"></div> Upcoming
+            </div>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <div class="cal-icon-dot dot-paid" style="width:8px; height:8px;"></div> Paid
+            </div>
+        </div>
+
     </div>
+
+    <div id="bills-list-container"></div>
+</div>
 
     <div id="subview-accounts" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -2550,6 +2669,154 @@ function setDailyReminder() {
             saveData();
             renderAccounts();
         }
+    }
+    // --- MISSING BILLS / SUBSCRIPTIONS LOGIC ---
+    
+    // 1. Calendar Navigation & State
+    window.bills = [];
+    let billViewDate = new Date();
+
+    window.changeBillMonth = function(dir) {
+        billViewDate.setMonth(billViewDate.getMonth() + dir);
+        renderBills();
+    }
+
+    // 2. Initialize Day Dropdown (Auto-run)
+    (function initBillForm() {
+        const sel = document.getElementById('bill-day');
+        if(sel) {
+            sel.innerHTML = "";
+            for(let i=1; i<=31; i++) sel.innerHTML += `<option value="${i}">${i}th</option>`;
+        }
+    })();
+
+    // 3. MAIN RENDER FUNCTION
+    window.renderBills = function() {
+        const container = document.getElementById('calendar-grid');
+        const listContainer = document.getElementById('bills-list-container');
+        const title = document.getElementById('cal-month-title');
+        
+        if(!container) return;
+        container.innerHTML = ""; 
+        listContainer.innerHTML = "";
+        
+        const year = billViewDate.getFullYear();
+        const month = billViewDate.getMonth();
+        title.innerText = billViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+        const currentDay = today.getDate();
+
+        // A. Render Empty Slots (Padding)
+        for(let i=0; i<firstDay; i++) {
+            container.innerHTML += `<div class="cal-day empty"></div>`;
+        }
+
+        // B. Render Days
+        for(let d=1; d<=daysInMonth; d++) {
+            let dayHtml = `<div class="cal-day ${isCurrentMonth && d === currentDay ? 'today' : ''}">
+                              <div>${d}</div>
+                              <div class="cal-dot-container" id="day-dots-${d}"></div>
+                           </div>`;
+            container.innerHTML += dayHtml;
+        }
+
+        // C. Render Bill Dots & List
+        if(!window.bills) window.bills = [];
+        
+        window.bills.sort((a,b) => a.day - b.day).forEach(b => {
+            // Check Smart Status (Search transactions for "Netflix" etc.)
+            const paidTx = window.transactions.find(t => {
+                const txDate = new Date(t.date);
+                return txDate.getMonth() === month && 
+                       txDate.getFullYear() === year && 
+                       t.type === 'expense' &&
+                       t.desc.toLowerCase().includes(b.name.toLowerCase());
+            });
+
+            const isPaid = !!paidTx;
+            const isOverdue = !isPaid && isCurrentMonth && b.day < currentDay;
+
+            // 1. Add Dot to Calendar (Clean Style)
+            const dotContainer = document.getElementById(`day-dots-${b.day}`);
+            if(dotContainer) {
+                let dotClass = 'dot-due';
+                if(isPaid) dotClass = 'dot-paid';
+                else if(isOverdue) dotClass = 'dot-overdue';
+                
+                // Add the dot
+                dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
+            }
+
+            // 2. Add Card to List
+            const statusText = isPaid ? "Paid" : (isOverdue ? "Overdue" : "Due");
+            const statusClass = isPaid ? "status-paid" : (isOverdue ? "status-overdue" : "status-due");
+            
+            listContainer.innerHTML += `
+                <div class="bill-card">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:40px; height:40px; border-radius:10px; background:${b.color}; display:flex; align-items:center; justify-content:center; color:white; font-size:1.1rem;">
+                            <i class="fa-solid ${b.icon}"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:0.95rem;">${b.name}</div>
+                            <div class="${statusClass}">${statusText} • ${b.day}${getOrdinal(b.day)}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:700; font-family:'Consolas';">${formatMoney(b.amount)}</div>
+                        ${!isPaid ? `<button onclick="payBill('${b.name}', ${b.amount})" style="font-size:0.7rem; padding:5px 10px; margin-top:5px; background:rgba(255,255,255,0.1); color:var(--text-main); border:1px solid var(--glass-border); border-radius:6px; cursor:pointer;">Pay</button>` : '<div style="font-size:0.7rem; color:#10b981; margin-top:5px;"><i class="fa-solid fa-check"></i> Done</div>'}
+                        ${!isPaid ? `<div style="font-size:0.65rem; color:var(--danger); margin-top:5px; cursor:pointer; opacity:0.6;" onclick="deleteBill('${b.name}')">Remove</div>` : ''}
+                    </div>
+                </div>`;
+        });
+    }
+
+    // 4. Form & Actions
+    window.toggleBillForm = function() {
+        const f = document.getElementById('add-bill-form');
+        f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    }
+
+    window.saveNewBill = function() {
+        const name = document.getElementById('bill-name').value;
+        const amount = parseFloat(document.getElementById('bill-amount').value);
+        const day = parseInt(document.getElementById('bill-day').value);
+        const color = document.getElementById('bill-color').value;
+        const icon = document.getElementById('bill-icon').value;
+
+        if(!name || !amount) return alert("Fill all fields");
+        
+        // Convert to USD for storage
+        const amtUSD = amount / currentRate;
+        
+        window.bills.push({ name, amount: amtUSD, day, color, icon });
+        saveData();
+        toggleBillForm();
+        renderBills();
+    }
+
+    window.payBill = function(name, amount) {
+        openCalc();
+        setCalcType('expense');
+        // We set the Note to the bill name so "Smart Status" can detect it later!
+        document.getElementById('calc-cat').value = "Bills"; 
+        document.getElementById('calc-note').value = name; 
+    }
+
+    window.deleteBill = function(name) {
+        if(confirm("Stop tracking this subscription?")) {
+            window.bills = window.bills.filter(b => b.name !== name);
+            saveData();
+            renderBills();
+        }
+    }
+
+    function getOrdinal(n) { 
+        return ["th","st","nd","rd"][(n%100>10&&n%100<20)?0:(n%10<4)?n%10:0]; 
     }
 
 </script>
