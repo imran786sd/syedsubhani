@@ -817,12 +817,101 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             </div>
 
             <div id="view-categories" class="view-container">
-                <div class="cat-section-title">Income Categories</div>
-                <div id="cat-list-income"></div>
+    
+    <div class="custom-tabs-header">
+        <button class="tab-link-btn active" onclick="switchManageView('cats', this)">
+            Categories
+        </button>
+        <button class="tab-link-btn" onclick="switchManageView('bills', this)">
+            Subscriptions
+        </button>
+        <button class="tab-link-btn" onclick="switchManageView('accounts', this)">
+            Accounts
+        </button>
+    </div>
 
-                <div class="cat-section-title">Expense Categories</div>
-                <div id="cat-list-expense"></div>
+    <div id="subview-cats">
+        <div class="cat-section-title">Income Categories</div>
+        <div id="cat-list-income"></div>
+
+        <div class="cat-section-title">Expense Categories</div>
+        <div id="cat-list-expense"></div>
+    </div>
+
+    <div id="subview-bills" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div class="chart-title">Recurring Bills</div>
+            <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleBillForm()">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
+            <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;">
+            <div class="input-row">
+                <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
+                <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
             </div>
+            <div class="input-row" style="margin-top:10px;">
+                <select id="bill-color" class="calc-pill-select" style="flex:1;">
+                    <option value="#e50914">Netflix Red</option>
+                    <option value="#1db954">Spotify Green</option>
+                    <option value="#ffffff">Apple White</option>
+                    <option value="#00a8e8">Prime Blue</option>
+                    <option value="#f59e0b">Orange</option>
+                    <option value="#8b5cf6">Purple</option>
+                </select>
+                <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+                    <option value="fa-film">&#xf008; Movie</option>
+                    <option value="fa-bolt">&#xf0e7; Utility</option>
+                    <option value="fa-wifi">&#xf1eb; Net</option>
+                    <option value="fa-mobile-screen">&#xf3cd; Phone</option>
+                </select>
+            </div>
+            <button class="btn-goal-add" onclick="saveNewBill()" style="margin-top:10px; background:var(--primary); color:black;">Save Subscription</button>
+        </div>
+
+        <div class="calendar-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <button class="chart-switch-btn" onclick="changeBillMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+            <div id="cal-month-title" style="font-weight:700; font-size:1rem;">...</div>
+            <button class="chart-switch-btn" onclick="changeBillMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        
+        <div class="calendar-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; margin-bottom:5px;">
+            <div class="cal-day-label">S</div><div class="cal-day-label">M</div><div class="cal-day-label">T</div>
+            <div class="cal-day-label">W</div><div class="cal-day-label">T</div><div class="cal-day-label">F</div>
+            <div class="cal-day-label">S</div>
+        </div>
+        <div id="calendar-grid" class="calendar-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; margin-bottom:20px;"></div>
+
+        <div id="bills-list-container"></div>
+    </div>
+
+    <div id="subview-accounts" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div class="chart-title">Payment Methods</div>
+            <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleAcctForm()">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <div id="add-acct-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
+            <input type="text" id="acct-name" class="calc-pill-select" placeholder="Account Name (e.g. HDFC Bank)" style="width:100%; font-weight:bold; margin-bottom:10px;">
+            <div class="input-row">
+                <select id="acct-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+                    <option value="fa-building-columns">&#xf19c; Bank</option>
+                    <option value="fa-wallet">&#xf555; Wallet</option>
+                    <option value="fa-credit-card">&#xf09d; Card</option>
+                    <option value="fa-money-bill-1">&#xf3d1; Cash</option>
+                </select>
+            </div>
+            <button class="btn-goal-add" onclick="saveNewAccount()" style="margin-top:10px; background:var(--secondary); color:black;">Add Account</button>
+        </div>
+
+        <div id="accounts-list-container"></div>
+    </div>
+
+</div>
             <div id="view-debts" class="view-container">
     <div class="stat-card" style="margin-bottom:20px; background:rgba(168, 85, 247, 0.1); border-color:#a855f7;">
         <span class="stat-title" style="color:#a855f7">Net Outstanding</span>
@@ -1037,6 +1126,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     async function loadData() {
         // 1. LOAD LOCAL (Instant Display)
         const localData = localStorage.getItem('budget_data_local');
+        window.accounts = parsed.accounts || ["Cash", "Card", "PhonePe", "GPay", "NetBanking"];
         if (localData) {
             try {
                 const parsed = JSON.parse(localData);
@@ -1106,6 +1196,8 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         const localObj = {
             transactions: window.transactions,
             goals: window.goals,
+            bills: window.bills,
+            accounts: window.accounts, // <--- Add this!
             lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('budget_data_local', JSON.stringify(localObj));
@@ -1318,6 +1410,19 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     window.openCalc = function(isEdit = false) {
         document.getElementById('calc-modal').style.display = 'flex';
         
+        // --- NEW CODE START: Populate Methods dynamically ---
+        const methodSelect = document.getElementById('calc-method');
+        if(methodSelect && window.accounts) {
+            methodSelect.innerHTML = "";
+            window.accounts.forEach(acc => {
+                const opt = document.createElement('option');
+                opt.value = acc;
+                opt.innerText = acc;
+                methodSelect.appendChild(opt);
+            });
+        }
+        // --- NEW CODE END ---
+
         // Set Date to Today
         const today = new Date();
         const yyyy = today.getFullYear();
@@ -1327,7 +1432,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
         if(!isEdit) {
             editingId = null; 
-            setCalcType('income'); // <--- CHANGED THIS to 'income'
+            setCalcType('income'); 
             calcString = "0"; 
             document.getElementById('calc-note').value = ""; 
             
@@ -2276,6 +2381,90 @@ function setDailyReminder() {
                     lastUpdated: new Date()
                 }, { merge: true });
             } catch(e) { console.error(e); }
+        }
+    }
+
+    // --- MANAGE HUB LOGIC ---
+    window.switchManageView = function(view, btn) {
+        // 1. Reset Tabs
+        const btns = btn.parentNode.querySelectorAll('button');
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // 2. Hide All Views
+        document.getElementById('subview-cats').style.display = 'none';
+        document.getElementById('subview-bills').style.display = 'none';
+        document.getElementById('subview-accounts').style.display = 'none';
+
+        // 3. Show Selected
+        if(view === 'cats') {
+            document.getElementById('subview-cats').style.display = 'block';
+            renderCategories(filterData());
+        } else if(view === 'bills') {
+            document.getElementById('subview-bills').style.display = 'block';
+            renderBills();
+        } else if(view === 'accounts') {
+            document.getElementById('subview-accounts').style.display = 'block';
+            renderAccounts();
+        }
+    }
+
+    // --- ACCOUNTS / METHODS LOGIC ---
+    // Default accounts if none exist
+    window.accounts = ["Cash", "Card", "PhonePe", "GPay", "NetBanking"]; 
+    
+    function renderAccounts() {
+        const container = document.getElementById('accounts-list-container');
+        container.innerHTML = "";
+        
+        window.accounts.forEach((acc, index) => {
+            // Pick an icon based on name (Smart auto-icon)
+            let icon = "fa-wallet";
+            const lower = acc.toLowerCase();
+            if(lower.includes("bank") || lower.includes("hdfc") || lower.includes("sbi")) icon = "fa-building-columns";
+            if(lower.includes("card") || lower.includes("visa")) icon = "fa-credit-card";
+            if(lower.includes("cash")) icon = "fa-money-bill-1";
+            if(lower.includes("pay")) icon = "fa-mobile-screen-button";
+
+            container.innerHTML += `
+                <div class="cat-list-item">
+                    <div class="cat-left">
+                        <div class="cat-icon-circle" style="background:rgba(251, 191, 36, 0.1); color:var(--secondary);">
+                            <i class="fa-solid ${icon}"></i>
+                        </div>
+                        <div class="cat-name">${acc}</div>
+                    </div>
+                    <div class="cat-right">
+                        <button onclick="deleteAccount('${acc}')" style="background:none; border:none; color:var(--danger); cursor:pointer;">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    window.toggleAcctForm = function() {
+        const f = document.getElementById('add-acct-form');
+        f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    }
+
+    window.saveNewAccount = function() {
+        const name = document.getElementById('acct-name').value;
+        if(!name) return alert("Enter Name");
+        
+        window.accounts.push(name);
+        saveData(); // Save to memory/cloud
+        toggleAcctForm();
+        renderAccounts();
+        document.getElementById('acct-name').value = "";
+    }
+
+    window.deleteAccount = function(name) {
+        if(confirm(`Delete "${name}"? Existing transactions will keep this tag.`)) {
+            window.accounts = window.accounts.filter(a => a !== name);
+            saveData();
+            renderAccounts();
         }
     }
 
