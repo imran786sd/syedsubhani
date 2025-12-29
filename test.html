@@ -2783,7 +2783,33 @@ function setDailyReminder() {
     }
 
     // MAIN RENDER FUNCTION (Aligned + Filters + Counts)
-   // MAIN RENDER FUNCTION (With "Matched By" Debugging)
+   // ==========================================
+    // 1. HELPER: CORRECT DATE SUFFIXES (11th, 21st, etc.)
+    // ==========================================
+    window.getOrdinal = function(n) {
+        if (n > 3 && n < 21) return "th"; // Fixes 11th, 12th, 13th
+        switch (n % 10) {
+            case 1:  return "st";
+            case 2:  return "nd";
+            case 3:  return "rd";
+            default: return "th";
+        }
+    }
+
+    // ==========================================
+    // 2. HELPER: CALENDAR NAVIGATION
+    // ==========================================
+    // Ensure this variable exists at the top of your script
+    if(typeof billViewDate === 'undefined') window.billViewDate = new Date();
+
+    window.changeBillMonth = function(dir) {
+        window.billViewDate.setMonth(window.billViewDate.getMonth() + dir);
+        renderBills(); // Re-render with new date
+    };
+
+    // ==========================================
+    // 3. MAIN RENDER FUNCTION (Fixed Logic)
+    // ==========================================
     window.renderBills = function() {
         const container = document.getElementById('calendar-grid');
         const listContainer = document.getElementById('bills-list-container');
@@ -2795,9 +2821,11 @@ function setDailyReminder() {
         container.innerHTML = ""; 
         listContainer.innerHTML = "";
         
-        // 1. Setup Dates
+        // --- A. Setup Dates & Title ---
         const year = billViewDate.getFullYear();
         const month = billViewDate.getMonth();
+        
+        // Update Title (e.g., "October 2025")
         if(title) title.innerText = billViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
         const firstDay = new Date(year, month, 1).getDay();
@@ -2806,10 +2834,9 @@ function setDailyReminder() {
         const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
         const currentDay = today.getDate();
 
-        // 2. Draw Calendar Empty Slots
+        // --- B. Draw Calendar ---
         for(let i=0; i<firstDay; i++) container.innerHTML += `<div class="cal-day empty"></div>`;
 
-        // 3. Draw Calendar Days
         for(let d=1; d<=daysInMonth; d++) {
             let dayHtml = `<div class="cal-day ${isCurrentMonth && d === currentDay ? 'today' : ''}">
                               <div>${d}</div>
@@ -2818,14 +2845,12 @@ function setDailyReminder() {
             container.innerHTML += dayHtml;
         }
 
-        // --- 4. CALCULATE STATUS & COUNTS ---
+        // --- C. Process Bills ---
         const safeBills = window.bills || [];
-        let countPaid = 0;
-        let countOverdue = 0;
-        let countUpcoming = 0;
+        let countPaid = 0, countOverdue = 0, countUpcoming = 0;
 
         const processedBills = safeBills.sort((a,b) => a.day - b.day).map(b => {
-            // Find the SPECIFIC transaction that triggered "Paid"
+            // Check History for Payments
             const paidTx = window.transactions.find(t => {
                 const txDate = new Date(t.date);
                 return txDate.getMonth() === month && 
@@ -2842,11 +2867,10 @@ function setDailyReminder() {
             else if(isOverdue) countOverdue++;
             else countUpcoming++;
 
-            // Pass the transaction name along so we can show it
             return { ...b, isPaid, isOverdue, isUpcoming, paidBy: paidTx ? paidTx.desc : '' };
         });
 
-        // 5. Update Summary Text
+        // --- D. Update Summary Counts ---
         if(summaryContainer) {
             summaryContainer.innerHTML = `
                 <div class="cal-sum-item"><div class="cal-icon-dot dot-due"></div> ${countUpcoming} Upcoming</div>
@@ -2855,27 +2879,25 @@ function setDailyReminder() {
             `;
         }
 
-        // 6. Render Dots & List
+        // --- E. Render List Cards ---
         processedBills.forEach(b => {
-            // A. Draw Dot
+            // 1. Calendar Dots
             const dotContainer = document.getElementById(`day-dots-${b.day}`);
             if(dotContainer) {
-                let dotClass = 'dot-due';
-                if(b.isPaid) dotClass = 'dot-paid';
-                else if(b.isOverdue) dotClass = 'dot-overdue';
+                let dotClass = b.isPaid ? 'dot-paid' : (b.isOverdue ? 'dot-overdue' : 'dot-due');
                 dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
             }
 
-            // B. Filter List
-            let shouldShow = false;
-            if(currentBillFilter === 'all') shouldShow = true;
-            if(currentBillFilter === 'paid' && b.isPaid) shouldShow = true;
-            if(currentBillFilter === 'overdue' && b.isOverdue) shouldShow = true;
-            if(currentBillFilter === 'upcoming' && b.isUpcoming) shouldShow = true;
+            // 2. Filter Check
+            let shouldShow = (currentBillFilter === 'all') || 
+                             (currentBillFilter === 'paid' && b.isPaid) ||
+                             (currentBillFilter === 'overdue' && b.isOverdue) ||
+                             (currentBillFilter === 'upcoming' && b.isUpcoming);
 
             if(shouldShow) {
                 const statusText = b.isPaid ? "Paid" : (b.isOverdue ? "Overdue" : "Due");
                 const statusClass = b.isPaid ? "status-paid" : (b.isOverdue ? "status-overdue" : "status-due");
+                const suffix = getOrdinal(b.day); // Uses the fixed function
 
                 listContainer.innerHTML += `
                     <div class="bill-card">
@@ -2889,7 +2911,7 @@ function setDailyReminder() {
                             <div>
                                 <div style="font-weight:700; font-size:0.95rem; margin-bottom:2px;">${b.name}</div>
                                 <div class="${statusClass}" style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.7rem;">
-                                    ${statusText} • ${b.day}${getOrdinal(b.day)}
+                                    ${statusText} • ${b.day}${suffix}
                                 </div>
                             </div>
                         </div>
@@ -2900,28 +2922,47 @@ function setDailyReminder() {
                             ${!b.isPaid ? 
                                 `<button onclick="payBill('${b.name}', ${b.amount})" style="margin-top:6px; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); padding:4px 10px; border-radius:6px; font-size:0.75rem; color:var(--text-main); cursor:pointer;">Pay</button>` 
                                 : 
-                                // SHOW WHY IT MATCHED
                                 `<div style="margin-top:6px; font-size:0.75rem; color:#10b981;">
                                     <i class="fa-solid fa-check"></i> Done
-                                    <div style="font-size:0.6rem; opacity:0.7; color:var(--text-muted); max-width:80px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                        via: "${b.paidBy}"
-                                    </div>
+                                    <div style="font-size:0.6rem; opacity:0.7;">via: "${b.paidBy}"</div>
                                  </div>`
                             }
                             
-                            ${!b.isPaid ? 
-                                `<div onclick="deleteBill('${b.name}')" style="font-size:0.65rem; color:var(--danger); margin-top:5px; opacity:0.6; cursor:pointer;">Remove</div>` 
-                                : ''
-                            }
+                            <div style="margin-top:8px; display:flex; gap:10px; justify-content:flex-end;">
+                                <div onclick="editBill('${b.name}', ${b.amount}, ${b.day}, '${b.color}', '${b.icon}', '${b.logo || ''}')" style="font-size:0.65rem; color:var(--text-muted); cursor:pointer; opacity:0.8;">Edit</div>
+                                <div onclick="deleteBill('${b.name}')" style="font-size:0.65rem; color:var(--danger); cursor:pointer; opacity:0.8;">Remove</div>
+                            </div>
                         </div>
                     </div>`;
             }
         });
         
         if(listContainer.innerHTML === "") {
-            listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.9rem;">No bills in this category.</div>`;
+            listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.9rem;">No bills found.</div>`;
         }
     };
+
+    // ==========================================
+    // 4. NEW: EDIT FUNCTION
+    // ==========================================
+    window.editBill = function(name, amount, day, color, icon, logo) {
+        // 1. Remove the old one first
+        deleteBill(name, false); // false = don't ask for confirmation
+        
+        // 2. Open Form
+        toggleBillForm();
+        
+        // 3. Fill Data
+        document.getElementById('bill-name').value = name;
+        document.getElementById('bill-amount').value = amount;
+        document.getElementById('bill-day').value = day;
+        document.getElementById('bill-color').value = color;
+        document.getElementById('bill-icon').value = icon;
+        document.getElementById('bill-logo-url').value = logo;
+        
+        // 4. Scroll to top
+        document.getElementById('add-bill-form').scrollIntoView({ behavior: 'smooth' });
+    }
 
     // ==========================================
     // 2. MANAGE HUB LOGIC
