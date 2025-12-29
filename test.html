@@ -837,6 +837,9 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                 <div class="header-top-row">
                     <div class="report-title" id="page-title">Dashboard</div>
                     <div class="header-controls">
+                        <button class="header-select" onclick="toggleTheme()" style="width:40px; padding:0; display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                            <i id="header-theme-icon" class="fa-solid fa-moon"></i>
+                        </button>
                         <div class="currency-wrapper">
                             <select id="currency" class="header-select" onchange="changeCurrency()">
                                 <option value="USD">USD ($)</option>
@@ -2444,22 +2447,32 @@ function setDailyReminder() {
     }
 
     function updateThemeUI(isLight) {
+        // 1. Update the New Header Icon
+        const headerIcon = document.getElementById('header-theme-icon');
+        if (headerIcon) {
+            headerIcon.className = isLight ? "fa-solid fa-sun" : "fa-solid fa-moon";
+            headerIcon.style.color = isLight ? "#f59e0b" : "var(--text-muted)"; // Gold Sun / Gray Moon
+        }
+
+        // 2. Update the Profile Button (If you kept it there)
         const icon = document.getElementById('theme-icon');
         const text = document.getElementById('theme-text');
         const toggle = document.getElementById('theme-toggle-icon');
-        
-        if(isLight) {
-            icon.className = "fa-solid fa-sun";
-            icon.style.color = "#f59e0b"; // Orange Sun
-            text.innerText = "Light Mode";
-            toggle.className = "fa-solid fa-toggle-on";
-            toggle.style.color = "var(--primary)";
-        } else {
-            icon.className = "fa-solid fa-moon";
-            icon.style.color = "var(--text-main)"; // Default text color
-            text.innerText = "Dark Mode";
-            toggle.className = "fa-solid fa-toggle-off";
-            toggle.style.color = "var(--text-muted)";
+
+        if (icon && text && toggle) {
+            if (isLight) {
+                icon.className = "fa-solid fa-sun";
+                icon.style.color = "#f59e0b";
+                text.innerText = "Light Mode";
+                toggle.className = "fa-solid fa-toggle-on";
+                toggle.style.color = "var(--primary)";
+            } else {
+                icon.className = "fa-solid fa-moon";
+                icon.style.color = "var(--text-main)";
+                text.innerText = "Dark Mode";
+                toggle.className = "fa-solid fa-toggle-off";
+                toggle.style.color = "var(--text-muted)";
+            }
         }
     }
 
