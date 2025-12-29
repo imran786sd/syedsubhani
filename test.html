@@ -2585,8 +2585,8 @@ function setDailyReminder() {
         }
     }
 
-   // ==========================================
-    // 1. MANAGE HUB (TABS & SWITCHING)
+  // ==========================================
+    // 1. MANAGE HUB LOGIC (Tabs Switching)
     // ==========================================
     window.switchManageView = function(view, btn) {
         currentManageTab = view;
@@ -2607,8 +2607,7 @@ function setDailyReminder() {
             renderCategories(filterData());
         } else if(view === 'bills') {
             document.getElementById('subview-bills').style.display = 'block';
-            // Force a render immediately
-            if(typeof renderBills === 'function') renderBills();
+            if(typeof renderBills === 'function') renderBills(); // <--- This triggers the calendar
         } else if(view === 'accounts') {
             document.getElementById('subview-accounts').style.display = 'block';
             renderAccounts();
@@ -2616,12 +2615,12 @@ function setDailyReminder() {
     }
 
     // ==========================================
-    // 2. SUBSCRIPTIONS (CALENDAR LOGIC)
+    // 2. CALENDAR & BILLS LOGIC (The Missing Part)
     // ==========================================
     window.bills = [];
     let billViewDate = new Date();
 
-    // Navigation (Prev/Next Month)
+    // Change Month (Prev/Next)
     window.changeBillMonth = function(dir) {
         billViewDate.setMonth(billViewDate.getMonth() + dir);
         renderBills();
@@ -2636,34 +2635,34 @@ function setDailyReminder() {
         }
     })();
 
-    // MAIN RENDER FUNCTION
+    // MAIN RENDERER: Draws the Calendar & Dots
     window.renderBills = function() {
         const container = document.getElementById('calendar-grid');
         const listContainer = document.getElementById('bills-list-container');
         const title = document.getElementById('cal-month-title');
         
-        if(!container) return;
+        if(!container) return; // Stop if HTML is missing
         container.innerHTML = ""; 
         listContainer.innerHTML = "";
         
+        // 1. Set Month Title
         const year = billViewDate.getFullYear();
         const month = billViewDate.getMonth();
-        
-        // Update Title (Replaces the "...")
         title.innerText = billViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
+        // 2. Calculate Calendar Days
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const today = new Date();
         const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
         const currentDay = today.getDate();
 
-        // A. Render Empty Slots (Padding)
+        // 3. Draw Empty Slots (Spacing)
         for(let i=0; i<firstDay; i++) {
             container.innerHTML += `<div class="cal-day empty"></div>`;
         }
 
-        // B. Render Days
+        // 4. Draw Day Numbers
         for(let d=1; d<=daysInMonth; d++) {
             let dayHtml = `<div class="cal-day ${isCurrentMonth && d === currentDay ? 'today' : ''}">
                               <div>${d}</div>
@@ -2672,11 +2671,11 @@ function setDailyReminder() {
             container.innerHTML += dayHtml;
         }
 
-        // C. Render Bill Dots & List
+        // 5. Draw Bill Dots & List Cards
         if(!window.bills) window.bills = [];
         
         window.bills.sort((a,b) => a.day - b.day).forEach(b => {
-            // Check Smart Status (Search transactions for "Netflix" etc.)
+            // Check Smart Status (Look for expenses named "Netflix", etc.)
             const paidTx = window.transactions.find(t => {
                 const txDate = new Date(t.date);
                 return txDate.getMonth() === month && 
@@ -2688,18 +2687,17 @@ function setDailyReminder() {
             const isPaid = !!paidTx;
             const isOverdue = !isPaid && isCurrentMonth && b.day < currentDay;
 
-            // 1. Add Dot to Calendar (Clean Style)
+            // A. Add Dot to Calendar
             const dotContainer = document.getElementById(`day-dots-${b.day}`);
             if(dotContainer) {
                 let dotClass = 'dot-due';
                 if(isPaid) dotClass = 'dot-paid';
                 else if(isOverdue) dotClass = 'dot-overdue';
                 
-                // Add the dot
-                dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
+                dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}"></div>`;
             }
 
-            // 2. Add Card to List
+            // B. Add Card to List
             const statusText = isPaid ? "Paid" : (isOverdue ? "Overdue" : "Due");
             const statusClass = isPaid ? "status-paid" : (isOverdue ? "status-overdue" : "status-due");
             
@@ -2723,7 +2721,7 @@ function setDailyReminder() {
         });
     }
 
-    // 4. Form & Actions
+    // 6. Subscription Form Actions
     window.toggleBillForm = function() {
         const f = document.getElementById('add-bill-form');
         f.style.display = f.style.display === 'block' ? 'none' : 'block';
@@ -2737,8 +2735,8 @@ function setDailyReminder() {
         const icon = document.getElementById('bill-icon').value;
 
         if(!name || !amount) return alert("Fill all fields");
-        
         const amtUSD = amount / currentRate;
+        
         window.bills.push({ name, amount: amtUSD, day, color, icon });
         saveData();
         toggleBillForm();
@@ -2753,78 +2751,14 @@ function setDailyReminder() {
     }
 
     window.deleteBill = function(name) {
-        if(confirm("Stop tracking this subscription?")) {
+        if(confirm("Delete subscription?")) {
             window.bills = window.bills.filter(b => b.name !== name);
             saveData();
             renderBills();
         }
     }
 
-    function getOrdinal(n) { 
-        return ["th","st","nd","rd"][(n%100>10&&n%100<20)?0:(n%10<4)?n%10:0]; 
-    }
-
-    // ==========================================
-    // 3. ACCOUNTS LOGIC
-    // ==========================================
-    window.accounts = ["Cash", "Card", "PhonePe", "GPay", "NetBanking"]; 
-    
-    function renderAccounts() {
-        const container = document.getElementById('accounts-list-container');
-        if(!container) return;
-        container.innerHTML = "";
-        
-        if(!window.accounts) window.accounts = ["Cash"]; // Safety
-
-        window.accounts.forEach((acc, index) => {
-            let icon = "fa-wallet";
-            const lower = acc.toLowerCase();
-            if(lower.includes("bank") || lower.includes("hdfc") || lower.includes("sbi")) icon = "fa-building-columns";
-            if(lower.includes("card") || lower.includes("visa")) icon = "fa-credit-card";
-            if(lower.includes("cash")) icon = "fa-money-bill-1";
-            if(lower.includes("pay")) icon = "fa-mobile-screen-button";
-
-            container.innerHTML += `
-                <div class="cat-list-item">
-                    <div class="cat-left">
-                        <div class="cat-icon-circle" style="background:rgba(251, 191, 36, 0.1); color:var(--secondary);">
-                            <i class="fa-solid ${icon}"></i>
-                        </div>
-                        <div class="cat-name">${acc}</div>
-                    </div>
-                    <div class="cat-right">
-                        <button onclick="deleteAccount('${acc}')" style="background:none; border:none; color:var(--danger); cursor:pointer;">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    window.toggleAcctForm = function() {
-        const f = document.getElementById('add-acct-form');
-        f.style.display = f.style.display === 'block' ? 'none' : 'block';
-    }
-
-    window.saveNewAccount = function() {
-        const name = document.getElementById('acct-name').value;
-        if(!name) return alert("Enter Name");
-        
-        window.accounts.push(name);
-        saveData(); 
-        toggleAcctForm();
-        renderAccounts();
-        document.getElementById('acct-name').value = "";
-    }
-
-    window.deleteAccount = function(name) {
-        if(confirm(`Delete "${name}"?`)) {
-            window.accounts = window.accounts.filter(a => a !== name);
-            saveData();
-            renderAccounts();
-        }
-    }
+    function getOrdinal(n) { return ["th","st","nd","rd"][(n%100>10&&n%100<20)?0:(n%10<4)?n%10:0]; }
 
 </script>
 </body>
