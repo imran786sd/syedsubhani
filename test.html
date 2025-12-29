@@ -1336,12 +1336,14 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         window.addEventListener('resize', () => { if(currentTab==='dashboard') updateUI(); });
     }
 
-    // --- DATA LOGIC (CLOUD) ---
+    // ==========================================
+    // DATA LOGIC (CLOUD + LOCAL)
+    // ==========================================
     async function loadData() {
         // 1. LOAD LOCAL (Instant Display)
         const localData = localStorage.getItem('budget_data_local');
         
-        // --- 1. Initialize Defaults (Safe fallback) ---
+        // --- Initialize Defaults ---
         window.transactions = [];
         window.goals = [];
         window.bills = [];
@@ -1351,24 +1353,30 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             try {
                 const parsed = JSON.parse(localData);
                 
-                // --- 2. Load Data from Storage ---
+                // --- Load Data from Storage ---
                 window.transactions = parsed.transactions || [];
                 window.goals = parsed.goals || [];
                 window.bills = parsed.bills || [];
                 
-                // Only overwrite accounts if they exist in storage
                 if(parsed.accounts && parsed.accounts.length > 0) {
                     window.accounts = parsed.accounts;
                 }
                 
+                // Render immediately
                 updateUI();
+                if(window.renderBills) window.renderBills();
+                if(window.renderAccounts) window.renderAccounts();
+                if(window.renderGoals) window.renderGoals();
+
             } catch(e) { console.error("Local Parse Error", e); }
         }
 
         // 2. CHECK CLOUD (Smart Merge)
         if(!currentUserUID) return;
         
-        document.getElementById('loader').style.display = 'inline-block';
+        const loader = document.getElementById('loader');
+        if(loader) loader.style.display = 'inline-block';
+
         try {
             const docRef = window.firebaseModules.doc(db, "users", currentUserUID);
             const docSnap = await window.firebaseModules.getDoc(docRef);
@@ -1395,7 +1403,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
                 window.transactions = Array.from(txMap.values());
 
-                // Update Local Storage
+                // Update Local Storage with new merged data
                 localStorage.setItem('budget_data_local', JSON.stringify({
                     transactions: window.transactions,
                     goals: window.goals,
@@ -1404,8 +1412,13 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                     lastUpdated: new Date().toISOString()
                 }));
                 
+                // Render Final State
                 updateUI();
+                if(window.renderBills) window.renderBills();
+                if(window.renderAccounts) window.renderAccounts();
+                if(window.renderGoals) window.renderGoals();
                 
+                // If local had more items, push back to cloud
                 if(window.transactions.length > cloudTx.length) {
                     saveData(); 
                 }
@@ -1413,38 +1426,39 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         } catch (e) {
             console.error("Cloud Load Error", e);
         }
-        document.getElementById('loader').style.display = 'none';
-        initCurrency();
-        updateUI();
+        
+        if(loader) loader.style.display = 'none';
+        if(typeof initCurrency === 'function') initCurrency();
     }
 
     async function saveData() {
-        // 1. Update UI immediately (Optimistic UI)
-        updateUI(); 
+        // 1. Update UI immediately
+        if(typeof updateUI === 'function') updateUI(); 
         
-        // 2. SAVE LOCAL (Instant & Offline backup)
+        // 2. SAVE LOCAL
         const localObj = {
-            transactions: window.transactions,
-            goals: window.goals,
-            bills: window.bills,
-            accounts: window.accounts, // <--- Add this!
+            transactions: window.transactions || [],
+            goals: window.goals || [],
+            bills: window.bills || [],        // <--- Save Bills
+            accounts: window.accounts || [],  // <--- Save Accounts
             lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('budget_data_local', JSON.stringify(localObj));
         console.log("Local Save Complete");
 
-        // 3. SAVE CLOUD (If logged in)
+        // 3. SAVE CLOUD (THE IMPORTANT FIX)
         if(currentUserUID) {
             try {
                 await window.firebaseModules.setDoc(window.firebaseModules.doc(db, "users", currentUserUID), { 
-                    transactions: window.transactions,
+                    transactions: window.transactions || [],
                     goals: window.goals || [],
+                    bills: window.bills || [],       // <--- ADDED THIS
+                    accounts: window.accounts || [], // <--- ADDED THIS
                     lastUpdated: new Date()
                 }, { merge: true });
                 console.log("Cloud Sync Complete");
             } catch(e) { 
-                console.warn("Cloud Save Failed (Offline?):", e); 
-                // Optional: You could add a 'dirty' flag here to retry later
+                console.warn("Cloud Save Failed:", e); 
             }
         }
     }
@@ -1454,14 +1468,17 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             // 1. Clear Memory
             window.transactions = [];
             window.goals = [];
+            window.bills = [];
+            window.accounts = ["Cash"]; // Reset to default
             
             // 2. Clear Local
             localStorage.removeItem('budget_data_local');
             
-            // 3. Clear Cloud (via empty save)
+            // 3. Clear Cloud (Save empty state)
             saveData(); 
             
             alert("All data reset.");
+            location.reload();
         }
     }
 
