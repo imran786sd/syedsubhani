@@ -1642,17 +1642,18 @@ function setDailyReminder() {
     window.updateUI = function() {
         const filtered = filterData();
         
+        // 1. Setup Variables
         let realIncome = 0;   
         let realExpense = 0;  
         let cashIn = 0;       
         let cashOut = 0;
         
-        // New Variables for the 4th Card
+        // Variables for the new "Net Outstanding" card
         let totalLent = 0;
         let totalBorrowed = 0;
         
         filtered.forEach(t => {
-            // 1. Income & Expense
+            // A. Income & Expense (Chart Data)
             if (t.type === 'income') {
                 realIncome += t.amount;
                 cashIn += t.amount;
@@ -1661,42 +1662,42 @@ function setDailyReminder() {
                 realExpense += t.amount;
                 cashOut += t.amount;
             }
-            // 2. Debts (Cash Flow + Outstanding Calc)
+            // B. Debt Logic
             else if (t.type === 'debt_lent') {
-                cashOut += t.amount; 
-                totalLent += t.amount; // Add to "People owe me"
+                cashOut += t.amount;       // Money left wallet
+                totalLent += t.amount;     // Asset (People owe you)
             }
             else if (t.type === 'debt_borrowed') {
-                cashIn += t.amount;  
-                totalBorrowed += t.amount; // Add to "I owe people"
+                cashIn += t.amount;        // Money entered wallet
+                totalBorrowed += t.amount; // Liability (You owe people)
             }
         });
 
-        // UPDATE UI CARDS
+        // 2. Update the 2x2 Grid HTML
         document.getElementById('total-inc').innerText = formatMoney(realIncome);
         document.getElementById('total-exp').innerText = formatMoney(realExpense);
         
-        // 1. Wallet Balance (Cash you have right now)
+        // Card 3: Wallet Balance (Cash in hand)
         const netBal = cashIn - cashOut;
         document.getElementById('balance').innerText = formatMoney(netBal);
         
-        // 2. Net Outstanding (Assets vs Liabilities)
+        // Card 4: Net Outstanding (The new box!)
         const netOutstanding = totalLent - totalBorrowed;
         const outEl = document.getElementById('total-outstanding');
-        outEl.innerText = (netOutstanding > 0 ? "+" : "") + formatMoney(netOutstanding);
         
-        // Color Logic for Outstanding
-        if (netOutstanding > 0) {
-            outEl.style.color = "#10b981"; // Green (Good, people owe you)
-        } else if (netOutstanding < 0) {
-            outEl.style.color = "#ef4444"; // Red (Bad, you owe people)
-        } else {
-            outEl.style.color = "var(--text-main)"; // Neutral
-        }
+        // Add a "+" sign if positive to look cool
+        const prefix = netOutstanding > 0 ? "+" : ""; 
+        outEl.innerText = prefix + formatMoney(netOutstanding);
+        
+        // Color Logic: Green if people owe you, Red if you owe them
+        if (netOutstanding > 0) outEl.style.color = "#10b981"; // Green
+        else if (netOutstanding < 0) outEl.style.color = "#ef4444"; // Red
+        else outEl.style.color = "var(--text-main)"; // Gray
 
+        // 3. Update Profile Counter
         document.getElementById('profile-total-tx').innerText = filtered.length;
 
-        // RENDER TABS
+        // 4. Render Charts & Lists based on active tab
         if(currentTab === 'dashboard') {
             const chartData = filtered.filter(t => t.type === 'income' || t.type === 'expense');
             renderExpenseFlow(chartData);
