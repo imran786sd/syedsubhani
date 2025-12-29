@@ -407,7 +407,61 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             padding: 10px 0; font-size: 0.85rem; color: var(--text-muted); font-weight: bold; 
             border-bottom: 1px solid var(--glass-border); margin-top: 20px;
         }
+/* --- NEW TAB HEADER STYLES --- */
+.custom-tabs-header {
+    display: flex;
+    gap: 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 25px;
+    padding: 0 10px;
+    overflow-x: auto; /* Allows scrolling on small phones */
+    white-space: nowrap;
+}
 
+/* Hide scrollbar for a clean look */
+.custom-tabs-header::-webkit-scrollbar { display: none; }
+
+.tab-link-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 15px 0;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s ease;
+    letter-spacing: 0.8px;
+    flex-shrink: 0; /* Prevents squishing */
+}
+
+.tab-link-btn:hover {
+    color: var(--text-main);
+}
+
+/* Active State (Gold Line) */
+.tab-link-btn.active {
+    color: var(--secondary);
+}
+
+.tab-link-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--secondary);
+    border-radius: 3px 3px 0 0;
+    box-shadow: 0 -4px 10px rgba(251, 191, 36, 0.3);
+    animation: fadeInLine 0.2s ease-out;
+}
+
+@keyframes fadeInLine {
+    from { width: 0%; opacity: 0; }
+    to { width: 100%; opacity: 1; }
+}
         @media (max-width: 768px) {
             body { overflow-y: hidden; } /* Let main/view containers scroll */
             #app-wrapper { flex-direction: column; overflow-y: auto; }
@@ -592,6 +646,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px;
     border: 1px dashed var(--glass-border); margin-bottom: 20px; display: none;
 }
+        
     </style>
 </head>
 <body>
