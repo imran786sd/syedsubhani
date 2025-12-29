@@ -1309,6 +1309,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
     // --- CORE LOGIC ---
     window.transactions = [];
+    let currentManageTab = 'cats';
     let currentTab = 'dashboard';
     let editingId = null;
 
@@ -1786,6 +1787,12 @@ function setDailyReminder() {
                 cashIn += t.amount;        // Money entered wallet
                 totalBorrowed += t.amount; // Liability (You owe people)
             }
+            else if (currentTab === 'categories') {
+        // Check which sub-tab is open and refresh ONLY that one
+        if (currentManageTab === 'cats') renderCategories(filtered);
+        else if (currentManageTab === 'bills') renderBills();
+        else if (currentManageTab === 'accounts') renderAccounts();
+    }
         });
 
         // --- 4. UPDATE HTML CARDS ---
@@ -2385,8 +2392,10 @@ function setDailyReminder() {
     }
 
     // --- MANAGE HUB LOGIC ---
-    window.switchManageView = function(view, btn) {
-        // 1. Reset Tabs
+   window.switchManageView = function(view, btn) {
+        currentManageTab = view; // <--- ADD THIS LINE (Tracks the active tab)
+
+        // 1. Reset Buttons
         const btns = btn.parentNode.querySelectorAll('button');
         btns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -2396,7 +2405,7 @@ function setDailyReminder() {
         document.getElementById('subview-bills').style.display = 'none';
         document.getElementById('subview-accounts').style.display = 'none';
 
-        // 3. Show Selected
+        // 3. Show Selected & Render
         if(view === 'cats') {
             document.getElementById('subview-cats').style.display = 'block';
             renderCategories(filterData());
