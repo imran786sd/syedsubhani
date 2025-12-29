@@ -709,6 +709,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                             </select>
 
                         <select class="header-select" id="period-select" onchange="updateUI()">
+                            <option value="all_time">All Time</option>
                             <option value="all">All Year</option>
                             <option value="custom">Custom Range</option>
                             <option value="week">This Week</option>
@@ -1165,7 +1166,9 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             yearSel.appendChild(opt);
         }
 
-        document.getElementById('period-select').value = String(today.getMonth());
+        // FIX: Set default to "all_time" instead of current month
+        document.getElementById('period-select').value = "all_time";
+        
         document.getElementById('custom-start').value = `${yyyy}-${mm}-01`;
         document.getElementById('custom-end').value = today.toLocaleDateString('en-CA');
     }
@@ -1510,18 +1513,26 @@ function renderDebts(data) {
         const customStart = document.getElementById('custom-start').value;
         const customEnd = document.getElementById('custom-end').value;
 
+        // Show/Hide Custom Date Row
         const customRow = document.getElementById('custom-date-controls');
         if(period === 'custom') customRow.classList.add('show'); else customRow.classList.remove('show');
 
-        return transactions.filter(t => {
+        return window.transactions.filter(t => {
+            // 1. HANDLE "ALL TIME" (The Fix)
+            // If All Time is selected, we return TRUE immediately (ignoring the Year dropdown)
+            if (period === 'all_time') return true;
+
             const txDate = new Date(t.date);
             const txY = txDate.getFullYear();
             const txM = txDate.getMonth();
             
+            // 2. HANDLE CUSTOM DATE
             if(period === 'custom') {
                 if(!customStart || !customEnd) return true;
                 return t.date >= customStart && t.date <= customEnd;
             }
+
+            // 3. HANDLE WEEK
             if(period === 'week') {
                 const now = new Date();
                 const day = now.getDay() || 7; 
@@ -1533,14 +1544,20 @@ function renderDebts(data) {
                 endOfWeek.setHours(23,59,59,999);
                 return txDate >= startOfWeek && txDate <= endOfWeek;
             }
+
+            // 4. CHECK YEAR (For everything else)
             if(txY !== year) return false;
+
+            // 5. CHECK PERIOD (Months/Quarters)
             if(period === 'all') return true;
             if(period === 'q1') return txM >= 0 && txM <= 2;
             if(period === 'q2') return txM >= 3 && txM <= 5;
             if(period === 'q3') return txM >= 6 && txM <= 8;
             if(period === 'q4') return txM >= 9 && txM <= 11;
+            
             const monthIdx = parseInt(period);
             if(!isNaN(monthIdx)) return txM === monthIdx;
+            
             return true;
         });
     }
