@@ -2519,37 +2519,32 @@ function setDailyReminder() {
         else if(key === 'Enter') { event.preventDefault(); saveCalc(); }
         else if(key === 'Escape') { closeCalc(); }
     });
-    // --- FEATURE: EXPORT TO CSV ---
+   // ==========================================
+    // FIXED EXPORT FUNCTION (No Dropdown Error)
+    // ==========================================
     window.exportData = function() {
         if (!window.transactions || window.transactions.length === 0) { 
             alert("No data to export!"); 
             return; 
         }
         
-        // 1. Get the currently selected currency (e.g., "INR", "CAD")
-        const selectedCurrency = document.getElementById('currency').value;
-
-        // 2. Use backticks (`) to insert the currency into the Header Row
-        let csvContent = `Date,Description,Amount (${selectedCurrency}),Type,Method\n`;
+        // CSV Header
+        let csvContent = "Date,Description,Amount (INR),Type,Method\n";
         
         window.transactions.forEach(t => {
-            let cleanDesc = t.desc.replace(/,/g, " "); 
-            
-            // 3. Convert the value from USD to the selected currency
-            let convertedAmt = t.amount * currentRate; 
-            let amt = Number(convertedAmt).toFixed(2);
+            let cleanDesc = t.desc.replace(/,/g, " "); // Remove commas from text
+            let amt = parseFloat(t.amount).toFixed(2); // Raw number for Excel
             
             let row = `${t.date},${cleanDesc},${amt},${t.type},${t.method || ''}`;
             csvContent += row + "\n";
         });
         
+        // Create Download Link
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        
-        // 4. File name also includes the currency now
-        link.setAttribute("download", `budget_data_${selectedCurrency}.csv`);
+        link.setAttribute("download", "budget_data.csv");
         
         document.body.appendChild(link);
         link.click();
@@ -2953,9 +2948,8 @@ function setDailyReminder() {
     };
 
     // ==========================================
-    // 3. MAIN RENDER FUNCTION (Fixed Logic)
+    // FIXED RENDER BILLS (Color Highlight + Fix)
     // ==========================================
-   // MAIN RENDER FUNCTION (Final Fixes)
     window.renderBills = function() {
         const container = document.getElementById('calendar-grid');
         const listContainer = document.getElementById('bills-list-container');
@@ -3022,12 +3016,13 @@ function setDailyReminder() {
             `;
         }
 
-        // --- 5. Render List (OPTIMIZED) ---
+        // --- 5. Render List ---
         let listHtml = "";
 
         processedBills.forEach(b => {
             const dotContainer = document.getElementById(`day-dots-${b.day}`);
             if(dotContainer) {
+                // Calendar dots still use status colors (Green/Red) to be useful
                 let dotClass = b.isPaid ? 'dot-paid' : (b.isOverdue ? 'dot-overdue' : 'dot-due');
                 dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
             }
@@ -3040,15 +3035,15 @@ function setDailyReminder() {
             if(shouldShow) {
                 const statusText = b.isPaid ? "Paid" : (b.isOverdue ? "Overdue" : "Due");
                 const statusClass = b.isPaid ? "status-paid" : (b.isOverdue ? "status-overdue" : "status-due");
-                
                 const suffix = getOrdinal(b.day); 
 
+                // FIX: Added border-left using b.color to highlight the subscription
                 listHtml += `
-                    <div class="bill-card">
+                    <div class="bill-card" style="border-left: 4px solid ${b.color};">
                         <div class="bill-left">
                             <div style="width:42px; height:42px; border-radius:12px; background:${b.logo ? 'transparent' : b.color}; display:flex; align-items:center; justify-content:center; color:white; font-size:1.1rem; box-shadow:0 4px 10px rgba(0,0,0,0.1); overflow:hidden; position:relative;">
                                 ${b.logo 
-                                    ? `<img src="${b.logo}" style="width:100%; height:100%; object-fit:cover;">` 
+                                    ? `<img src="${b.logo}" style="width:100%; height:100%; object-fit:contain;">` 
                                     : `<i class="fa-solid ${b.icon}"></i>`
                                 }
                             </div>
@@ -3081,7 +3076,6 @@ function setDailyReminder() {
             }
         });
         
-        // --- OPTIMIZED: Update DOM once ---
         if(listHtml === "") {
             listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.9rem;">No bills found.</div>`;
         } else {
