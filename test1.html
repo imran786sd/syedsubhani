@@ -41,27 +41,27 @@
             --text-muted: #94a3b8;
             --calc-bg: #1e293b;
             /* --- ☀️ LIGHT MODE OVERRIDES --- */
-body.light-mode {
-    --bg-body: #f8fafc;            /* Light Gray Background */
-    --text-main: #0f172a;          /* Dark Text */
-    --text-muted: #64748b;         /* Muted Text */
-    --glass-bg: rgba(255, 255, 255, 0.85); /* White Glass */
-    --glass-border: rgba(0, 0, 0, 0.05);   /* Subtle Dark Border */
-    --calc-bg: #ffffff;            /* White Calculator */
-}
+            body.light-mode {
+                --bg-body: #f8fafc;            /* Light Gray Background */
+                --text-main: #0f172a;          /* Dark Text */
+                --text-muted: #64748b;         /* Muted Text */
+                --glass-bg: rgba(255, 255, 255, 0.85); /* White Glass */
+                --glass-border: rgba(0, 0, 0, 0.05);   /* Subtle Dark Border */
+                --calc-bg: #ffffff;            /* White Calculator */
+            }
 
-/* Fix specific elements for Light Mode visibility */
-body.light-mode .calc-keypad { border-top: 1px solid rgba(0,0,0,0.1); }
-body.light-mode .key { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
-body.light-mode .key:active { background: #cbd5e1; }
-body.light-mode .calc-display-wrapper { background: #f1f5f9; color: #000; }
-body.light-mode .calc-pill-select { background: #fff; color: #000; border-color: #cbd5e1; }
-body.light-mode .calc-note-input { color: #000; border-color: #cbd5e1; }
-body.light-mode .nav-btn { color: #64748b; }
-body.light-mode .nav-btn.active { background: var(--primary); color: #fff; }
-body.light-mode .profile-name-lg { color: #000; }
-body.light-mode .profile-stats-grid .p-stat-box { background: rgba(0,0,0,0.05); }
-body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+            /* Fix specific elements for Light Mode visibility */
+            body.light-mode .calc-keypad { border-top: 1px solid rgba(0,0,0,0.1); }
+            body.light-mode .key { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+            body.light-mode .key:active { background: #cbd5e1; }
+            body.light-mode .calc-display-wrapper { background: #f1f5f9; color: #000; }
+            body.light-mode .calc-pill-select { background: #fff; color: #000; border-color: #cbd5e1; }
+            body.light-mode .calc-note-input { color: #000; border-color: #cbd5e1; }
+            body.light-mode .nav-btn { color: #64748b; }
+            body.light-mode .nav-btn.active { background: var(--primary); color: #fff; }
+            body.light-mode .profile-name-lg { color: #000; }
+            body.light-mode .profile-stats-grid .p-stat-box { background: rgba(0,0,0,0.05); }
+            body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -966,17 +966,6 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                         <button class="header-select" onclick="toggleTheme()" style="width:40px; padding:0; display:flex; align-items:center; justify-content:center; font-size:1rem;">
                             <i id="header-theme-icon" class="fa-solid fa-moon"></i>
                         </button>
-                        <div class="currency-wrapper">
-                            <select id="currency" class="header-select" onchange="changeCurrency()">
-                                <option value="USD">USD ($)</option>
-                                <option value="INR">INR (₹)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="GBP">GBP (£)</option>
-                                <option value="JPY">JPY (¥)</option>
-                                <option value="CAD">CAD (C$)</option>
-                            </select>
-                            <span id="loader" class="spinner" style="display:none;"></span>
-                        </div>
                         
                         <select id="year-select" class="header-select" onchange="updateUI()">
                             </select>
@@ -1629,20 +1618,15 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         const savedCurr = localStorage.getItem('budget_currency_pref');
         currentCurrency = savedCurr || "INR";
         
-        const sel = document.getElementById('currency');
-        if(sel) sel.value = currentCurrency;
-        
+        // Remove dropdown logic since we are locked to INR mostly, 
+        // but keep this for symbol display if user changed preference previously.
         const loader = document.getElementById('loader');
         if(loader) loader.style.display = 'none';
         
         updateUI();
     }
 
-    function changeCurrency() {
-        currentCurrency = document.getElementById('currency').value;
-        localStorage.setItem('budget_currency_pref', currentCurrency);
-        updateUI();
-    }
+    // Removed changeCurrency since dropdown is gone from HTML
 
     function updateRate() { 
         currentRate = 1; // Locked
@@ -1650,15 +1634,17 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     }
 
     function formatMoney(amount) {
-        const sym = symbols[currentCurrency] || "$";
-        return sym + parseFloat(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        // Use "en-IN" locale for comma separation like 1,00,000
+        const sym = "₹"; // Hardcoded symbol for Native Mode
+        return sym + parseFloat(amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
     
     function formatCompactMoney(amount) {
-        const sym = symbols[currentCurrency] || "$";
+        const sym = "₹";
         let val = parseFloat(amount);
-        if(val >= 10000000) return sym + (val/10000000).toFixed(1) + "Cr"; // Added Crores
-        if(val >= 100000) return sym + (val/100000).toFixed(1) + "L";     // Added Lakhs
+        // Indian Number System (Lakhs/Crores)
+        if(val >= 10000000) return sym + (val/10000000).toFixed(1) + "Cr"; 
+        if(val >= 100000) return sym + (val/100000).toFixed(1) + "L";     
         if(val >= 1000) return sym + (val/1000).toFixed(1) + "k";
         return sym + val.toFixed(0);
     }
