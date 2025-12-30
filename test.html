@@ -2822,6 +2822,7 @@ function setDailyReminder() {
     // ==========================================
     // 3. MAIN RENDER FUNCTION (Fixed Logic)
     // ==========================================
+   // MAIN RENDER FUNCTION (Final Fixes)
     window.renderBills = function() {
         const container = document.getElementById('calendar-grid');
         const listContainer = document.getElementById('bills-list-container');
@@ -2833,11 +2834,9 @@ function setDailyReminder() {
         container.innerHTML = ""; 
         listContainer.innerHTML = "";
         
-        // --- A. Setup Dates & Title ---
+        // --- 1. Setup Dates ---
         const year = billViewDate.getFullYear();
         const month = billViewDate.getMonth();
-        
-        // Update Title (e.g., "October 2025")
         if(title) title.innerText = billViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
         const firstDay = new Date(year, month, 1).getDay();
@@ -2846,7 +2845,7 @@ function setDailyReminder() {
         const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
         const currentDay = today.getDate();
 
-        // --- B. Draw Calendar ---
+        // --- 2. Draw Calendar ---
         for(let i=0; i<firstDay; i++) container.innerHTML += `<div class="cal-day empty"></div>`;
 
         for(let d=1; d<=daysInMonth; d++) {
@@ -2857,12 +2856,11 @@ function setDailyReminder() {
             container.innerHTML += dayHtml;
         }
 
-        // --- C. Process Bills ---
+        // --- 3. Process Bills ---
         const safeBills = window.bills || [];
         let countPaid = 0, countOverdue = 0, countUpcoming = 0;
 
         const processedBills = safeBills.sort((a,b) => a.day - b.day).map(b => {
-            // Check History for Payments
             const paidTx = window.transactions.find(t => {
                 const txDate = new Date(t.date);
                 return txDate.getMonth() === month && 
@@ -2882,7 +2880,7 @@ function setDailyReminder() {
             return { ...b, isPaid, isOverdue, isUpcoming, paidBy: paidTx ? paidTx.desc : '' };
         });
 
-        // --- D. Update Summary Counts ---
+        // --- 4. Update Summary ---
         if(summaryContainer) {
             summaryContainer.innerHTML = `
                 <div class="cal-sum-item"><div class="cal-icon-dot dot-due"></div> ${countUpcoming} Upcoming</div>
@@ -2891,16 +2889,14 @@ function setDailyReminder() {
             `;
         }
 
-        // --- E. Render List Cards ---
+        // --- 5. Render List ---
         processedBills.forEach(b => {
-            // 1. Calendar Dots
             const dotContainer = document.getElementById(`day-dots-${b.day}`);
             if(dotContainer) {
                 let dotClass = b.isPaid ? 'dot-paid' : (b.isOverdue ? 'dot-overdue' : 'dot-due');
                 dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
             }
 
-            // 2. Filter Check
             let shouldShow = (currentBillFilter === 'all') || 
                              (currentBillFilter === 'paid' && b.isPaid) ||
                              (currentBillFilter === 'overdue' && b.isOverdue) ||
@@ -2909,7 +2905,9 @@ function setDailyReminder() {
             if(shouldShow) {
                 const statusText = b.isPaid ? "Paid" : (b.isOverdue ? "Overdue" : "Due");
                 const statusClass = b.isPaid ? "status-paid" : (b.isOverdue ? "status-overdue" : "status-due");
-                const suffix = getOrdinal(b.day); // Uses the fixed function
+                
+                // FIX: Get Suffix correctly (e.g., "th")
+                const suffix = getOrdinal(b.day); 
 
                 listContainer.innerHTML += `
                     <div class="bill-card">
