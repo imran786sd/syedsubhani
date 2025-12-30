@@ -2938,23 +2938,28 @@ function setDailyReminder() {
     // ==========================================
     // 4. NEW: EDIT FUNCTION
     // ==========================================
-    window.editBill = function(name, amount, day, color, icon, logo) {
-        // 1. Remove the old entry silently (Pass 'true' to skip confirm)
+   window.editBill = function(name, amount, day, color, icon, logo) {
+        // 1. Remove the old entry silently
         deleteBill(name, true); 
         
         // 2. Open Form
         const form = document.getElementById('add-bill-form');
         if(form.style.display === 'none') toggleBillForm();
         
-        // 3. Fill Data
+        // 3. MATH FIX: Convert Base Amount back to Your Currency
+        // If stored as 11.90 (USD) and rate is 84, this becomes ~1000 (INR)
+        const rate = (typeof currentRate !== 'undefined') ? currentRate : 1;
+        const displayAmount = (amount * rate).toFixed(2); // <--- THE FIX
+
+        // 4. Fill Data
         document.getElementById('bill-name').value = name;
-        document.getElementById('bill-amount').value = amount;
+        document.getElementById('bill-amount').value = displayAmount; // Use the converted amount
         document.getElementById('bill-day').value = day;
         document.getElementById('bill-color').value = color;
         document.getElementById('bill-icon').value = icon;
         document.getElementById('bill-logo-url').value = logo || "";
         
-        // 4. Scroll to top so user sees the form
+        // 5. Scroll to top
         form.scrollIntoView({ behavior: 'smooth' });
     }
 
