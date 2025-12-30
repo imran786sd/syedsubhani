@@ -2915,7 +2915,12 @@ function setDailyReminder() {
     // 1. CALENDAR & BILLS LOGIC (Defined First)
     // ==========================================
     window.bills = []; 
-    let billViewDate = new Date();
+    
+    // FIX: Ensure this is global and starts on the 1st
+    if (typeof window.billViewDate === 'undefined') {
+        window.billViewDate = new Date();
+        window.billViewDate.setDate(1); // Avoid 31st bug
+    }
 
     // FIX: Helper to get DATE SUFFIX ONLY (st, nd, rd, th)
     window.getOrdinal = function(n) {
@@ -2928,8 +2933,7 @@ function setDailyReminder() {
         }
     };
 
-    // MAIN RENDER FUNCTION
-   // Global Filter State (Keep outside the function)
+    // Global Filter State
     let currentBillFilter = 'all';
 
     window.setBillFilter = function(filter, btn) {
@@ -2940,24 +2944,23 @@ function setDailyReminder() {
         renderBills(); 
     }
 
-    // MAIN RENDER FUNCTION (Aligned + Filters + Counts)
-
-
     // ==========================================
-    // 2. HELPER: CALENDAR NAVIGATION (FIXED)
+    // 2. HELPER: CALENDAR NAVIGATION
     // ==========================================
-    
-    // Initialize to the 1st of the current month to avoid "31st" bugs
-    if(typeof billViewDate === 'undefined') {
-        let temp = new Date();
-        temp.setDate(1); // Set to 1st
-        window.billViewDate = temp;
-    }
-
     window.changeBillMonth = function(dir) {
-        // Always operate on the 1st of the month
-        window.billViewDate.setDate(1); 
+        // FAILSAFE: If it somehow became undefined, reset it
+        if (!window.billViewDate) {
+            window.billViewDate = new Date();
+            window.billViewDate.setDate(1);
+        }
+
+        // 1. Force Date to 1st (fixes 31st bug)
+        window.billViewDate.setDate(1);
+        
+        // 2. Change Month
         window.billViewDate.setMonth(window.billViewDate.getMonth() + dir);
+        
+        // 3. Render
         renderBills(); 
     };
 
