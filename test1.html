@@ -1617,49 +1617,48 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         return "fa-tag"; 
     }
 
-    // --- CURRENCY ---
-    const API_URL = "https://open.er-api.com/v6/latest/USD";
-    let exchangeRates = { USD: 1 };
-    let currentCurrency = "USD";
-    let currentRate = 1;
+    // ==========================================
+    // 1. CURRENCY LOGIC (Native Mode - No Conversion)
+    // ==========================================
+    // FIXED: Removed Exchange Rate Math. Rate is locked to 1.
     const symbols = { USD: "$", INR: "₹", EUR: "€", GBP: "£", JPY: "¥", CAD: "C$" };
+    let currentCurrency = "INR"; 
+    let currentRate = 1; 
 
-    async function initCurrency() {
-        try {
-            const response = await fetch(API_URL);
-            const data = await response.json();
-            if(data.result === "success") exchangeRates = data.rates;
-        } catch(e) { exchangeRates = { USD:1, INR: 83.5, EUR: 0.92 }; }
-        
+    function initCurrency() {
         const savedCurr = localStorage.getItem('budget_currency_pref');
-        if(savedCurr && exchangeRates[savedCurr]) {
-            currentCurrency = savedCurr;
-        }
-        document.getElementById('currency').value = currentCurrency;
-        updateRate();
+        currentCurrency = savedCurr || "INR";
+        
+        const sel = document.getElementById('currency');
+        if(sel) sel.value = currentCurrency;
+        
+        const loader = document.getElementById('loader');
+        if(loader) loader.style.display = 'none';
+        
+        updateUI();
     }
 
     function changeCurrency() {
         currentCurrency = document.getElementById('currency').value;
         localStorage.setItem('budget_currency_pref', currentCurrency);
-        updateRate();
+        updateUI();
     }
 
     function updateRate() { 
-        currentRate = exchangeRates[currentCurrency] || 1; 
+        currentRate = 1; // Locked
         updateUI(); 
     }
 
-    function formatMoney(amountInUSD) {
-        const converted = amountInUSD * currentRate;
+    function formatMoney(amount) {
         const sym = symbols[currentCurrency] || "$";
-        return sym + converted.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        return sym + parseFloat(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
     
-    function formatCompactMoney(amountInUSD) {
-        let val = amountInUSD * currentRate;
+    function formatCompactMoney(amount) {
         const sym = symbols[currentCurrency] || "$";
-        if(val >= 1000000) return sym + (val/1000000).toFixed(1) + "m";
+        let val = parseFloat(amount);
+        if(val >= 10000000) return sym + (val/10000000).toFixed(1) + "Cr"; // Added Crores
+        if(val >= 100000) return sym + (val/100000).toFixed(1) + "L";     // Added Lakhs
         if(val >= 1000) return sym + (val/1000).toFixed(1) + "k";
         return sym + val.toFixed(0);
     }
@@ -1757,7 +1756,8 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         }
         document.getElementById('calc-note').value = note;
         
-        calcString = (tx.amount * currentRate).toFixed(2);
+        // FIXED: Show exact amount (No Multiplication)
+        calcString = tx.amount.toString();
         updateCalcDisplay();
     }
 
@@ -1871,6 +1871,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         document.getElementById('calc-display').style.color = calcType === 'income' ? 'var(--primary)' : 'var(--secondary)';
     }
 
+    // FIXED: Save Exact Amount (No Division)
     window.saveCalc = function() {
         try { calcString = eval(calcString).toString(); } catch {}
         const amount = parseFloat(calcString);
@@ -1894,7 +1895,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
             desc = note ? `${cat} (${note})` : cat;
         }
 
-        const amtUSD = amount / currentRate;
+        const amtUSD = amount; // NO CONVERSION
         const txObj = { id: editingId || Date.now(), date: dateVal, desc, amount: amtUSD, type, method, note };
         
         if(editingId) {
@@ -2032,7 +2033,7 @@ function renderDebts(data) {
         document.getElementById('calc-person').value = person;
         
         // Fill Amount
-        calcString = Math.abs(balance * currentRate).toFixed(2); 
+        calcString = Math.abs(balance).toFixed(2); // No conversion
         updateCalcDisplay();
         
         // Set Dropdown Logic: 
@@ -2213,7 +2214,7 @@ function setDailyReminder() {
         
         const dateMap = {};
         data.filter(t => t.type === 'expense').forEach(t => {
-            const val = t.amount * currentRate;
+            const val = t.amount; // No Conversion
             dateMap[t.date] = (dateMap[t.date] || 0) + val;
         });
 
@@ -2255,7 +2256,7 @@ function setDailyReminder() {
             .on("mouseover", function(event, d) {
                 d3.select(this).attr("r", 8).attr("fill", "var(--danger)");
                 tooltip.style.opacity = 1;
-                tooltip.innerHTML = `<strong>${d.date.toLocaleDateString()}</strong><br>${formatMoney(d.val / currentRate)}`; 
+                tooltip.innerHTML = `<strong>${d.date.toLocaleDateString()}</strong><br>${formatMoney(d.val)}`; 
                 
                 const [mx, my] = d3.pointer(event, document.querySelector('.flow-container'));
                 tooltip.style.left = `${mx}px`;
@@ -2271,7 +2272,7 @@ function setDailyReminder() {
         [...chartData].reverse().forEach(d => {
             const div = document.createElement('div');
             div.className = 'flow-daily-item';
-            div.innerHTML = `<div class="flow-day">${d.date.toLocaleDateString('en-US', { weekday: 'short' })}</div><div class="flow-date">${d.date.getDate()}</div><div class="flow-amt">${formatCompactMoney(d.val / currentRate)}</div>`;
+            div.innerHTML = `<div class="flow-day">${d.date.toLocaleDateString('en-US', { weekday: 'short' })}</div><div class="flow-date">${d.date.getDate()}</div><div class="flow-amt">${formatCompactMoney(d.val)}</div>`;
             strip.appendChild(div);
         });
     }
@@ -2295,7 +2296,7 @@ function setDailyReminder() {
     function getLabelText(name, value, total) {
         const mode = document.getElementById('chart-label-mode').value;
         const percent = ((value / total) * 100).toFixed(1) + "%";
-        const valStr = formatCompactMoney(value / currentRate); 
+        const valStr = formatCompactMoney(value); 
         if(mode === 'value') return valStr;
         if(mode === 'percent') return percent;
         if(mode === 'all') return `${name}: ${valStr} (${percent})`;
@@ -2306,7 +2307,7 @@ function setDailyReminder() {
         const container = document.getElementById('chart-cats');
         const tooltip = document.getElementById('cat-tooltip');
         container.innerHTML = ""; container.appendChild(tooltip);
-        const map = {}; data.filter(t => t.type==='expense').forEach(t => { const val = t.amount * currentRate; let catName = t.desc.split('(')[0].trim(); map[catName] = (map[catName] || 0) + val; });
+        const map = {}; data.filter(t => t.type==='expense').forEach(t => { const val = t.amount; let catName = t.desc.split('(')[0].trim(); map[catName] = (map[catName] || 0) + val; });
         const sorted = Object.keys(map).map(k => ({name:k, val:map[k]})).sort((a,b) => b.val - a.val).slice(0, 7);
         if(sorted.length===0) { container.innerHTML += "<div style='color:#64748b;text-align:center;padding-top:150px;'>No expenses</div>"; return; }
         const total = sorted.reduce((a,b)=>a+b.val,0);
@@ -2319,11 +2320,11 @@ function setDailyReminder() {
         const arc = d3.arc().innerRadius(radius*0.6).outerRadius(radius).cornerRadius(5);
         const outerArc = d3.arc().innerRadius(radius * 1.1).outerRadius(radius * 1.1);
         const centerName = svg.append("text").attr("class", "donut-label").attr("dy", "-0.5em").attr("text-anchor","middle").style("font-size","12px").style("fill", "var(--text-muted)").text("Top Spend");
-        const centerVal = svg.append("text").attr("class", "donut-val").attr("dy", "1em").attr("text-anchor","middle").style("font-size","20px").style("fill", "var(--text-main)").style("font-weight","bold").text(formatCompactMoney(total / currentRate));
+        const centerVal = svg.append("text").attr("class", "donut-val").attr("dy", "1em").attr("text-anchor","middle").style("font-size","20px").style("fill", "var(--text-main)").style("font-weight","bold").text(formatCompactMoney(total));
         const arcs = svg.selectAll('g.slice').data(pie(sorted)).enter().append('g').attr('class','slice');
         arcs.append('path').attr('d', arc).attr('fill', (d,i) => colors(i)).style("stroke", "var(--bg-body)").style("stroke-width", "3px")
-            .on('mouseover', (e, d) => { const sym = symbols[currentCurrency] || "$"; centerName.text(d.data.name); centerVal.text(formatCompactMoney(d.data.val / currentRate)); centerVal.style("fill", colors(d.index)); })
-            .on('mouseout', () => { centerName.text("Total"); centerVal.text(formatCompactMoney(total / currentRate)); centerVal.style("fill", "var(--text-main)"); });
+            .on('mouseover', (e, d) => { const sym = symbols[currentCurrency] || "$"; centerName.text(d.data.name); centerVal.text(formatCompactMoney(d.data.val)); centerVal.style("fill", colors(d.index)); })
+            .on('mouseout', () => { centerName.text("Total"); centerVal.text(formatCompactMoney(total)); centerVal.style("fill", "var(--text-main)"); });
         const pieData = pie(sorted);
         const labelData = pieData.map(d => {
             const pos = outerArc.centroid(d);
@@ -2349,7 +2350,7 @@ function setDailyReminder() {
         const catMap = {};
 
         data.filter(t => t.type==='expense').forEach(t => {
-            const val = t.amount * currentRate;
+            const val = t.amount;
             let catName = t.desc.split('(')[0].trim();
             let subName = t.desc.includes('(') ? t.desc.match(/\(([^)]+)\)/)[1] : t.desc;
             if(subName === catName) subName = "General";
@@ -2401,7 +2402,7 @@ function setDailyReminder() {
 
         const centerName = svg.append("text").attr("dy", "-0.5em").attr("text-anchor","middle").style("font-size","12px").style("fill", "var(--text-muted)").text("Total");
         const centerVal = svg.append("text").attr("dy", "1em").attr("text-anchor","middle").style("font-size","18px").style("fill", "var(--text-main)").style("font-weight","bold")
-            .text(formatCompactMoney(root.value / currentRate));
+            .text(formatCompactMoney(root.value));
 
         svg.selectAll("path")
             .data(root.descendants().filter(d => d.depth)) 
@@ -2413,11 +2414,11 @@ function setDailyReminder() {
             .on("mouseover", function(event, d) {
                 const sym = symbols[currentCurrency] || "$";
                 centerName.text(d.data.name); 
-                centerVal.text(formatCompactMoney(d.value / currentRate));
+                centerVal.text(formatCompactMoney(d.value));
                 d3.select(this).style("fill-opacity", 1);
             })
             .on("mouseout", function() {
-                centerName.text("Total"); centerVal.text(formatCompactMoney(root.value / currentRate));
+                centerName.text("Total"); centerVal.text(formatCompactMoney(root.value));
                 d3.selectAll("path").style("fill-opacity", d => d.children ? 0.8 : 0.6);
             });
             
@@ -2742,8 +2743,8 @@ function setDailyReminder() {
         
         if(!name || !target) return alert("Please fill details");
         
-        // Convert to USD for storage
-        const targetUSD = target / currentRate;
+        // FIXED: Save Exact Amount (No Division)
+        const targetUSD = target; 
         
         if(!window.goals) window.goals = [];
         window.goals.push({ name, target: targetUSD, saved: 0 });
@@ -2763,8 +2764,8 @@ function setDailyReminder() {
         if(amount) {
             const val = parseFloat(amount);
             if(val > 0) {
-                // Store in USD
-                window.goals[index].saved += (val / currentRate);
+                // FIXED: Save Exact Amount (No Division)
+                window.goals[index].saved += val;
                 saveData(); // <--- Updates Local + Cloud
                 renderGoals();
             }
@@ -2917,9 +2918,10 @@ function setDailyReminder() {
     window.bills = []; 
     
     // FIX: Ensure this is global and starts on the 1st
+    // This fix prevents the calendar from crashing on the 31st
     if (typeof window.billViewDate === 'undefined') {
         window.billViewDate = new Date();
-        window.billViewDate.setDate(1); // Avoid 31st bug
+        window.billViewDate.setDate(1); 
     }
 
     // FIX: Helper to get DATE SUFFIX ONLY (st, nd, rd, th)
@@ -3185,15 +3187,9 @@ function setDailyReminder() {
         
         if(!name || !rawAmount || !day) return alert("Please fill all details");
 
-        // --- MATH FIX: Handle Currency Lag ---
-        let rate = (typeof currentRate !== 'undefined') ? currentRate : 1;
-        const cur = document.getElementById('currency').value;
-
-        // If rate is 1 (API didn't load) but you are in INR, force the rate to 84
-        if (rate === 1 && cur === 'INR') rate = 84; 
-
+        // FIXED: Handle Currency (No Division)
         // Convert to Base Currency (USD)
-        const finalAmount = rawAmount / rate; 
+        const finalAmount = rawAmount; 
 
         if(!window.bills) window.bills = [];
         
