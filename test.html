@@ -3021,43 +3021,43 @@ function setDailyReminder() {
 
     // 2. SAVE NEW BILL (With Logo Support)
     // 2. SAVE NEW BILL (With Logo Support & UI Refresh)
+   // SAVE NEW BILL (With Currency Fix & Logo)
     window.saveNewBill = function() {
         const name = document.getElementById('bill-name').value;
-        const amount = parseFloat(document.getElementById('bill-amount').value);
+        const rawAmount = parseFloat(document.getElementById('bill-amount').value);
         const day = parseInt(document.getElementById('bill-day').value);
         const color = document.getElementById('bill-color').value;
         const icon = document.getElementById('bill-icon').value;
-        const logo = document.getElementById('bill-logo-url').value; // Get the logo
+        const logo = document.getElementById('bill-logo-url').value;
         
-        if(!name || !amount || !day) return alert("Please fill all details");
+        if(!name || !rawAmount || !day) return alert("Please fill all details");
+
+        // --- CURRENCY FIX: Normalize amount to Base Currency ---
+        // If we are in INR (rate 84), and user types 1000, we save (1000 / 84)
+        const rate = window.currentRate || 1; 
+        const finalAmount = rawAmount / rate; 
 
         if(!window.bills) window.bills = [];
         
-        // Save the Bill Object
         window.bills.push({ 
             name, 
-            amount, 
+            amount: finalAmount, // Saved as Base Currency
             day, 
             color, 
             icon, 
-            logo: logo 
+            logo 
         });
         
         saveData(); // Save to storage
 
-        // --- MISSING UI CLEANUP STEPS (ADD THESE) ---
-        
-        // 1. Clear the inputs so they are empty for next time
+        // UI Cleanup
         document.getElementById('bill-name').value = "";
         document.getElementById('bill-amount').value = "";
         document.getElementById('bill-logo-url').value = "";
-        
-        // 2. Hide the form
         document.getElementById('add-bill-form').style.display = 'none';
         
-        // 3. Refresh the list immediately so you see the new bill
         renderBills(); 
-    };
+    }
 
     window.payBill = function(name, amount) {
         openCalc();
