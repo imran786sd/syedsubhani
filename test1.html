@@ -2944,14 +2944,21 @@ function setDailyReminder() {
 
 
     // ==========================================
-    // 2. HELPER: CALENDAR NAVIGATION
+    // 2. HELPER: CALENDAR NAVIGATION (FIXED)
     // ==========================================
-    // Ensure this variable exists at the top of your script
-    if(typeof billViewDate === 'undefined') window.billViewDate = new Date();
+    
+    // Initialize to the 1st of the current month to avoid "31st" bugs
+    if(typeof billViewDate === 'undefined') {
+        let temp = new Date();
+        temp.setDate(1); // Set to 1st
+        window.billViewDate = temp;
+    }
 
     window.changeBillMonth = function(dir) {
+        // Always operate on the 1st of the month
+        window.billViewDate.setDate(1); 
         window.billViewDate.setMonth(window.billViewDate.getMonth() + dir);
-        renderBills(); // Re-render with new date
+        renderBills(); 
     };
 
     // ==========================================
