@@ -2939,11 +2939,12 @@ function setDailyReminder() {
     // 4. NEW: EDIT FUNCTION
     // ==========================================
     window.editBill = function(name, amount, day, color, icon, logo) {
-        // 1. Remove the old one first
-        deleteBill(name, false); // false = don't ask for confirmation
+        // 1. Remove the old entry silently (Pass 'true' to skip confirm)
+        deleteBill(name, true); 
         
         // 2. Open Form
-        toggleBillForm();
+        const form = document.getElementById('add-bill-form');
+        if(form.style.display === 'none') toggleBillForm();
         
         // 3. Fill Data
         document.getElementById('bill-name').value = name;
@@ -2951,10 +2952,10 @@ function setDailyReminder() {
         document.getElementById('bill-day').value = day;
         document.getElementById('bill-color').value = color;
         document.getElementById('bill-icon').value = icon;
-        document.getElementById('bill-logo-url').value = logo;
+        document.getElementById('bill-logo-url').value = logo || "";
         
-        // 4. Scroll to top
-        document.getElementById('add-bill-form').scrollIntoView({ behavior: 'smooth' });
+        // 4. Scroll to top so user sees the form
+        form.scrollIntoView({ behavior: 'smooth' });
     }
 
     // ==========================================
@@ -3053,8 +3054,10 @@ function setDailyReminder() {
         document.getElementById('calc-note').value = name; 
     };
 
-    window.deleteBill = function(name) {
-        if(confirm("Delete subscription?")) {
+    window.deleteBill = function(name, skipConfirm = false) {
+        // If skipConfirm is TRUE, we delete immediately. 
+        // If FALSE, we show the confirm box.
+        if(skipConfirm || confirm("Delete subscription?")) {
             window.bills = window.bills.filter(b => b.name !== name);
             saveData();
             window.renderBills();
