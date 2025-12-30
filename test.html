@@ -3382,13 +3382,15 @@ function setDailyReminder() {
     
 
     // 2. Re-Initialize the Dropdown correctly
+    // 2. Re-Initialize the Dropdown correctly
     ;(function initBillForm() {
         const sel = document.getElementById('bill-day');
         if(sel) {
             sel.innerHTML = "";
             for(let i=1; i<=31; i++) {
-                // Now uses the helper to generate 1st, 2nd...
-                sel.innerHTML += `<option value="${i}">${getOrdinal(i)}</option>`;
+                // CHANGED: Added ${i} before getOrdinal(i)
+                // This makes it "1st", "2nd" instead of just "st", "nd"
+                sel.innerHTML += `<option value="${i}">${i}${getOrdinal(i)}</option>`;
             }
         }
     })();
