@@ -3002,7 +3002,7 @@ function setDailyReminder() {
 
     // 2. SAVE NEW BILL (With Logo Support)
     // 2. SAVE NEW BILL (With Logo Support & UI Refresh)
-   // SAVE NEW BILL (With Currency Fix & Logo)
+  // SAVE NEW BILL (Safe Version)
     window.saveNewBill = function() {
         const name = document.getElementById('bill-name').value;
         const rawAmount = parseFloat(document.getElementById('bill-amount').value);
@@ -3013,23 +3013,28 @@ function setDailyReminder() {
         
         if(!name || !rawAmount || !day) return alert("Please fill all details");
 
-        // --- CURRENCY FIX: Normalize amount to Base Currency ---
-        // If we are in INR (rate 84), and user types 1000, we save (1000 / 84)
-        const rate = window.currentRate || 1; 
+        // --- MATH FIX: Handle Currency Lag ---
+        let rate = (typeof currentRate !== 'undefined') ? currentRate : 1;
+        const cur = document.getElementById('currency').value;
+
+        // If rate is 1 (API didn't load) but you are in INR, force the rate to 84
+        if (rate === 1 && cur === 'INR') rate = 84; 
+
+        // Convert to Base Currency (USD)
         const finalAmount = rawAmount / rate; 
 
         if(!window.bills) window.bills = [];
         
         window.bills.push({ 
             name, 
-            amount: finalAmount, // Saved as Base Currency
+            amount: finalAmount, 
             day, 
             color, 
             icon, 
             logo 
         });
         
-        saveData(); // Save to storage
+        saveData(); 
 
         // UI Cleanup
         document.getElementById('bill-name').value = "";
