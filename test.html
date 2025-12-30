@@ -1306,11 +1306,14 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                     </div>
 
                     <div class="settings-group">
-
+                        <div class="settings-btn" onclick="enableNotifications()">
+                            <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> Enable App Notifications</span>
+                            <i class="fa-solid fa-toggle-on" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
                         <div class="settings-btn" onclick="setDailyReminder()">
-    <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> Set Daily Reminder</span>
-    <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
-</div>
+                        <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> Set Daily Reminder</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
                         <div class="settings-btn" onclick="toggleTheme()">
                             <span>
                                 <i id="theme-icon" class="fa-solid fa-moon" style="margin-right:10px; width:20px; text-align:center;"></i> 
@@ -1474,7 +1477,7 @@ body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
                 if(window.renderBills) window.renderBills();
                 if(window.renderAccounts) window.renderAccounts();
                 if(window.renderGoals) window.renderGoals();
-
+                if(window.checkBillAlerts) window.checkBillAlerts();
             } catch(e) { console.error("Local Parse Error", e); }
         }
 
@@ -3403,6 +3406,85 @@ function setDailyReminder() {
         }
     })();
 
+// ==========================================
+    // 🔔 NATIVE NOTIFICATION SYSTEM
+    // ==========================================
+    
+    // 1. Request Permission & Test
+    window.enableNotifications = function() {
+        if (!("Notification" in window)) {
+            alert("This browser does not support desktop notifications");
+            return;
+        }
+
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                new Notification("Budget Pro", { 
+                    body: "Notifications enabled! We'll remind you about bills.", 
+                    icon: "https://cdn-icons-png.flaticon.com/512/2344/2344132.png" 
+                });
+                // Start the clock immediately
+                setInterval(checkTimeForDailyReminder, 60000); // Check every minute
+            }
+        });
+    }
+
+    // 2. Logic: Check for Bill Alerts (Run this on App Load)
+    window.checkBillAlerts = function() {
+        if (Notification.permission !== "granted") return;
+
+        const today = new Date();
+        const currentDay = today.getDate();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+
+        let upcomingCount = 0;
+        let overdueCount = 0;
+
+        (window.bills || []).forEach(b => {
+            // Check if Paid (Same logic as Render)
+            const isPaid = window.transactions.some(t => {
+                const tDate = new Date(t.date);
+                return tDate.getMonth() === currentMonth && 
+                       tDate.getFullYear() === currentYear && 
+                       t.type === 'expense' &&
+                       t.desc.toLowerCase().includes(b.name.toLowerCase());
+            });
+
+            if (!isPaid) {
+                // Overdue
+                if (b.day < currentDay) overdueCount++;
+                // Upcoming (Due in next 3 days)
+                else if (b.day >= currentDay && b.day <= currentDay + 3) upcomingCount++;
+            }
+        });
+
+        // Fire Notifications
+        if (overdueCount > 0) {
+            new Notification("⚠️ Bill Alert", {
+                body: `You have ${overdueCount} overdue bills! Pay them now to avoid fees.`,
+                icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png"
+            });
+        } else if (upcomingCount > 0) {
+            new Notification("📅 Upcoming Bills", {
+                body: `You have ${upcomingCount} bills due in the next 3 days.`,
+                icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png"
+            });
+        }
+    }
+
+    // 3. Logic: 9 PM Daily Reminder (Runs every minute)
+    function checkTimeForDailyReminder() {
+        const now = new Date();
+        // Check if it is exactly 9:00 PM (21:00)
+        if (now.getHours() === 21 && now.getMinutes() === 0) {
+            new Notification("📝 Daily Update", {
+                body: "It's 9 PM! Time to log your daily expenses.",
+                icon: "https://cdn-icons-png.flaticon.com/512/2921/2921222.png"
+            });
+        }
+    }
+    
 </script>
 </body>
 </html>
