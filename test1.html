@@ -1438,26 +1438,35 @@
     // ==========================================
     // DATA LOGIC (CLOUD + LOCAL)
     // ==========================================
+    // ==========================================
+    // DATA LOGIC (CLOUD + LOCAL) - SMART MERGE FIX
+    // ==========================================
     async function loadData() {
-        // 1. LOAD LOCAL (Instant Display)
+        // 1. Define the Master List of defaults (Including UPI, Paytm, etc.)
+        const defaultAccounts = ["Cash", "UPI", "GPay", "PhonePe", "Paytm", "Card", "Credit Card", "NetBanking"];
+
+        // 2. LOAD LOCAL
         const localData = localStorage.getItem('budget_data_local');
         
-        // --- Initialize Defaults ---
+        // Initialize with defaults
         window.transactions = [];
         window.goals = [];
         window.bills = [];
-        window.accounts = ["Cash", "UPI", "GPay", "PhonePe", "Paytm", "Card", "Credit Card", "NetBanking"];
+        window.accounts = [...defaultAccounts]; 
+
         if (localData) {
             try {
                 const parsed = JSON.parse(localData);
-                
-                // --- Load Data from Storage ---
                 window.transactions = parsed.transactions || [];
                 window.goals = parsed.goals || [];
                 window.bills = parsed.bills || [];
                 
+                // --- THE FIX: SMART MERGE ---
+                // If user has saved accounts, combine them with defaults
                 if(parsed.accounts && parsed.accounts.length > 0) {
-                    window.accounts = parsed.accounts;
+                    // "Set" automatically removes duplicates
+                    const combined = new Set([...parsed.accounts, ...defaultAccounts]);
+                    window.accounts = Array.from(combined);
                 }
                 
                 // Render immediately
@@ -1469,7 +1478,7 @@
             } catch(e) { console.error("Local Parse Error", e); }
         }
 
-        // 2. CHECK CLOUD (Smart Merge)
+        // 3. CHECK CLOUD
         if(!currentUserUID) return;
         
         const loader = document.getElementById('loader');
@@ -1481,49 +1490,32 @@
             
             if (docSnap.exists()) {
                 const cloudData = docSnap.data();
-                const cloudTx = cloudData.transactions || [];
                 
-                // Sync Arrays
                 window.goals = cloudData.goals || [];
                 window.bills = cloudData.bills || [];
                 
+                // Cloud Merge for Accounts
                 if(cloudData.accounts && cloudData.accounts.length > 0) {
-                    window.accounts = cloudData.accounts;
+                     const combined = new Set([...cloudData.accounts, ...window.accounts]);
+                     window.accounts = Array.from(combined);
                 }
 
-                // Sync Transactions (Smart Merge)
+                // Sync Transactions
+                const cloudTx = cloudData.transactions || [];
                 const txMap = new Map();
                 cloudTx.forEach(t => txMap.set(t.id, t));
-                
-                window.transactions.forEach(t => {
-                     if(!txMap.has(t.id)) txMap.set(t.id, t);
-                });
-
+                window.transactions.forEach(t => { if(!txMap.has(t.id)) txMap.set(t.id, t); });
                 window.transactions = Array.from(txMap.values());
 
-                // Update Local Storage with new merged data
-                localStorage.setItem('budget_data_local', JSON.stringify({
-                    transactions: window.transactions,
-                    goals: window.goals,
-                    bills: window.bills,
-                    accounts: window.accounts,
-                    lastUpdated: new Date().toISOString()
-                }));
+                // Update Local Storage with merged result
+                saveData(); 
                 
-                // Render Final State
                 updateUI();
                 if(window.renderBills) window.renderBills();
                 if(window.renderAccounts) window.renderAccounts();
                 if(window.renderGoals) window.renderGoals();
-                
-                // If local had more items, push back to cloud
-                if(window.transactions.length > cloudTx.length) {
-                    saveData(); 
-                }
             } 
-        } catch (e) {
-            console.error("Cloud Load Error", e);
-        }
+        } catch (e) { console.error("Cloud Load Error", e); }
         
         if(loader) loader.style.display = 'none';
         if(typeof initCurrency === 'function') initCurrency();
