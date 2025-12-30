@@ -2765,7 +2765,6 @@ function setDailyReminder() {
     window.bills = []; 
     let billViewDate = new Date();
 
-    // Helper: Ordinal Dates (1st, 2nd...)
     // FIX: Helper to get DATE SUFFIX ONLY (st, nd, rd, th)
     window.getOrdinal = function(n) {
         if (n > 3 && n < 21) return "th"; // 11th, 12th, 13th
