@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget Tracker Pro (Mahira Sync)</title>
-    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2dd4bf">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2344/2344132.png">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     
     <script type="module">
@@ -26,8 +30,8 @@
     <style>
         :root {
             /* --- 🎨 THEME CONFIGURATION --- */
-            --bg-body: #0b0e14;   
-            --primary: #2dd4bf;   
+            --bg-body: #0b0e14;    
+            --primary: #2dd4bf;    
             --secondary: #fbbf24; 
             --text-main: #f1f5f9; 
             
@@ -36,6 +40,28 @@
             --danger: #f43f5e;
             --text-muted: #94a3b8;
             --calc-bg: #1e293b;
+            /* --- ☀️ LIGHT MODE OVERRIDES --- */
+body.light-mode {
+    --bg-body: #f8fafc;            /* Light Gray Background */
+    --text-main: #0f172a;          /* Dark Text */
+    --text-muted: #64748b;         /* Muted Text */
+    --glass-bg: rgba(255, 255, 255, 0.85); /* White Glass */
+    --glass-border: rgba(0, 0, 0, 0.05);   /* Subtle Dark Border */
+    --calc-bg: #ffffff;            /* White Calculator */
+}
+
+/* Fix specific elements for Light Mode visibility */
+body.light-mode .calc-keypad { border-top: 1px solid rgba(0,0,0,0.1); }
+body.light-mode .key { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+body.light-mode .key:active { background: #cbd5e1; }
+body.light-mode .calc-display-wrapper { background: #f1f5f9; color: #000; }
+body.light-mode .calc-pill-select { background: #fff; color: #000; border-color: #cbd5e1; }
+body.light-mode .calc-note-input { color: #000; border-color: #cbd5e1; }
+body.light-mode .nav-btn { color: #64748b; }
+body.light-mode .nav-btn.active { background: var(--primary); color: #fff; }
+body.light-mode .profile-name-lg { color: #000; }
+body.light-mode .profile-stats-grid .p-stat-box { background: rgba(0,0,0,0.05); }
+body.light-mode .stat-card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -292,14 +318,31 @@
         .cat-right { text-align: right; }
         .cat-amount { font-weight: 700; font-family: 'Consolas', monospace; font-size: 1rem; }
         .cat-count { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
-
+/* --- SEARCH BAR --- */
+.search-container { position: relative; margin-bottom: 15px; }
+.search-input {
+    width: 100%; padding: 12px 15px 12px 45px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px; color: var(--text-main);
+    font-size: 0.95rem; outline: none; transition: 0.3s;
+}
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(45, 212, 191, 0.2);
+}
+.search-icon {
+    position: absolute; left: 15px; top: 50%;
+    transform: translateY(-50%); color: var(--text-muted);
+}
         /* NAV */
         .bottom-nav {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border); border-radius: 25px;
             display: flex; padding: 5px 10px; gap: 5px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 100;
-            align-items: center; width: auto; max-width: 95%; overflow-x: auto;
+            align-items: center; width: auto; max-width: 100%; overflow-x: auto;
         }
         .nav-btn {
             background: transparent; border: none; color: var(--text-muted);
@@ -364,7 +407,61 @@
             padding: 10px 0; font-size: 0.85rem; color: var(--text-muted); font-weight: bold; 
             border-bottom: 1px solid var(--glass-border); margin-top: 20px;
         }
+/* --- NEW TAB HEADER STYLES --- */
+.custom-tabs-header {
+    display: flex;
+    gap: 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 25px;
+    padding: 0 10px;
+    overflow-x: auto; /* Allows scrolling on small phones */
+    white-space: nowrap;
+}
 
+/* Hide scrollbar for a clean look */
+.custom-tabs-header::-webkit-scrollbar { display: none; }
+
+.tab-link-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 15px 0;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s ease;
+    letter-spacing: 0.8px;
+    flex-shrink: 0; /* Prevents squishing */
+}
+
+.tab-link-btn:hover {
+    color: var(--text-main);
+}
+
+/* Active State (Gold Line) */
+.tab-link-btn.active {
+    color: var(--secondary);
+}
+
+.tab-link-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--secondary);
+    border-radius: 3px 3px 0 0;
+    box-shadow: 0 -4px 10px rgba(251, 191, 36, 0.3);
+    animation: fadeInLine 0.2s ease-out;
+}
+
+@keyframes fadeInLine {
+    from { width: 0%; opacity: 0; }
+    to { width: 100%; opacity: 1; }
+}
         @media (max-width: 768px) {
             body { overflow-y: hidden; } /* Let main/view containers scroll */
             #app-wrapper { flex-direction: column; overflow-y: auto; }
@@ -372,14 +469,399 @@
             #main { order: 2; height: 100%; overflow: visible; padding-bottom: 100px; }
             .report-header { padding: 15px 20px; align-items: flex-start; gap: 10px; }
             .header-top-row { flex-wrap: wrap; gap:10px; }
-            .header-controls { width: 100%; justify-content: space-between; overflow-x: auto; }
-            .currency-wrapper, #period-select, #year-select { flex: 1; min-width: 80px; }
+            /* --- FIXED HEADER FOR MOBILE --- */
+.header-controls { 
+    width: 100%; 
+    justify-content: flex-start; /* Align to start */
+    overflow-x: auto; /* Enable scroll */
+    gap: 10px; 
+    padding-bottom: 5px; /* Space for scrollbar */
+}
+/* Stop items from squishing */
+.currency-wrapper, #period-select, #year-select { 
+    flex: 0 0 auto; /* Do not shrink */
+    width: auto; 
+    min-width: auto; 
+}
+/* Hide scrollbar for clean look */
+.header-controls::-webkit-scrollbar { display: none; }
             .custom-date-row { flex-direction: column; align-items: flex-start; }
             .view-container { padding: 20px 20px 120px 20px; }
             .summary-grid { grid-template-columns: 1fr; }
             .top-cats-container { height: 400px; }
             .bottom-nav { bottom: 0; left: 0; transform: none; width: 100%; border-radius: 0; justify-content: space-around; padding: 12px 10px; }
         }
+        /* --- DEBT VIEW STYLES --- */
+/* --- DEBT CARD IMPROVEMENTS --- */
+/* --- SMART DEBT CARD --- */
+.debt-card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 12px; margin-bottom: 12px;
+    display: flex; flex-direction: column; 
+    transition: all 0.2s ease; overflow: hidden;
+}
+        /* --- STYLIZED DROPDOWN HISTORY --- */
+.debt-history-container {
+    background: rgba(11, 14, 20, 0.5); /* Darker inner background */
+    border-top: 1px solid rgba(255,255,255,0.05);
+    box-shadow: inset 0 10px 20px rgba(0,0,0,0.3); /* Inner shadow for depth */
+    display: none; /* Hidden by default */
+    animation: slideOpen 0.3s ease-out; /* Smooth animation */
+}
+
+/* Animation for opening */
+@keyframes slideOpen {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* The small header inside the list */
+.debt-hist-header-label {
+    padding: 10px 15px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Individual Transaction Items */
+.debt-hist-item {
+    padding: 12px 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.2s;
+}
+.debt-hist-item:last-child { border-bottom: none; }
+.debt-hist-item:hover { background: rgba(255,255,255,0.05); } /* Highlight on hover */
+
+/* Icons inside the list */
+.hist-action-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: none; background: rgba(255,255,255,0.05);
+    color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+}
+.hist-action-btn:hover { background: var(--text-main); color: #000; }
+.hist-action-btn.del:hover { background: var(--danger); color: white; }
+
+/* Row 1: Name, Amount, Chevron */
+.debt-header-main {
+    padding: 15px 15px 5px 15px; /* Less bottom padding */
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+}
+
+/* Row 2: Info (Days) & Actions */
+.debt-action-row {
+    padding: 5px 15px 15px 15px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+
+.debt-days-badge {
+    font-size: 0.7rem; color: var(--text-muted);
+    background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px;
+    display: inline-block;
+}
+
+.debt-btn-group { display: flex; gap: 8px; }
+
+/* Action Buttons */
+.btn-mini-action {
+    border: none; border-radius: 6px; 
+    padding: 6px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+}
+.btn-settle { background: var(--primary); color: #000; }
+.btn-wa { background: #25D366; color: #fff; } /* WhatsApp Green */
+
+/* History List (Hidden by default) */
+.debt-history-container {
+    background: rgba(0,0,0,0.2); /* Slightly darker background for list */
+    border-top: 1px solid var(--glass-border);
+    display: none; /* Hidden */
+}
+.debt-card.open .debt-history-container { display: block; }
+
+/* Rotating Chevron */
+.debt-chevron { transition: transform 0.3s; margin-left: 8px; font-size: 0.8rem; color: var(--text-muted); }
+.debt-card.open .debt-chevron { transform: rotate(180deg); }
+
+/* Custom Scrollbar for the history list */
+.debt-history-scroll::-webkit-scrollbar { width: 4px; }
+.debt-history-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+.debt-avatar { 
+    width: 40px; height: 40px; border-radius: 50%; 
+    background: rgba(255,255,255,0.05); color: var(--text-main);
+    display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;
+}
+.debt-amt { font-family: 'Consolas', monospace; font-weight: 700; font-size: 1rem; }
+.debt-amt.lent { color: var(--secondary); }   /* Money you gave (Asset) */
+.debt-amt.borrowed { color: var(--danger); } /* Money you took (Liability) */
+
+/* Calculator Debt Tab Color */
+.calc-tab.active.debt-tab { border-color: #a855f7; color: #a855f7; }
+
+/* --- GOALS VIEW STYLES --- */
+.goal-card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 20px; margin-bottom: 20px;
+    position: relative; overflow: hidden;
+}
+.goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.goal-title { font-weight: 700; font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+.goal-icon-box { 
+    width: 40px; height: 40px; border-radius: 10px; 
+    background: rgba(45, 212, 191, 0.1); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+
+/* Progress Bar */
+.goal-progress-bg {
+    width: 100%; height: 8px; background: rgba(255,255,255,0.05);
+    border-radius: 4px; margin: 15px 0; overflow: hidden;
+}
+.goal-progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 4px; width: 0%; transition: width 0.5s ease;
+}
+
+.goal-stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+.goal-current { color: var(--text-main); font-size: 1rem; }
+
+/* Add Money Button inside Card */
+.btn-goal-add {
+    width: 100%; padding: 10px; margin-top: 15px;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+    border-radius: 8px; color: var(--primary); font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: 0.2s;
+}
+.btn-goal-add:hover { background: var(--primary); color: #000; }
+
+/* New Goal Form (Hidden by default) */
+#add-goal-form {
+    background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px;
+    border: 1px dashed var(--glass-border); margin-bottom: 20px; display: none;
+}
+
+        /* --- PRO CALENDAR STYLES --- */
+.calendar-wrapper {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px; /* Big rounded corners like the image */
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.calendar-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px;
+    padding: 0 10px;
+}
+
+/* The Grid Container */
+.calendar-grid { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 5px; /* Tighter gap */
+    width: 100%;
+}
+
+/* Day Labels (S M T W...) */
+.cal-day-label { 
+    text-align: center; 
+    color: var(--text-muted); 
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    margin-bottom: 10px;
+    opacity: 0.7;
+}
+
+/* Individual Day Cell */
+.cal-day {
+    aspect-ratio: 1/1; /* Keeps it square */
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    border-radius: 50%; /* Circular selection like iOS */
+    font-size: 0.9rem; 
+    font-weight: 500;
+    position: relative;
+    cursor: pointer;
+    border: 2px solid transparent; /* Reserve space for border */
+    transition: all 0.2s ease;
+    color: var(--text-main);
+}
+
+/* Hover Effect */
+.cal-day:hover:not(.empty) { 
+    background: rgba(255,255,255,0.1); 
+}
+
+/* "Today" State (Solid Circle) */
+.cal-day.today { 
+    background: var(--primary); 
+    color: #000; 
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(45, 212, 191, 0.4);
+}
+
+/* "Has Bill" State (Indicator Dot) */
+.cal-dot-container {
+    position: absolute;
+    bottom: 4px;
+    display: flex;
+    gap: 2px;
+}
+
+.cal-icon-dot {
+    width: 5px; 
+    height: 5px; 
+    border-radius: 50%; 
+    background-color: var(--text-muted);
+}
+
+/* Status Colors for Dots */
+.dot-paid { background-color: #10b981; }   /* Green */
+.dot-due { background-color: var(--text-muted); } /* Gray */
+.dot-overdue { background-color: #ef4444; } /* Red */
+
+/* Empty slots for spacing */
+.cal-day.empty { pointer-events: none; }
+
+        /* --- DESKTOP OPTIMIZATIONS --- */
+@media (min-width: 768px) {
+    
+    /* 1. Restrict Calendar Width */
+    .calendar-wrapper {
+        max-width: 350px;  /* Stop it from stretching */
+        margin: 0 auto 25px auto; /* Center it */
+        padding: 15px;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    /* 2. Smaller Text & Gaps */
+    .calendar-header { margin-bottom: 10px; }
+    #cal-month-title { font-size: 1rem; }
+    .calendar-grid { gap: 4px; }
+    .cal-day-label { font-size: 0.7rem; margin-bottom: 5px; }
+
+    /* 3. Smaller Day Circles (Mouse friendly) */
+    .cal-day {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+        border-radius: 8px; /* Slightly squarer looks better small */
+    }
+
+    /* 4. Tiny Dots */
+    .cal-dot-container { bottom: 2px; gap: 1px; }
+    .cal-icon-dot { width: 3px; height: 3px; }
+    
+    /* 5. Make the Bill List a Grid on Desktop */
+    #bills-list-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 2 Columns */
+        gap: 15px;
+    }
+}
+
+        /* --- BILL CARD STYLING --- */
+.bill-card {
+    display: flex;
+    justify-content: space-between; /* Pushes content to edges */
+    align-items: center;
+    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    transition: transform 0.2s;
+}
+
+.bill-card:active { transform: scale(0.98); }
+
+.bill-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1; /* Takes up all empty space */
+}
+
+.bill-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 80px; /* Ensures alignment even for small/big numbers */
+}
+
+.bill-amount {
+    font-family: 'Consolas', monospace; /* Monospace aligns numbers better */
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-main);
+}
+/* --- CALENDAR SUMMARY (Inside the dark card) --- */
+.cal-summary-line {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.cal-sum-item { display: flex; align-items: center; gap: 6px; }
+
+/* --- FILTER TABS (Pills below calendar) --- */
+.bill-filter-tabs {
+    display: flex;
+    background: var(--glass-bg);
+    padding: 5px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--glass-border);
+}
+
+.bill-filter-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.bill-filter-btn.active {
+    background: var(--bg-body); /* Or a highlight color */
+    color: var(--text-main);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.presets-scroll {
+    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;
+}
+.preset-chip {
+    flex: 0 0 auto; background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 20px; padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 0.75rem; color: var(--text-main); transition: 0.2s;
+}
+.preset-chip:hover { background: rgba(255,255,255,0.05); }
+        
     </style>
 </head>
 <body>
@@ -416,7 +898,10 @@
                     </div>
                 </div>
             </div>
-
+<div class="settings-btn" onclick="switchTab('goals')" style="margin-top:20px;">
+    <span><i class="fa-solid fa-bullseye" style="margin-right:10px; color:#f472b6;"></i> Savings Goals</span>
+    <i class="fa-solid fa-chevron-right" style="font-size:0.8rem;"></i>
+</div>
             <div style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.5; margin-top:20px;">
                 Use the <strong>+</strong> button below to add transactions. <br><br>
                 <em>Note: Profile & Logout are now in the bottom tabs.</em>
@@ -425,60 +910,52 @@
 
         <div id="calc-modal">
             <div id="calc-content">
-                <div class="calc-header">
-                    <button class="calc-action-btn btn-close" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
-                    <div style="font-size:0.9rem; font-weight:600; color:var(--text-muted)" id="calc-title">New Transaction</div>
-                    <button class="calc-action-btn btn-save" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
-                </div>
-                
-                <div class="calc-tabs">
-                    <div class="calc-tab active expense-tab" id="tab-exp" onclick="setCalcType('expense')">EXPENSE</div>
-                    <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')">INCOME</div>
-                </div>
+    <div class="calc-header">
+        <button class="calc-action-btn" style="background:none;border:none;color:var(--danger);" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+        <input type="date" id="calc-date" style="background:transparent; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:0.9rem; outline:none; text-align:center; width:130px;">
+        <button class="calc-action-btn" style="background:none;border:none;color:var(--primary);" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
+    </div>
+    
+    <div class="calc-tabs">
+        <div class="calc-tab active" id="tab-exp" onclick="setCalcType('expense')">EXPENSE</div>
+        <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')">INCOME</div>
+        <div class="calc-tab" id="tab-debt" onclick="setCalcType('debt')">DEBT</div>
+    </div>
 
-                <div class="calc-input-area">
-                    <div class="input-row">
-                        <select id="calc-cat" class="calc-pill-select">
-                            </select>
-                        <select id="calc-method" class="calc-pill-select" style="flex:0.8;">
-                            <option value="Card">Card</option>
-                            <option value="PhonePe">PhonePe</option>
-                            <option value="GPay">GPay</option>
-                            <option value="Paytm">Paytm</option>
-                            <option value="NetBanking">NetBanking</option>
-                            <option value="Cash">Cash</option>
-                        </select>
-                    </div>
-                    <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (e.g. Vegetables)...">
-                </div>
-
-                <div class="calc-display-wrapper">
-                    <div id="calc-display" class="calc-display">0</div>
-                </div>
-
-                <div class="calc-keypad">
-                    <button class="key op" onclick="calcInput('/')">÷</button>
-                    <button class="key" onclick="calcInput('7')">7</button>
-                    <button class="key" onclick="calcInput('8')">8</button>
-                    <button class="key" onclick="calcInput('9')">9</button>
-                    
-                    <button class="key op" onclick="calcInput('*')">×</button>
-                    <button class="key" onclick="calcInput('4')">4</button>
-                    <button class="key" onclick="calcInput('5')">5</button>
-                    <button class="key" onclick="calcInput('6')">6</button>
-                    
-                    <button class="key op" onclick="calcInput('-')">-</button>
-                    <button class="key" onclick="calcInput('1')">1</button>
-                    <button class="key" onclick="calcInput('2')">2</button>
-                    <button class="key" onclick="calcInput('3')">3</button>
-                    
-                    <button class="key op" onclick="calcInput('+')">+</button>
-                    <button class="key" onclick="calcInput('.')">.</button>
-                    <button class="key" onclick="calcInput('0')">0</button>
-                    <button class="key del" onclick="calcInput('del')"><i class="fa-solid fa-delete-left"></i></button>
-                </div>
-                <button class="key eq" style="position:absolute; bottom:0; right:0; width:25%; height:120px;" onclick="calcEval()">=</button>
+    <div class="calc-input-area">
+        <div class="input-row">
+            <select id="calc-cat" class="calc-pill-select" style="width:100%; font-weight:bold;"></select>
+            
+            <div id="debt-row-wrapper" style="display:none; width:100%; gap:10px;">
+                <input type="text" id="calc-person" class="calc-pill-select" style="flex:1; font-weight:bold;" placeholder="Person Name">
+                <select id="debt-dir" class="calc-pill-select" style="flex:0.7; font-size:0.85rem;">
+                    <option value="lent">Gave (Lent)</option>
+                    <option value="borrowed">Got (Borrow)</option>
+                </select>
             </div>
+        </div>
+
+        <div class="input-row" style="margin-top:10px;">
+            <select id="calc-method" class="calc-pill-select" style="flex:1;">
+                <option value="Cash">Cash</option><option value="Card">Card</option><option value="PhonePe">PhonePe</option><option value="GPay">GPay</option><option value="NetBanking">NetBanking</option>
+            </select>
+        </div>
+        
+        <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (Optional)..." style="margin-top:10px;">
+    </div>
+
+    <div class="calc-display-wrapper"><div id="calc-display" class="calc-display">0</div></div>
+    
+    <div class="calc-keypad">
+        <button class="key" onclick="calcInput('7')">7</button><button class="key" onclick="calcInput('8')">8</button><button class="key" onclick="calcInput('9')">9</button><button class="key op" onclick="calcInput('/')">÷</button>
+        <button class="key" onclick="calcInput('4')">4</button><button class="key" onclick="calcInput('5')">5</button><button class="key" onclick="calcInput('6')">6</button><button class="key op" onclick="calcInput('*')">×</button>
+        <button class="key" onclick="calcInput('1')">1</button><button class="key" onclick="calcInput('2')">2</button><button class="key" onclick="calcInput('3')">3</button><button class="key op" onclick="calcInput('-')">-</button>
+        <button class="key clear" onclick="calcInput('clear')">C</button>
+        <button class="key" onclick="calcInput('0')">0</button><button class="key" onclick="calcInput('.')">.</button><button class="key op" onclick="calcInput('+')">+</button>
+        <button class="key del" onclick="calcInput('del')">⌫</button>
+        <button class="key eq" style="grid-column: span 3; background:var(--primary); color:black;" onclick="saveCalc()">ENTER</button>
+    </div>
+</div>
         </div>
 
         <div id="main">
@@ -486,6 +963,9 @@
                 <div class="header-top-row">
                     <div class="report-title" id="page-title">Dashboard</div>
                     <div class="header-controls">
+                        <button class="header-select" onclick="toggleTheme()" style="width:40px; padding:0; display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                            <i id="header-theme-icon" class="fa-solid fa-moon"></i>
+                        </button>
                         <div class="currency-wrapper">
                             <select id="currency" class="header-select" onchange="changeCurrency()">
                                 <option value="USD">USD ($)</option>
@@ -493,6 +973,7 @@
                                 <option value="EUR">EUR (€)</option>
                                 <option value="GBP">GBP (£)</option>
                                 <option value="JPY">JPY (¥)</option>
+                                <option value="CAD">CAD (C$)</option>
                             </select>
                             <span id="loader" class="spinner" style="display:none;"></span>
                         </div>
@@ -501,6 +982,7 @@
                             </select>
 
                         <select class="header-select" id="period-select" onchange="updateUI()">
+                            <option value="all_time">All Time</option>
                             <option value="all">All Year</option>
                             <option value="custom">Custom Range</option>
                             <option value="week">This Week</option>
@@ -539,20 +1021,29 @@
             </div>
 
             <div id="view-dashboard" class="view-container active">
-                <div class="summary-grid">
-                    <div class="stat-card">
-                        <div class="stat-title">Income</div>
-                        <div class="stat-val pos" id="total-inc">...</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-title">Spend</div>
-                        <div class="stat-val neg" id="total-exp">...</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-title">Net Balance</div>
-                        <div class="stat-val" id="balance">...</div>
-                    </div>
-                </div>
+                <div class="stats-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        
+        <div class="stat-card" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 15px;">
+            <div class="stat-title" style="color:#10b981; font-size:0.7rem;">Income</div>
+            <div class="stat-val" id="total-inc" style="font-size:1.2rem;">...</div>
+        </div>
+
+        <div class="stat-card" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 15px;">
+            <div class="stat-title" style="color:#ef4444; font-size:0.7rem;">Spend</div>
+            <div class="stat-val" id="total-exp" style="font-size:1.2rem;">...</div>
+        </div>
+
+        <div class="stat-card" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 15px;">
+            <div class="stat-title" style="color:#3b82f6; font-size:0.7rem;">Wallet Balance</div>
+            <div class="stat-val" id="balance" style="font-size:1.2rem;">...</div>
+        </div>
+
+        <div class="stat-card" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px;">
+            <div class="stat-title" style="color:#f59e0b; font-size:0.7rem;">Net Outstanding</div>
+            <div class="stat-val" id="total-outstanding" style="font-size:1.2rem;">...</div>
+        </div>
+
+    </div>
 
                 <div class="dashboard-lower">
                     <div class="flow-container">
@@ -587,6 +1078,10 @@
             </div>
 
             <div id="view-records" class="view-container">
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search records..." onkeyup="handleSearch()">
+                </div>
                 <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
                     <span class="stat-title">Total Records (Period)</span>
                     <span class="stat-val" style="color:var(--text-main)" id="records-page-total">...</span>
@@ -595,13 +1090,177 @@
             </div>
 
             <div id="view-categories" class="view-container">
-                <div class="cat-section-title">Income Categories</div>
-                <div id="cat-list-income"></div>
+    
+    <div class="custom-tabs-header">
+        <button class="tab-link-btn active" onclick="switchManageView('cats', this)">
+            Categories
+        </button>
+        <button class="tab-link-btn" onclick="switchManageView('bills', this)">
+            Subscriptions
+        </button>
+        <button class="tab-link-btn" onclick="switchManageView('accounts', this)">
+            Accounts
+        </button>
+    </div>
 
-                <div class="cat-section-title">Expense Categories</div>
-                <div id="cat-list-expense"></div>
+    <div id="subview-cats">
+        <div class="cat-section-title">Income Categories</div>
+        <div id="cat-list-income"></div>
+
+        <div class="cat-section-title">Expense Categories</div>
+        <div id="cat-list-expense"></div>
+    </div>
+
+    <div id="subview-bills" style="display:none;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div class="chart-title">Recurring Bills</div>
+        <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleBillForm()">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+        </div>
+
+    <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
+    <input type="hidden" id="bill-logo-url" value="">
+    <select id="preset-cat-select" class="calc-pill-select" style="width:100%; margin-bottom:10px; font-weight:bold; color:var(--primary);" onchange="renderCategoryPresets()">
+        <option value="" disabled selected>✨ Select Category to Auto-fill</option>
+        <option value="ott">🎬 Movies & OTT</option>
+        <option value="music">🎵 Music & Audio</option>
+        <option value="utilities">⚡ Utilities & Bills</option>
+        <option value="internet">🛜 Internet & Phone</option>
+        <option value="manual">✏️ Custom / Manual</option>
+    </select>
+
+    <div id="preset-options" class="presets-scroll" style="margin-bottom:15px; display:none;"></div>
+
+    <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;" onkeyup="autoDetectBillIcon()">
+    
+    <div class="input-row">
+        <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
+        <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
+    </div>
+
+    <div class="input-row" style="margin-top:10px;">
+        <select id="bill-color" class="calc-pill-select" style="flex:1;">
+            <option value="#e50914">Red</option>
+            <option value="#1db954">Green</option>
+            <option value="#ffffff">White</option>
+            <option value="#00a8e8">Blue</option>
+            <option value="#f59e0b">Orange</option>
+            <option value="#8b5cf6">Purple</option>
+        </select>
+        <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+            <option value="fa-film">&#xf008; Movie</option>
+                <option value="fa-music">&#xf001; Music</option>
+                <option value="fa-bolt">&#xf0e7; Utility</option>
+                <option value="fa-wifi">&#xf1eb; Net</option>
+                <option value="fa-mobile-screen">&#xf3cd; Phone</option>
+                <option value="fa-dumbbell">&#xf44b; Gym</option>
+                <option value="fa-tv">&#xf26c; TV</option>
+                <option value="fa-play">&#xf04b; Play</option>
+                <option value="fa-house">&#xf015; Rent</option>
+                <option value="fa-fire">&#xf06d; Gas</option>
+                <option value="fa-droplet">&#xf043; Water</option>
+                <option value="fa-credit-card">&#xf09d; EMI</option>
+        </select>
+    </div>
+
+    <button class="btn-goal-add" onclick="saveNewBill()" style="margin-top:10px; background:var(--primary); color:black;">Save Subscription</button>
+</div>
+
+    <div class="calendar-wrapper">
+        
+        <div class="calendar-header">
+            <button class="chart-switch-btn" onclick="changeBillMonth(-1)">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div id="cal-month-title" style="font-weight:800; font-size:1.1rem; letter-spacing:0.5px;">
+                ...
             </div>
+            <button class="chart-switch-btn" onclick="changeBillMonth(1)">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+        
+        <div class="calendar-grid" style="margin-bottom:10px;">
+            <div class="cal-day-label">S</div>
+            <div class="cal-day-label">M</div>
+            <div class="cal-day-label">T</div>
+            <div class="cal-day-label">W</div>
+            <div class="cal-day-label">T</div>
+            <div class="cal-day-label">F</div>
+            <div class="cal-day-label">S</div>
+        </div>
+        
+        <div id="calendar-grid" class="calendar-grid"></div>
 
+        <div id="cal-summary" class="cal-summary-line">
+            </div>
+    </div>
+
+    <div class="bill-filter-tabs">
+        <button class="bill-filter-btn active" onclick="setBillFilter('all', this)">All</button>
+        <button class="bill-filter-btn" onclick="setBillFilter('upcoming', this)">Upcoming</button>
+        <button class="bill-filter-btn" onclick="setBillFilter('overdue', this)">Overdue</button>
+        <button class="bill-filter-btn" onclick="setBillFilter('paid', this)">Paid</button>
+    </div>
+
+    <div id="bills-list-container"></div>
+</div>
+
+    <div id="subview-accounts" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div class="chart-title">Payment Methods</div>
+            <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleAcctForm()">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <div id="add-acct-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
+            <input type="text" id="acct-name" class="calc-pill-select" placeholder="Account Name (e.g. HDFC Bank)" style="width:100%; font-weight:bold; margin-bottom:10px;">
+            <div class="input-row">
+                <select id="acct-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+                    <option value="fa-building-columns">&#xf19c; Bank</option>
+                    <option value="fa-wallet">&#xf555; Wallet</option>
+                    <option value="fa-credit-card">&#xf09d; Card</option>
+                    <option value="fa-money-bill-1">&#xf3d1; Cash</option>
+                </select>
+            </div>
+            <button class="btn-goal-add" onclick="saveNewAccount()" style="margin-top:10px; background:var(--secondary); color:black;">Add Account</button>
+        </div>
+
+        <div id="accounts-list-container"></div>
+    </div>
+
+</div>
+            <div id="view-debts" class="view-container">
+    <div class="stat-card" style="margin-bottom:20px; background:rgba(168, 85, 247, 0.1); border-color:#a855f7;">
+        <span class="stat-title" style="color:#a855f7">Net Outstanding</span>
+        <span class="stat-val" style="color:#a855f7" id="debt-net-bal">...</span>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;">Positive = People owe you</div>
+    </div>
+    <div id="debts-list-container"></div>
+</div>
+<div id="view-goals" class="view-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div class="chart-title">My Targets</div>
+        <button class="nav-add-btn" style="width:35px; height:35px; font-size:1rem;" onclick="toggleGoalForm()">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
+
+    <div id="add-goal-form">
+        <div class="input-row">
+            <input type="text" id="goal-name" class="calc-pill-select" placeholder="Goal Name (e.g. iPhone)" style="flex:2; font-weight:bold;">
+            <div style="flex:1; position:relative;">
+                <input type="number" id="goal-target" class="calc-pill-select" placeholder="Target Amount">
+            </div>
+        </div>
+        <button class="btn-goal-add" onclick="saveNewGoal()" style="margin-top:10px; background:var(--primary); color:black;">Create Goal</button>
+    </div>
+
+    <div id="goals-list-container"></div>
+</div>
             <div id="view-income" class="view-container">
                 <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
                     <span class="stat-title">Total Income (Period)</span>
@@ -647,6 +1306,25 @@
                     </div>
 
                     <div class="settings-group">
+                        <div class="settings-btn" onclick="toggleNotifications()">
+                            <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> App Notifications</span>
+                            <i id="notif-toggle-icon" class="fa-solid fa-toggle-off" style="font-size:1.2rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn" onclick="setDailyReminder()">
+                        <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> Set Daily Reminder</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn" onclick="toggleTheme()">
+                            <span>
+                                <i id="theme-icon" class="fa-solid fa-moon" style="margin-right:10px; width:20px; text-align:center;"></i> 
+                                <span id="theme-text">Dark Mode</span>
+                            </span>
+                                <i class="fa-solid fa-toggle-off" id="theme-toggle-icon" style="font-size:1.2rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn" onclick="exportData()">
+                            <span><i class="fa-solid fa-file-csv" style="margin-right:10px; color:#10b981"></i> Export to Excel</span>
+                            <i class="fa-solid fa-download" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
                         <div class="settings-btn" onclick="resetData()">
                             <span><i class="fa-solid fa-rotate-left" style="margin-right:10px; color:var(--secondary)"></i> Clear All Data</span>
                             <i class="fa-solid fa-chevron-right" style="font-size:0.8rem; color:var(--text-muted)"></i>
@@ -673,7 +1351,10 @@
                 </button>
 
                 <button class="nav-btn" onclick="switchTab('categories', this)">
-                    <i class="fa-solid fa-tags"></i> Cats
+                    <i class="fa-solid fa-wallet"></i> Account
+                </button>
+                <button class="nav-btn" onclick="switchTab('debts', this)">
+                    <i class="fa-solid fa-handshake"></i> Debts
                 </button>
 
                 <button class="nav-btn" onclick="switchTab('profile', this)">
@@ -765,51 +1446,149 @@
         window.addEventListener('resize', () => { if(currentTab==='dashboard') updateUI(); });
     }
 
-    // --- DATA LOGIC (CLOUD) ---
+    // ==========================================
+    // DATA LOGIC (CLOUD + LOCAL)
+    // ==========================================
     async function loadData() {
+        // 1. LOAD LOCAL (Instant Display)
+        const localData = localStorage.getItem('budget_data_local');
+        
+        // --- Initialize Defaults ---
+        window.transactions = [];
+        window.goals = [];
+        window.bills = [];
+        window.accounts = ["Cash", "Card", "PhonePe", "GPay", "NetBanking"];
+
+        if (localData) {
+            try {
+                const parsed = JSON.parse(localData);
+                
+                // --- Load Data from Storage ---
+                window.transactions = parsed.transactions || [];
+                window.goals = parsed.goals || [];
+                window.bills = parsed.bills || [];
+                
+                if(parsed.accounts && parsed.accounts.length > 0) {
+                    window.accounts = parsed.accounts;
+                }
+                
+                // Render immediately
+                updateUI();
+                if(window.renderBills) window.renderBills();
+                if(window.renderAccounts) window.renderAccounts();
+                if(window.renderGoals) window.renderGoals();
+                if(window.checkBillAlerts) window.checkBillAlerts();
+            } catch(e) { console.error("Local Parse Error", e); }
+        }
+
+        // 2. CHECK CLOUD (Smart Merge)
         if(!currentUserUID) return;
         
-        document.getElementById('loader').style.display = 'inline-block';
+        const loader = document.getElementById('loader');
+        if(loader) loader.style.display = 'inline-block';
+
         try {
             const docRef = window.firebaseModules.doc(db, "users", currentUserUID);
             const docSnap = await window.firebaseModules.getDoc(docRef);
             
             if (docSnap.exists()) {
-                transactions = docSnap.data().transactions || [];
-            } else {
-                generateDummyData(); // First time login
-            }
+                const cloudData = docSnap.data();
+                const cloudTx = cloudData.transactions || [];
+                
+                // Sync Arrays
+                window.goals = cloudData.goals || [];
+                window.bills = cloudData.bills || [];
+                
+                if(cloudData.accounts && cloudData.accounts.length > 0) {
+                    window.accounts = cloudData.accounts;
+                }
+
+                // Sync Transactions (Smart Merge)
+                const txMap = new Map();
+                cloudTx.forEach(t => txMap.set(t.id, t));
+                
+                window.transactions.forEach(t => {
+                     if(!txMap.has(t.id)) txMap.set(t.id, t);
+                });
+
+                window.transactions = Array.from(txMap.values());
+
+                // Update Local Storage with new merged data
+                localStorage.setItem('budget_data_local', JSON.stringify({
+                    transactions: window.transactions,
+                    goals: window.goals,
+                    bills: window.bills,
+                    accounts: window.accounts,
+                    lastUpdated: new Date().toISOString()
+                }));
+                
+                // Render Final State
+                updateUI();
+                if(window.renderBills) window.renderBills();
+                if(window.renderAccounts) window.renderAccounts();
+                if(window.renderGoals) window.renderGoals();
+                
+                // If local had more items, push back to cloud
+                if(window.transactions.length > cloudTx.length) {
+                    saveData(); 
+                }
+            } 
         } catch (e) {
-            console.error("Load Error", e);
+            console.error("Cloud Load Error", e);
         }
-        document.getElementById('loader').style.display = 'none';
-        initCurrency();
-        updateUI();
+        
+        if(loader) loader.style.display = 'none';
+        if(typeof initCurrency === 'function') initCurrency();
     }
 
     async function saveData() {
-        // Optimistic UI Update (Update screen first)
-        updateUI(); 
+        // 1. Update UI immediately
+        if(typeof updateUI === 'function') updateUI(); 
         
-        // Background Cloud Save
+        // 2. SAVE LOCAL
+        const localObj = {
+            transactions: window.transactions || [],
+            goals: window.goals || [],
+            bills: window.bills || [],        // <--- Save Bills
+            accounts: window.accounts || [],  // <--- Save Accounts
+            lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('budget_data_local', JSON.stringify(localObj));
+        console.log("Local Save Complete");
+
+        // 3. SAVE CLOUD (THE IMPORTANT FIX)
         if(currentUserUID) {
             try {
                 await window.firebaseModules.setDoc(window.firebaseModules.doc(db, "users", currentUserUID), { 
-                    transactions: transactions,
+                    transactions: window.transactions || [],
+                    goals: window.goals || [],
+                    bills: window.bills || [],       // <--- ADDED THIS
+                    accounts: window.accounts || [], // <--- ADDED THIS
                     lastUpdated: new Date()
-                });
-                console.log("Cloud Saved");
-            } catch(e) {
-                console.error("Save Failed", e);
-                // Silent fail or alert("Cloud Save Failed. Check console.");
+                }, { merge: true });
+                console.log("Cloud Sync Complete");
+            } catch(e) { 
+                console.warn("Cloud Save Failed:", e); 
             }
         }
     }
 
     function resetData() {
-        if(confirm("Are you sure? This will delete all data from the Cloud.")) {
-            transactions = [];
-            saveData();
+        if(confirm("Are you sure? This deletes ALL data from Cloud & Device.")) {
+            // 1. Clear Memory
+            window.transactions = [];
+            window.goals = [];
+            window.bills = [];
+            window.accounts = ["Cash"]; // Reset to default
+            
+            // 2. Clear Local
+            localStorage.removeItem('budget_data_local');
+            
+            // 3. Clear Cloud (Save empty state)
+            saveData(); 
+            
+            alert("All data reset.");
+            location.reload();
         }
     }
 
@@ -843,7 +1622,7 @@
     let exchangeRates = { USD: 1 };
     let currentCurrency = "USD";
     let currentRate = 1;
-    const symbols = { USD: "$", INR: "₹", EUR: "€", GBP: "£", JPY: "¥" };
+    const symbols = { USD: "$", INR: "₹", EUR: "€", GBP: "£", JPY: "¥", CAD: "C$" };
 
     async function initCurrency() {
         try {
@@ -886,8 +1665,9 @@
     }
 
     // --- CORE LOGIC ---
-    let transactions = [];
+    window.transactions = [];
     let currentTab = 'dashboard';
+    let currentManageTab = 'bills';
     let editingId = null;
 
     function initDateControls() {
@@ -905,7 +1685,9 @@
             yearSel.appendChild(opt);
         }
 
-        document.getElementById('period-select').value = String(today.getMonth());
+        // FIX: Set default to "all_time" instead of current month
+        document.getElementById('period-select').value = "all_time";
+        
         document.getElementById('custom-start').value = `${yyyy}-${mm}-01`;
         document.getElementById('custom-end').value = today.toLocaleDateString('en-CA');
     }
@@ -938,7 +1720,8 @@
         if(btn) btn.classList.add('active');
         document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
         document.getElementById(`view-${tabName}`).classList.add('active');
-        
+        // Inside updateUI...
+    if (currentTab === 'goals') renderGoals();
         const titles = { 'dashboard': 'Dashboard', 'income': 'Income Details', 'expenses': 'Expense Details', 'records': 'All Records', 'categories': 'Categories', 'profile': 'My Profile' };
         document.getElementById('page-title').innerText = titles[tabName] || 'Budget Pro';
         updateUI();
@@ -982,38 +1765,94 @@
     let calcString = "0";
     let calcType = "expense";
 
-    function openCalc(isEdit = false) {
+    window.openCalc = function(isEdit = false) {
         document.getElementById('calc-modal').style.display = 'flex';
-        document.getElementById('calc-title').innerText = isEdit ? "Edit Transaction" : "New Transaction";
+        
+        // --- NEW CODE START: Populate Methods dynamically ---
+        const methodSelect = document.getElementById('calc-method');
+        if(methodSelect && window.accounts) {
+            methodSelect.innerHTML = "";
+            window.accounts.forEach(acc => {
+                const opt = document.createElement('option');
+                opt.value = acc;
+                opt.innerText = acc;
+                methodSelect.appendChild(opt);
+            });
+        }
+        // --- NEW CODE END ---
+
+        // Set Date to Today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById('calc-date').value = `${yyyy}-${mm}-${dd}`;
+
         if(!isEdit) {
-            editingId = null; setCalcType('expense'); calcString = "0";
-            document.getElementById('calc-note').value = ""; updateCalcDisplay();
+            editingId = null; 
+            setCalcType('income'); 
+            calcString = "0"; 
+            document.getElementById('calc-note').value = ""; 
+            
+            // Clear specific inputs if they exist
+            if(document.getElementById('calc-person')) document.getElementById('calc-person').value = "";
+            
+            updateCalcDisplay();
         }
     }
 
     function closeCalc() { document.getElementById('calc-modal').style.display = 'none'; editingId = null; }
 
-    function setCalcType(type) {
+    window.setCalcType = function(type) {
         calcType = type;
-        document.getElementById('tab-exp').classList.toggle('active', type === 'expense');
-        document.getElementById('tab-inc').classList.toggle('active', type === 'income');
-        const select = document.getElementById('calc-cat');
-        const currentVal = select.value;
-        select.innerHTML = "";
-        const list = type === 'expense' ? expCategories : incCategories;
-        list.forEach(c => {
-            const opt = document.createElement('option'); opt.value = c; opt.innerText = c; select.appendChild(opt);
-        });
-        if(list.includes(currentVal)) select.value = currentVal;
+        
+        // 1. Highlight Tab
+        document.getElementById('tab-exp').className = type==='expense'?'calc-tab active expense-tab':'calc-tab';
+        document.getElementById('tab-inc').className = type==='income'?'calc-tab active':'calc-tab';
+        document.getElementById('tab-debt').className = type==='debt'?'calc-tab active debt-tab':'calc-tab';
+
+        // 2. Toggle Fields
+        const catSelect = document.getElementById('calc-cat');
+        const debtWrapper = document.getElementById('debt-row-wrapper');
+
+        if(type === 'debt') {
+            catSelect.style.display = 'none';
+            debtWrapper.style.display = 'flex'; // Show the Name + Type row
+        } else {
+            catSelect.style.display = 'block';
+            debtWrapper.style.display = 'none';
+            
+            // Refill Categories
+            catSelect.innerHTML = "";
+            const list = type === 'expense' ? expCategories : incCategories;
+            if(list) list.forEach(c => {
+                const opt = document.createElement('option'); opt.value = c; opt.innerText = c; catSelect.appendChild(opt);
+            });
+        }
+        updateCalcDisplay();
     }
 
     function calcInput(val) {
-        if(val === 'del') { calcString = calcString.slice(0, -1); if(calcString === "") calcString = "0"; }
+        if(val === 'del') { 
+            calcString = calcString.slice(0, -1); 
+            if(calcString === "") calcString = "0"; 
+        }
+        else if(val === 'clear') { 
+            // FIX: Actually reset to 0 instead of writing "clear"
+            calcString = "0"; 
+        }
         else if (['+','-','*','/'].includes(val)) {
             const last = calcString.slice(-1);
-            if(['+','-','*','/'].includes(last)) calcString = calcString.slice(0, -1) + val; else calcString += val;
+            // Prevent double operators (e.g. 5++5)
+            if(['+','-','*','/'].includes(last)) {
+                calcString = calcString.slice(0, -1) + val; 
+            } else {
+                calcString += val;
+            }
         } else {
-            if(calcString === "0" && val !== '.') calcString = val; else calcString += val;
+            // Standard number input
+            if(calcString === "0" && val !== '.') calcString = val; 
+            else calcString += val;
         }
         updateCalcDisplay();
     }
@@ -1032,31 +1871,178 @@
         document.getElementById('calc-display').style.color = calcType === 'income' ? 'var(--primary)' : 'var(--secondary)';
     }
 
-    function saveCalc() {
-        calcEval(); 
+    window.saveCalc = function() {
+        try { calcString = eval(calcString).toString(); } catch {}
         const amount = parseFloat(calcString);
+        if(!amount || amount <= 0) return alert("Invalid Amount");
         
-        if(isNaN(amount) || amount <= 0) { 
-            alert("Please enter a valid amount greater than 0"); 
-            return; 
-        }
-        
-        const cat = document.getElementById('calc-cat').value;
+        const dateVal = document.getElementById('calc-date').value || new Date().toISOString().split('T')[0];
         const method = document.getElementById('calc-method').value;
         const note = document.getElementById('calc-note').value.trim();
-        const desc = note ? `${cat} (${note})` : cat;
-        const amtUSD = amount / currentRate;
+        let desc = "", type = calcType;
 
-        if(editingId) {
-            const idx = transactions.findIndex(t => t.id === editingId);
-            if(idx > -1) transactions[idx] = { ...transactions[idx], desc, amount: amtUSD, type: calcType, method };
+        if(calcType === 'debt') {
+            const person = document.getElementById('calc-person').value.trim();
+            if(!person) return alert("Enter Person Name");
+            desc = person; 
+            
+            // READ FROM DROPDOWN INSTEAD OF BUTTONS
+            const dir = document.getElementById('debt-dir').value;
+            type = dir === 'lent' ? 'debt_lent' : 'debt_borrowed';
         } else {
-            const dateStr = new Date().toLocaleDateString('en-CA');
-            transactions.push({ id: Date.now(), date: dateStr, desc: desc, amount: amtUSD, type: calcType, method: method });
+            const cat = document.getElementById('calc-cat').value;
+            desc = note ? `${cat} (${note})` : cat;
         }
-        saveData(); closeCalc();
+
+        const amtUSD = amount / currentRate;
+        const txObj = { id: editingId || Date.now(), date: dateVal, desc, amount: amtUSD, type, method, note };
+        
+        if(editingId) {
+            const idx = window.transactions.findIndex(t => t.id === editingId);
+            if(idx > -1) window.transactions[idx] = txObj;
+        } else {
+            window.transactions.push(txObj);
+        }
+        window.saveData();
+        closeCalc();
+    }
+function renderDebts(data) {
+        const container = document.getElementById('debts-list-container');
+        container.innerHTML = "";
+        
+        const people = {};
+        
+        // 1. Group Data & Find Totals
+        window.transactions.forEach(t => {
+            if(t.type !== 'debt_lent' && t.type !== 'debt_borrowed') return;
+            const person = t.desc;
+            if(!people[person]) people[person] = { bal: 0, txs: [], lastDate: t.date };
+            
+            if(t.type === 'debt_lent') people[person].bal += t.amount;
+            else people[person].bal -= t.amount;
+            
+            people[person].txs.push(t);
+            if(t.date > people[person].lastDate) people[person].lastDate = t.date;
+        });
+
+        let totalNet = 0;
+        
+        // --- OPTIMIZED: Use String Variable ---
+        let html = "";
+
+        Object.keys(people).forEach((p, index) => {
+            const personData = people[p];
+            const val = personData.bal;
+            totalNet += val;
+
+            const isLent = val >= 0; 
+            const colorClass = isLent ? "lent" : "borrowed";
+            const uniqueId = `debt-card-${index}`;
+            const formattedAmt = formatMoney(Math.abs(val));
+            
+            // Days Ago Logic
+            const today = new Date();
+            const lastTxDate = new Date(personData.lastDate);
+            const diffTime = Math.abs(today - lastTxDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            const dayText = diffDays === 0 ? "Today" : diffDays === 1 ? "Yesterday" : `${diffDays} days ago`;
+
+            // WhatsApp Button Logic
+            let waBtn = "";
+            if(isLent && Math.abs(val) > 1) {
+                const msg = `Hi ${p}, reminder regarding balance: ${formattedAmt}.`;
+                const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                waBtn = `<button class="btn-mini-action btn-wa" onclick="event.stopPropagation(); window.open('${waUrl}', '_blank')"><i class="fa-brands fa-whatsapp"></i></button>`;
+            }
+
+            // Build Stylized History List
+            let histHtml = '';
+            personData.txs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(t => {
+                const tColor = t.type === 'debt_lent' ? 'var(--secondary)' : 'var(--danger)';
+                const tSign = t.type === 'debt_lent' ? '+' : '-';
+                let note = t.note || (t.type==='debt_lent'?'Gave':'Got');
+                
+                histHtml += `
+                    <div class="debt-hist-item">
+                        <div style="flex:1;">
+                            <div class="debt-hist-date">${t.date}</div>
+                            <div style="font-size:0.85rem; color:var(--text-main); margin-top:2px;">${note}</div>
+                        </div>
+                        <div style="text-align:right; display:flex; align-items:center; gap:12px;">
+                            <div style="font-weight:bold; color:${tColor}; font-family:'Consolas'; font-size:0.95rem;">${tSign}${formatMoney(t.amount)}</div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="hist-action-btn" onclick="event.stopPropagation(); editTx(${t.id})"><i class="fa-solid fa-pen" style="font-size:0.75rem;"></i></button>
+                                <button class="hist-action-btn del" onclick="event.stopPropagation(); deleteTx(${t.id})"><i class="fa-solid fa-trash" style="font-size:0.75rem;"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+
+            html += `
+                <div class="debt-card" id="${uniqueId}">
+                    <div class="debt-header-main" onclick="toggleDebt('${uniqueId}')">
+                        <div style="display:flex; align-items:center;">
+                            <div class="debt-avatar">${p.charAt(0).toUpperCase()}</div>
+                            <div style="font-weight:700; font-size:1rem;">${p}</div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <div class="debt-amt ${colorClass}" style="margin-right:8px;">${formattedAmt}</div>
+                            <i class="fa-solid fa-chevron-down debt-chevron"></i>
+                        </div>
+                    </div>
+
+                    <div class="debt-action-row">
+                        <div class="debt-days-badge"><i class="fa-regular fa-clock"></i> ${dayText}</div>
+                        <div class="debt-btn-group">
+                            ${waBtn}
+                            <button class="btn-mini-action btn-settle" onclick="event.stopPropagation(); settleDebt('${p}', ${val})">
+                                <i class="fa-solid fa-check"></i> Settle
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="debt-history-container">
+                        <div class="debt-hist-header-label">Transaction Log</div>
+                        <div class="debt-history-scroll" style="max-height:250px; overflow-y:auto;">
+                            ${histHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // --- OPTIMIZED: Update DOM once ---
+        container.innerHTML = html;
+
+        const netEl = document.getElementById('debt-net-bal');
+        netEl.innerText = formatMoney(totalNet);
+        netEl.className = totalNet >= 0 ? "stat-val pos" : "stat-val neg";
     }
 
+    // Toggle Function
+    function toggleDebt(id) {
+        document.getElementById(id).classList.toggle('open');
+    }
+
+    function settleDebt(person, balance) {
+        openCalc(); 
+        setCalcType('debt');
+        
+        // Fill Name
+        document.getElementById('calc-person').value = person;
+        
+        // Fill Amount
+        calcString = Math.abs(balance * currentRate).toFixed(2); 
+        updateCalcDisplay();
+        
+        // Set Dropdown Logic: 
+        // If they owe you (+), you are "receiving" (use 'borrowed' logic to reduce balance)
+        // If you owe them (-), you are "giving" (use 'lent' logic to reduce balance)
+        const dir = balance > 0 ? 'borrowed' : 'lent';
+        document.getElementById('debt-dir').value = dir;
+        
+        document.getElementById('calc-note').value = "Settlement";
+    }
     // --- FILTER ---
     function filterData() {
         const year = parseInt(document.getElementById('year-select').value);
@@ -1064,18 +2050,26 @@
         const customStart = document.getElementById('custom-start').value;
         const customEnd = document.getElementById('custom-end').value;
 
+        // Show/Hide Custom Date Row
         const customRow = document.getElementById('custom-date-controls');
         if(period === 'custom') customRow.classList.add('show'); else customRow.classList.remove('show');
 
-        return transactions.filter(t => {
+        return window.transactions.filter(t => {
+            // 1. HANDLE "ALL TIME" (The Fix)
+            // If All Time is selected, we return TRUE immediately (ignoring the Year dropdown)
+            if (period === 'all_time') return true;
+
             const txDate = new Date(t.date);
             const txY = txDate.getFullYear();
             const txM = txDate.getMonth();
             
+            // 2. HANDLE CUSTOM DATE
             if(period === 'custom') {
                 if(!customStart || !customEnd) return true;
                 return t.date >= customStart && t.date <= customEnd;
             }
+
+            // 3. HANDLE WEEK
             if(period === 'week') {
                 const now = new Date();
                 const day = now.getDay() || 7; 
@@ -1087,38 +2081,121 @@
                 endOfWeek.setHours(23,59,59,999);
                 return txDate >= startOfWeek && txDate <= endOfWeek;
             }
+
+            // 4. CHECK YEAR (For everything else)
             if(txY !== year) return false;
+
+            // 5. CHECK PERIOD (Months/Quarters)
             if(period === 'all') return true;
             if(period === 'q1') return txM >= 0 && txM <= 2;
             if(period === 'q2') return txM >= 3 && txM <= 5;
             if(period === 'q3') return txM >= 6 && txM <= 8;
             if(period === 'q4') return txM >= 9 && txM <= 11;
+            
             const monthIdx = parseInt(period);
             if(!isNaN(monthIdx)) return txM === monthIdx;
+            
             return true;
         });
     }
-
+function setDailyReminder() {
+        // Creates a link to add a recurring 9PM event to Google Calendar
+        const title = "Update Budget Tracker";
+        const details = "Time to add your daily expenses and income!";
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(details)}&recur=RRULE:FREQ=DAILY`;
+        
+        window.open(url, '_blank');
+    }
     // --- UI RENDERING ---
-    function updateUI() {
+   window.updateUI = function() {
+        // --- 1. UI LOGIC: HIDE YEAR IF 'ALL TIME' ---
+        const periodEl = document.getElementById('period-select');
+        const yearSelect = document.getElementById('year-select');
+        
+        // Safety check if elements exist
+        if(periodEl && yearSelect) {
+            const period = periodEl.value;
+            yearSelect.style.display = (period === 'all_time') ? 'none' : 'block';
+        }
+
+        // --- 2. DATA FILTERING ---
         const filtered = filterData();
         
-        let inc=0, exp=0;
-        filtered.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
-        document.getElementById('total-inc').innerText = formatMoney(inc);
-        document.getElementById('total-exp').innerText = formatMoney(exp);
-        document.getElementById('balance').innerText = formatMoney(inc - exp);
+        // --- 3. CALCULATE TOTALS ---
+        let realIncome = 0;    
+        let realExpense = 0;   
+        let cashIn = 0;        
+        let cashOut = 0;
         
-        document.getElementById('profile-total-tx').innerText = filtered.length;
+        let totalLent = 0;
+        let totalBorrowed = 0;
+        
+        // --- MAIN LOOP (CALCULATE ONLY) ---
+        filtered.forEach(t => {
+            // A. Income & Expense
+            if (t.type === 'income') {
+                realIncome += t.amount;
+                cashIn += t.amount;
+            } 
+            else if (t.type === 'expense') {
+                realExpense += t.amount;
+                cashOut += t.amount;
+            }
+            // B. Debt Logic
+            else if (t.type === 'debt_lent') {
+                cashOut += t.amount;       // Money left wallet
+                totalLent += t.amount;     // Asset (People owe you)
+            }
+            else if (t.type === 'debt_borrowed') {
+                cashIn += t.amount;        // Money entered wallet
+                totalBorrowed += t.amount; // Liability (You owe people)
+            }
+        });
 
+        // --- 4. UPDATE HTML CARDS ---
+        if(document.getElementById('total-inc')) {
+            document.getElementById('total-inc').innerText = formatMoney(realIncome);
+            document.getElementById('total-exp').innerText = formatMoney(realExpense);
+            
+            // Wallet Balance
+            const netBal = cashIn - cashOut;
+            document.getElementById('balance').innerText = formatMoney(netBal);
+            
+            // Net Outstanding
+            const netOutstanding = totalLent - totalBorrowed;
+            const outEl = document.getElementById('total-outstanding');
+            const prefix = netOutstanding > 0 ? "+" : ""; 
+            outEl.innerText = prefix + formatMoney(netOutstanding);
+            
+            // Color Logic
+            if (netOutstanding > 0) outEl.style.color = "#10b981"; // Green
+            else if (netOutstanding < 0) outEl.style.color = "#ef4444"; // Red
+            else outEl.style.color = "var(--text-main)"; // Gray
+
+            document.getElementById('profile-total-tx').innerText = filtered.length;
+        }
+
+        // --- 5. RENDER ACTIVE TAB (DISPLAY LOGIC) ---
+        // This MUST be outside the loop!
         if(currentTab === 'dashboard') {
-            renderExpenseFlow(filtered);
-            if(currentChartType === 'donut') renderSpendingDonut(filtered);
-            else renderSpendingSunburst(filtered);
-        } else if (currentTab === 'records') renderRecordsList(filtered);
+            const chartData = filtered.filter(t => t.type === 'income' || t.type === 'expense');
+            renderExpenseFlow(chartData);
+            if(currentChartType === 'donut') renderSpendingDonut(chartData);
+            else renderSpendingSunburst(chartData);
+        } 
+        else if (currentTab === 'debts') renderDebts(window.transactions); 
+        else if (currentTab === 'records') renderRecordsList(filtered);
         else if (currentTab === 'income') renderDetailList(filtered, 'income');
         else if (currentTab === 'expenses') renderDetailList(filtered, 'expense');
-        else if (currentTab === 'categories') renderCategories(filtered);
+        else if (currentTab === 'categories') {
+            // Check which sub-tab is open and refresh ONLY that one
+            if (!currentManageTab) currentManageTab = 'cats'; // Safety Default
+            
+            if (currentManageTab === 'cats') renderCategories(filtered);
+            else if (currentManageTab === 'bills') renderBills();
+            else if (currentManageTab === 'accounts') renderAccounts();
+        }
+        else if (currentTab === 'goals') renderGoals();
     }
 
     function switchChartType(type, btn) {
@@ -1417,24 +2494,33 @@
     function renderRecordsList(data) {
         const container = document.getElementById('records-list-container'); data.sort((a,b) => new Date(b.date) - new Date(a.date)); document.getElementById('records-page-total').innerText = data.length + " items";
         if(data.length === 0) { container.innerHTML = `<div class="empty-state">No records found.</div>`; return; }
-        let html = ''; let lastDate = '';
+        
+        // --- OPTIMIZED: Use String Variable ---
+        let html = ''; 
+        let lastDate = '';
         data.forEach(t => {
             if(t.date !== lastDate) { const niceDate = new Date(t.date).toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'}); html += `<div class="records-date-header">${niceDate}</div>`; lastDate = t.date; }
             const icon = getCategoryIcon(t.desc); const color = t.type === 'income' ? 'var(--primary)' : 'var(--danger)'; const sign = t.type === 'income' ? '+' : '-'; const methodDisplay = t.method ? `<span class="method-tag">${t.method}</span>` : '';
             html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.03);"><div style="display:flex; align-items:center;"><span class="detail-icon" style="color:${color}"><i class="fa-solid ${icon}"></i></span><div><div style="font-weight:600; font-size:0.95rem;">${t.desc}</div><div style="display:flex; align-items:center; margin-top:3px;"><div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">${t.type}</div>${methodDisplay}</div></div></div><div style="text-align:right;"><div style="font-weight:700; color:${color}">${sign}${formatMoney(t.amount)}</div><div style="display:flex; gap:10px; justify-content:flex-end; margin-top:5px;"><div style="font-size:0.9rem; color:var(--text-muted); cursor:pointer;" onclick="editTx(${t.id})"><i class="fa-solid fa-pen"></i></div><div style="font-size:0.9rem; color:var(--text-muted); cursor:pointer;" onclick="deleteTx(${t.id})"><i class="fa-solid fa-trash"></i></div></div></div></div>`;
         });
+        
+        // --- OPTIMIZED: Update DOM once ---
         container.innerHTML = html;
     }
 
     function renderDetailList(data, type) {
         const container = document.getElementById(type === 'income' ? 'income-list-container' : 'expense-list-container'); const subset = data.filter(t => t.type === type).sort((a,b) => new Date(b.date) - new Date(a.date));
         if(subset.length === 0) { container.innerHTML = `<div class="empty-state">No ${type} records.</div>`; return; }
+        
+        // --- OPTIMIZED: Use String Variable ---
         let html = `<table class="detail-table"><thead><tr><th>Date</th><th>Description</th><th style="text-align:right">Amount</th><th style="text-align:right"></th></tr></thead><tbody>`;
         subset.forEach(t => {
             const icon = getCategoryIcon(t.desc); const methodTxt = t.method ? ` <span style="font-size:0.75rem; color:var(--text-muted)">(${t.method})</span>` : '';
             html += `<tr><td>${t.date}</td><td><span class="detail-icon"><i class="fa-solid ${icon}"></i></span> ${t.desc}${methodTxt}</td><td style="text-align:right; font-family:'Consolas'; font-weight:700; color: ${type=='income'?'var(--primary)':'var(--secondary)'}">${formatMoney(t.amount)}</td><td style="text-align:right"><button style="background:none; border:none; color:var(--text-muted); cursor:pointer; margin-right:10px;" onclick="editTx(${t.id})"><i class="fa-solid fa-pen"></i></button><button style="background:none; border:none; color:var(--text-muted); cursor:pointer;" onclick="deleteTx(${t.id})"><i class="fa-solid fa-trash"></i></button></td></tr>`;
         });
         html += `</tbody></table>`;
+        
+        // --- OPTIMIZED: Update DOM once ---
         container.innerHTML = html;
     }
 
@@ -1446,7 +2532,915 @@
         else if(key === 'Enter') { event.preventDefault(); saveCalc(); }
         else if(key === 'Escape') { closeCalc(); }
     });
+    // --- FEATURE: EXPORT TO CSV ---
+    window.exportData = function() {
+        if (!window.transactions || window.transactions.length === 0) { 
+            alert("No data to export!"); 
+            return; 
+        }
+        
+        // 1. Get the currently selected currency (e.g., "INR", "CAD")
+        const selectedCurrency = document.getElementById('currency').value;
 
+        // 2. Use backticks (`) to insert the currency into the Header Row
+        let csvContent = `Date,Description,Amount (${selectedCurrency}),Type,Method\n`;
+        
+        window.transactions.forEach(t => {
+            let cleanDesc = t.desc.replace(/,/g, " "); 
+            
+            // 3. Convert the value from USD to the selected currency
+            let convertedAmt = t.amount * currentRate; 
+            let amt = Number(convertedAmt).toFixed(2);
+            
+            let row = `${t.date},${cleanDesc},${amt},${t.type},${t.method || ''}`;
+            csvContent += row + "\n";
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        
+        // 4. File name also includes the currency now
+        link.setAttribute("download", `budget_data_${selectedCurrency}.csv`);
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    // --- FEATURE: SMART SEARCH (>, <, =) ---
+    window.handleSearch = function() {
+        // 1. Get input and clean it
+        let query = document.getElementById('search-input').value.trim().toLowerCase();
+        
+        // 2. Get currently filtered data (respects date/year)
+        const currentData = window.filterData();
+        
+        let searchResults = [];
+
+        // 3. Check if input starts with an operator (>, <, >=, <=, =)
+        // Regex looks for: Operator + Optional Space + Number
+        const match = query.match(/^([<>]=?|=)\s*(\d+(\.\d+)?)$/);
+
+        if (match) {
+            // --- MATH MODE ---
+            const operator = match[1];
+            const searchVal = parseFloat(match[2]);
+
+            searchResults = currentData.filter(t => {
+                // IMPORTANT: Convert stored USD amount to CURRENT displayed currency
+                // This ensures if you see ₹500 on screen, searching >400 works correctly.
+                const val = t.amount * currentRate; 
+                
+                if (operator === '>') return val > searchVal;
+                if (operator === '<') return val < searchVal;
+                if (operator === '>=') return val >= searchVal;
+                if (operator === '<=') return val <= searchVal;
+                if (operator === '=') return Math.abs(val - searchVal) < 0.01; // Exact match (with float safety)
+                return false;
+            });
+        } else {
+            // --- TEXT MODE (Standard) ---
+            searchResults = currentData.filter(t => {
+                // Convert amount to displayed string for matching (e.g. finds "50" in "150")
+                const valStr = (t.amount * currentRate).toFixed(2);
+                
+                return t.desc.toLowerCase().includes(query) || 
+                       valStr.includes(query) ||
+                       (t.method && t.method.toLowerCase().includes(query));
+            });
+        }
+        
+        // 4. Render results
+        renderRecordsList(searchResults);
+    };
+    // --- FEATURE: THEME TOGGLE ---
+    window.toggleTheme = function() {
+        const body = document.body;
+        body.classList.toggle('light-mode');
+        
+        const isLight = body.classList.contains('light-mode');
+        localStorage.setItem('budget_theme', isLight ? 'light' : 'dark');
+        updateThemeUI(isLight);
+    }
+
+    function updateThemeUI(isLight) {
+        // 1. Update the New Header Icon
+        const headerIcon = document.getElementById('header-theme-icon');
+        if (headerIcon) {
+            headerIcon.className = isLight ? "fa-solid fa-sun" : "fa-solid fa-moon";
+            headerIcon.style.color = isLight ? "#f59e0b" : "var(--text-muted)"; // Gold Sun / Gray Moon
+        }
+
+        // 2. Update the Profile Button (If you kept it there)
+        const icon = document.getElementById('theme-icon');
+        const text = document.getElementById('theme-text');
+        const toggle = document.getElementById('theme-toggle-icon');
+
+        if (icon && text && toggle) {
+            if (isLight) {
+                icon.className = "fa-solid fa-sun";
+                icon.style.color = "#f59e0b";
+                text.innerText = "Light Mode";
+                toggle.className = "fa-solid fa-toggle-on";
+                toggle.style.color = "var(--primary)";
+            } else {
+                icon.className = "fa-solid fa-moon";
+                icon.style.color = "var(--text-main)";
+                text.innerText = "Dark Mode";
+                toggle.className = "fa-solid fa-toggle-off";
+                toggle.style.color = "var(--text-muted)";
+            }
+        }
+    }
+
+    // --- INIT THEME ON LOAD ---
+    // Call this immediately to set correct theme
+    (function initTheme() {
+        const savedTheme = localStorage.getItem('budget_theme');
+        if(savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            // We use a small timeout to ensure DOM is ready if script runs too early
+            setTimeout(() => updateThemeUI(true), 50); 
+        }
+    })();
+    // --- PWA REGISTRATION ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js?v=5')
+                .then(reg => console.log('App Installed!', reg.scope))
+                .catch(err => console.log('App Fail:', err));
+        });
+    }
+    // --- GOALS LOGIC ---
+    window.goals = []; // Store goals here
+
+    window.renderGoals = function() {
+        const container = document.getElementById('goals-list-container');
+        if(!container) return;
+        
+        container.innerHTML = "";
+        
+        if(!window.goals || window.goals.length === 0) {
+            container.innerHTML = "<div class='empty-state'>No goals yet. Click + to add one!</div>";
+            return;
+        }
+
+        // --- OPTIMIZED: Use String Variable ---
+        let html = "";
+
+        window.goals.forEach((g, index) => {
+            // Safety check for numbers
+            const saved = parseFloat(g.saved) || 0;
+            const target = parseFloat(g.target) || 1;
+            const percent = Math.min(100, (saved / target) * 100).toFixed(1);
+            
+            html += `
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <div class="goal-title">
+                            <div class="goal-icon-box"><i class="fa-solid fa-bullseye"></i></div>
+                            ${g.name}
+                        </div>
+                        <div style="font-size:0.9rem; font-weight:bold; color:var(--primary);">
+                            ${percent}%
+                        </div>
+                    </div>
+                    
+                    <div class="goal-progress-bg">
+                        <div class="goal-progress-fill" style="width:${percent}%"></div>
+                    </div>
+                    
+                    <div class="goal-stats">
+                        <div>Saved: <span class="goal-current">${formatMoney(saved)}</span></div>
+                        <div>Target: ${formatMoney(target)}</div>
+                    </div>
+
+                    <button class="btn-goal-add" onclick="addMoneyToGoal(${index})">
+                        <i class="fa-solid fa-circle-plus"></i> Add Money
+                    </button>
+                    
+                    <div style="text-align:center; margin-top:10px;">
+                         <span style="font-size:0.7rem; color:var(--danger); cursor:pointer;" onclick="deleteGoal(${index})">Delete Goal</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        // --- OPTIMIZED: Update DOM once ---
+        container.innerHTML = html;
+    }
+
+    window.toggleGoalForm = function() {
+        const f = document.getElementById('add-goal-form');
+        f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    }
+
+    window.saveNewGoal = function() {
+        const name = document.getElementById('goal-name').value;
+        const target = parseFloat(document.getElementById('goal-target').value);
+        
+        if(!name || !target) return alert("Please fill details");
+        
+        // Convert to USD for storage
+        const targetUSD = target / currentRate;
+        
+        if(!window.goals) window.goals = [];
+        window.goals.push({ name, target: targetUSD, saved: 0 });
+        
+        // --- THE FIX ---
+        saveData(); // Uses the MAIN save function (Local + Cloud)
+        // ----------------
+        
+        document.getElementById('goal-name').value = "";
+        document.getElementById('goal-target').value = "";
+        toggleGoalForm();
+        renderGoals();
+    }
+
+    window.addMoneyToGoal = function(index) {
+        const amount = prompt("How much to add?");
+        if(amount) {
+            const val = parseFloat(amount);
+            if(val > 0) {
+                // Store in USD
+                window.goals[index].saved += (val / currentRate);
+                saveData(); // <--- Updates Local + Cloud
+                renderGoals();
+            }
+        }
+    }
+    
+    window.deleteGoal = function(index) {
+        if(confirm("Delete this goal?")) {
+            window.goals.splice(index, 1);
+            saveData(); // <--- Updates Local + Cloud
+            renderGoals();
+        }
+    }
+    // ==========================================
+    // AUTO-DETECT ICONS & COLORS
+    // ==========================================
+    window.autoDetectBillIcon = function() {
+        const name = document.getElementById('bill-name').value.toLowerCase();
+        const iconSel = document.getElementById('bill-icon');
+        const colorSel = document.getElementById('bill-color');
+
+        // 1. Movies / Streaming
+        if(name.includes('netflix') || name.includes('youtube')) {
+            iconSel.value = "fa-film"; 
+            colorSel.value = "#e50914"; // Netflix Red
+        }
+        else if(name.includes('prime') || name.includes('disney') || name.includes('hulu') || name.includes('tv') || name.includes('hotstar')) {
+            iconSel.value = "fa-film"; 
+            colorSel.value = "#00a8e8"; // Prime Blue
+        }
+        
+        // 2. Music
+        else if(name.includes('spotify') || name.includes('music') || name.includes('sound') || name.includes('gaana') || name.includes('jiosaavn')) {
+            iconSel.value = "fa-music"; 
+            colorSel.value = "#1db954"; // Spotify Green
+        }
+        else if(name.includes('apple')) {
+            iconSel.value = "fa-music"; 
+            colorSel.value = "#ffffff"; // Apple White
+        }
+
+        // 3. Internet / Wifi
+        else if(name.includes('wifi') || name.includes('net') || name.includes('fiber') || name.includes('airtel') || name.includes('act') || name.includes('jio')) {
+            iconSel.value = "fa-wifi"; 
+            colorSel.value = "#8b5cf6"; // Purple
+        }
+
+        // 4. Utilities (Power/Water)
+        else if(name.includes('electric') || name.includes('power') || name.includes('bill') || name.includes('bescom') || name.includes('water') || name.includes('gas')) {
+            iconSel.value = "fa-bolt"; 
+            colorSel.value = "#f59e0b"; // Orange
+        }
+
+        // 5. Phone
+        else if(name.includes('phone') || name.includes('mobile') || name.includes('recharge') || name.includes('prepaid') || name.includes('postpaid')) {
+            iconSel.value = "fa-mobile-screen"; 
+            colorSel.value = "#00a8e8"; // Blue
+        }
+
+        // 6. Gym / Health
+        else if(name.includes('gym') || name.includes('fitness') || name.includes('health') || name.includes('cult') || name.includes('yoga')) {
+            iconSel.value = "fa-dumbbell"; 
+            colorSel.value = "#f59e0b"; // Orange/Gold
+        }
+    }
+
+    // ==========================================
+    // CATEGORY-WISE PRESETS
+    // ==========================================
+    
+    // ==========================================
+    // BRANDED PRESETS (Official Logos)
+    // ==========================================
+    const presetData = {
+        'ott': [
+            { name: "Netflix", price: 149, icon: "fa-film", color: "#000000", logo: "https://upload.wikimedia.org/wikipedia/commons/7/75/Netflix_icon.svg" },
+            { name: "Prime Video", price: 299, icon: "fa-film", color: "#00A8E1", logo: "https://upload.wikimedia.org/wikipedia/commons/b/b9/Amazon_Prime_Video_logo.svg" },
+            { name: "Hotstar", price: 149, icon: "fa-tv", color: "#133ba2", logo: "https://secure-media.hotstarext.com/web-assets/prod/images/brand-logos/disney-hotstar-logo-dark.svg" },
+            { name: "YouTube Prem", price: 129, icon: "fa-play", color: "#FF0000", logo: "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg" },
+            { name: "SonyLiv", price: 299, icon: "fa-play", color: "#f05a28", logo: "https://images.samsung.com/is/image/samsung/assets/in/tvs/smart-tv/apps-on-smart-tv/sonyliv.png?$ORIGIN_PNG$" }
+        ],
+        'music': [
+            { name: "Spotify", price: 119, icon: "fa-music", color: "#1DB954", logo: "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg" },
+            { name: "Apple Music", price: 99, icon: "fa-music", color: "#FA243C", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_Music_icon.svg" }, // Fallback to generic music note if needed, but Amazon Music logo here for example
+            { name: "JioSaavn", price: 99, icon: "fa-music", color: "#2bc5b4", logo: "https://upload.wikimedia.org/wikipedia/commons/e/e8/JioSaavn_Logo.svg" }
+        ],
+        'internet': [
+            { name: "JioFiber", price: 699, icon: "fa-wifi", color: "#0f62fe", logo: "https://upload.wikimedia.org/wikipedia/commons/5/50/Jio_Logo.png" },
+            { name: "Airtel", price: 499, icon: "fa-wifi", color: "#ed1c24", logo: "https://upload.wikimedia.org/wikipedia/commons/b/bd/Airtel_logo_2010.svg" },
+            { name: "Google One", price: 130, icon: "fa-cloud", color: "#4285F4", logo: "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" }
+        ],
+        // Manual categories use generic icons (no logos)
+        'utilities': [
+            { name: "Electricity", price: 0, icon: "fa-bolt", color: "#F59E0B", logo: "" },
+            { name: "Rent", price: 0, icon: "fa-house", color: "#10B981", logo: "" }
+        ]
+    };
+
+    // 1. RENDER PRESET CHIPS (With Logos)
+    window.renderCategoryPresets = function() {
+        const cat = document.getElementById('preset-cat-select').value;
+        const container = document.getElementById('preset-options');
+        
+        container.innerHTML = "";
+        
+        if(cat === 'manual' || !presetData[cat]) {
+            container.style.display = 'none';
+            // Clear inputs
+            document.getElementById('bill-name').value = "";
+            document.getElementById('bill-amount').value = "";
+            document.getElementById('bill-logo-url').value = ""; // Clear logo
+            return;
+        }
+
+        container.style.display = 'flex';
+
+        presetData[cat].forEach(sub => {
+            const chip = document.createElement('div');
+            chip.className = 'preset-chip';
+            
+            // Check: Use Image if available, else use Icon
+            if(sub.logo) {
+                chip.innerHTML = `<img src="${sub.logo}" style="width:16px; height:16px; object-fit:contain;"> ${sub.name}`;
+            } else {
+                chip.innerHTML = `<i class="fa-solid ${sub.icon}" style="color:${sub.color}"></i> ${sub.name}`;
+            }
+            
+            chip.onclick = function() {
+                document.getElementById('bill-name').value = sub.name;
+                document.getElementById('bill-amount').value = sub.price || "";
+                
+                // Set Icon & Color Dropdowns
+                document.getElementById('bill-icon').value = sub.icon;
+                document.getElementById('bill-color').value = sub.color;
+                
+                // IMPORTANT: Save the Logo URL
+                document.getElementById('bill-logo-url').value = sub.logo || "";
+                
+                // Highlight
+                document.querySelectorAll('.preset-chip').forEach(c => c.style.borderColor = "var(--glass-border)");
+                this.style.borderColor = "var(--primary)";
+            };
+            
+            container.appendChild(chip);
+        });
+    }
+    // ==========================================
+    // 1. CALENDAR & BILLS LOGIC (Defined First)
+    // ==========================================
+    window.bills = []; 
+    let billViewDate = new Date();
+
+    // FIX: Helper to get DATE SUFFIX ONLY (st, nd, rd, th)
+    window.getOrdinal = function(n) {
+        if (n > 3 && n < 21) return "th"; // 11th, 12th, 13th
+        switch (n % 10) {
+            case 1:  return "st";
+            case 2:  return "nd";
+            case 3:  return "rd";
+            default: return "th";
+        }
+    };
+
+    // MAIN RENDER FUNCTION
+   // Global Filter State (Keep outside the function)
+    let currentBillFilter = 'all';
+
+    window.setBillFilter = function(filter, btn) {
+        currentBillFilter = filter;
+        const parent = btn.parentNode;
+        parent.querySelectorAll('.bill-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderBills(); 
+    }
+
+    // MAIN RENDER FUNCTION (Aligned + Filters + Counts)
+
+
+    // ==========================================
+    // 2. HELPER: CALENDAR NAVIGATION
+    // ==========================================
+    // Ensure this variable exists at the top of your script
+    if(typeof billViewDate === 'undefined') window.billViewDate = new Date();
+
+    window.changeBillMonth = function(dir) {
+        window.billViewDate.setMonth(window.billViewDate.getMonth() + dir);
+        renderBills(); // Re-render with new date
+    };
+
+    // ==========================================
+    // 3. MAIN RENDER FUNCTION (Fixed Logic)
+    // ==========================================
+   // MAIN RENDER FUNCTION (Final Fixes)
+    window.renderBills = function() {
+        const container = document.getElementById('calendar-grid');
+        const listContainer = document.getElementById('bills-list-container');
+        const title = document.getElementById('cal-month-title');
+        const summaryContainer = document.getElementById('cal-summary');
+        
+        if(!container) return; 
+        
+        container.innerHTML = ""; 
+        listContainer.innerHTML = "";
+        
+        // --- 1. Setup Dates ---
+        const year = billViewDate.getFullYear();
+        const month = billViewDate.getMonth();
+        if(title) title.innerText = billViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+        const currentDay = today.getDate();
+
+        // --- 2. Draw Calendar ---
+        for(let i=0; i<firstDay; i++) container.innerHTML += `<div class="cal-day empty"></div>`;
+
+        for(let d=1; d<=daysInMonth; d++) {
+            let dayHtml = `<div class="cal-day ${isCurrentMonth && d === currentDay ? 'today' : ''}">
+                              <div>${d}</div>
+                              <div class="cal-dot-container" id="day-dots-${d}"></div>
+                           </div>`;
+            container.innerHTML += dayHtml;
+        }
+
+        // --- 3. Process Bills ---
+        const safeBills = window.bills || [];
+        let countPaid = 0, countOverdue = 0, countUpcoming = 0;
+
+        const processedBills = safeBills.sort((a,b) => a.day - b.day).map(b => {
+            const paidTx = window.transactions.find(t => {
+                const txDate = new Date(t.date);
+                return txDate.getMonth() === month && 
+                       txDate.getFullYear() === year && 
+                       t.type === 'expense' &&
+                       t.desc.toLowerCase().includes(b.name.toLowerCase());
+            });
+
+            const isPaid = !!paidTx;
+            const isOverdue = !isPaid && isCurrentMonth && b.day < currentDay;
+            const isUpcoming = !isPaid && !isOverdue;
+
+            if(isPaid) countPaid++;
+            else if(isOverdue) countOverdue++;
+            else countUpcoming++;
+
+            return { ...b, isPaid, isOverdue, isUpcoming, paidBy: paidTx ? paidTx.desc : '' };
+        });
+
+        // --- 4. Update Summary ---
+        if(summaryContainer) {
+            summaryContainer.innerHTML = `
+                <div class="cal-sum-item"><div class="cal-icon-dot dot-due"></div> ${countUpcoming} Upcoming</div>
+                <div class="cal-sum-item"><div class="cal-icon-dot dot-overdue"></div> ${countOverdue} Overdue</div>
+                <div class="cal-sum-item"><div class="cal-icon-dot dot-paid"></div> ${countPaid} Paid</div>
+            `;
+        }
+
+        // --- 5. Render List (OPTIMIZED) ---
+        let listHtml = "";
+
+        processedBills.forEach(b => {
+            const dotContainer = document.getElementById(`day-dots-${b.day}`);
+            if(dotContainer) {
+                let dotClass = b.isPaid ? 'dot-paid' : (b.isOverdue ? 'dot-overdue' : 'dot-due');
+                dotContainer.innerHTML += `<div class="cal-icon-dot ${dotClass}" style="width:5px; height:5px; border-radius:50%;"></div>`;
+            }
+
+            let shouldShow = (currentBillFilter === 'all') || 
+                             (currentBillFilter === 'paid' && b.isPaid) ||
+                             (currentBillFilter === 'overdue' && b.isOverdue) ||
+                             (currentBillFilter === 'upcoming' && b.isUpcoming);
+
+            if(shouldShow) {
+                const statusText = b.isPaid ? "Paid" : (b.isOverdue ? "Overdue" : "Due");
+                const statusClass = b.isPaid ? "status-paid" : (b.isOverdue ? "status-overdue" : "status-due");
+                
+                const suffix = getOrdinal(b.day); 
+
+                listHtml += `
+                    <div class="bill-card">
+                        <div class="bill-left">
+                            <div style="width:42px; height:42px; border-radius:12px; background:${b.logo ? 'transparent' : b.color}; display:flex; align-items:center; justify-content:center; color:white; font-size:1.1rem; box-shadow:0 4px 10px rgba(0,0,0,0.1); overflow:hidden; position:relative;">
+                                ${b.logo 
+                                    ? `<img src="${b.logo}" style="width:100%; height:100%; object-fit:cover;">` 
+                                    : `<i class="fa-solid ${b.icon}"></i>`
+                                }
+                            </div>
+                            <div>
+                                <div style="font-weight:700; font-size:0.95rem; margin-bottom:2px;">${b.name}</div>
+                                <div class="${statusClass}" style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.7rem;">
+                                    ${statusText} • ${b.day}${suffix}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bill-right">
+                            <div class="bill-amount">${formatMoney(b.amount)}</div>
+                            
+                            ${!b.isPaid ? 
+                                `<button onclick="payBill('${b.name}', ${b.amount})" style="margin-top:6px; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); padding:4px 10px; border-radius:6px; font-size:0.75rem; color:var(--text-main); cursor:pointer;">Pay</button>` 
+                                : 
+                                `<div style="margin-top:6px; font-size:0.75rem; color:#10b981;">
+                                    <i class="fa-solid fa-check"></i> Done
+                                    <div style="font-size:0.6rem; opacity:0.7;">via: "${b.paidBy}"</div>
+                                 </div>`
+                            }
+                            
+                            <div style="margin-top:8px; display:flex; gap:10px; justify-content:flex-end;">
+                                <div onclick="editBill('${b.name}', ${b.amount}, ${b.day}, '${b.color}', '${b.icon}', '${b.logo || ''}')" style="font-size:0.65rem; color:var(--text-muted); cursor:pointer; opacity:0.8;">Edit</div>
+                                <div onclick="deleteBill('${b.name}')" style="font-size:0.65rem; color:var(--danger); cursor:pointer; opacity:0.8;">Remove</div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        });
+        
+        // --- OPTIMIZED: Update DOM once ---
+        if(listHtml === "") {
+            listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.9rem;">No bills found.</div>`;
+        } else {
+            listContainer.innerHTML = listHtml;
+        }
+    };
+
+    // ==========================================
+    // 4. NEW: EDIT FUNCTION
+    // ==========================================
+   window.editBill = function(name, amount, day, color, icon, logo) {
+        // 1. Remove the old entry silently
+        deleteBill(name, true); 
+        
+        // 2. Open Form
+        const form = document.getElementById('add-bill-form');
+        if(form.style.display === 'none') toggleBillForm();
+        
+        // 3. MATH FIX: Convert Base Amount back to Your Currency
+        // If stored as 11.90 (USD) and rate is 84, this becomes ~1000 (INR)
+        const rate = (typeof currentRate !== 'undefined') ? currentRate : 1;
+        const displayAmount = (amount * rate).toFixed(2); // <--- THE FIX
+
+        // 4. Fill Data
+        document.getElementById('bill-name').value = name;
+        document.getElementById('bill-amount').value = displayAmount; // Use the converted amount
+        document.getElementById('bill-day').value = day;
+        document.getElementById('bill-color').value = color;
+        document.getElementById('bill-icon').value = icon;
+        document.getElementById('bill-logo-url').value = logo || "";
+        
+        // 5. Scroll to top
+        form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // ==========================================
+    // 2. MANAGE HUB LOGIC
+    // ==========================================
+    window.switchManageView = function(view, btn) {
+        currentManageTab = view;
+
+        if(btn) {
+            const parent = btn.parentNode;
+            parent.querySelectorAll('.tab-link-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const cats = document.getElementById('subview-cats');
+        const bills = document.getElementById('subview-bills');
+        const accts = document.getElementById('subview-accounts');
+        
+        if(cats) cats.style.display = 'none';
+        if(bills) bills.style.display = 'none';
+        if(accts) accts.style.display = 'none';
+
+        if(view === 'cats' && cats) {
+            cats.style.display = 'block';
+            renderCategories(filterData());
+        } 
+        else if(view === 'bills' && bills) {
+            bills.style.display = 'block';
+            // Now renderBills is guaranteed to exist
+            if(window.renderBills) window.renderBills();
+        } 
+        else if(view === 'accounts' && accts) {
+            accts.style.display = 'block';
+            if(window.renderAccounts) window.renderAccounts();
+        }
+    };
+
+    // ==========================================
+    // 3. BUTTON ACTIONS
+    // ==========================================
+    window.toggleBillForm = function() {
+        const f = document.getElementById('add-bill-form');
+        if(f) f.style.display = (f.style.display === 'block') ? 'none' : 'block';
+    };
+
+    // 2. SAVE NEW BILL (With Logo Support)
+    // 2. SAVE NEW BILL (With Logo Support & UI Refresh)
+  // SAVE NEW BILL (Safe Version)
+    window.saveNewBill = function() {
+        const name = document.getElementById('bill-name').value;
+        const rawAmount = parseFloat(document.getElementById('bill-amount').value);
+        const day = parseInt(document.getElementById('bill-day').value);
+        const color = document.getElementById('bill-color').value;
+        const icon = document.getElementById('bill-icon').value;
+        const logo = document.getElementById('bill-logo-url').value;
+        
+        if(!name || !rawAmount || !day) return alert("Please fill all details");
+
+        // --- MATH FIX: Handle Currency Lag ---
+        let rate = (typeof currentRate !== 'undefined') ? currentRate : 1;
+        const cur = document.getElementById('currency').value;
+
+        // If rate is 1 (API didn't load) but you are in INR, force the rate to 84
+        if (rate === 1 && cur === 'INR') rate = 84; 
+
+        // Convert to Base Currency (USD)
+        const finalAmount = rawAmount / rate; 
+
+        if(!window.bills) window.bills = [];
+        
+        window.bills.push({ 
+            name, 
+            amount: finalAmount, 
+            day, 
+            color, 
+            icon, 
+            logo 
+        });
+        
+        saveData(); 
+
+        // UI Cleanup
+        document.getElementById('bill-name').value = "";
+        document.getElementById('bill-amount').value = "";
+        document.getElementById('bill-logo-url').value = "";
+        document.getElementById('add-bill-form').style.display = 'none';
+        
+        renderBills(); 
+    }
+
+    window.payBill = function(name, amount) {
+        openCalc();
+        setCalcType('expense');
+        const catEl = document.getElementById('calc-cat');
+        if(catEl) catEl.value = "Utilities"; 
+        document.getElementById('calc-note').value = name; 
+    };
+
+    window.deleteBill = function(name, skipConfirm = false) {
+        // If skipConfirm is TRUE, we delete immediately. 
+        // If FALSE, we show the confirm box.
+        if(skipConfirm || confirm("Delete subscription?")) {
+            window.bills = window.bills.filter(b => b.name !== name);
+            saveData();
+            window.renderBills();
+        }
+    };
+
+    // ==========================================
+    // 4. ACCOUNTS LOGIC
+    // ==========================================
+    window.accounts = ["Cash", "Card", "PhonePe", "GPay", "NetBanking"]; 
+    
+    window.renderAccounts = function() {
+        const container = document.getElementById('accounts-list-container');
+        if(!container) return;
+        
+        container.innerHTML = "";
+        
+        if(!window.accounts) window.accounts = ["Cash"];
+
+        // --- OPTIMIZED: Use String Variable ---
+        let html = "";
+
+        window.accounts.forEach((acc) => {
+            // 1. Calculate Balance for this Account
+            // We look at all transactions matching this method
+            const balanceUSD = window.transactions.reduce((sum, t) => {
+                if (t.method !== acc) return sum;
+                
+                // Add Income & Borrowed Money
+                if (t.type === 'income' || t.type === 'debt_borrowed') return sum + t.amount;
+                
+                // Subtract Expense & Lent Money
+                if (t.type === 'expense' || t.type === 'debt_lent') return sum - t.amount;
+                
+                return sum;
+            }, 0);
+
+            // 2. Determine Icon
+            let icon = "fa-wallet";
+            const lower = acc.toLowerCase();
+            if(lower.includes("bank")||lower.includes("hdfc")||lower.includes("sbi")) icon="fa-building-columns";
+            if(lower.includes("card")||lower.includes("visa")) icon="fa-credit-card";
+            if(lower.includes("cash")) icon="fa-money-bill-1";
+            if(lower.includes("pay")) icon="fa-mobile-screen-button";
+
+            // 3. Render (Added Balance Div)
+            html += `
+                <div class="cat-list-item">
+                    <div class="cat-left">
+                        <div class="cat-icon-circle" style="background:rgba(251, 191, 36, 0.1); color:var(--secondary);">
+                            <i class="fa-solid ${icon}"></i>
+                        </div>
+                        <div class="cat-name">${acc}</div>
+                    </div>
+                    <div class="cat-right" style="display:flex; align-items:center; gap:10px;">
+                        <div style="font-weight:700; font-family:'Consolas'; font-size:0.95rem; color:${balanceUSD >= 0 ? 'var(--text-main)' : 'var(--danger)'}">
+                            ${formatMoney(balanceUSD)}
+                        </div>
+                        
+                        <button onclick="deleteAccount('${acc}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; opacity:0.6;">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>`;
+        });
+
+        // --- OPTIMIZED: Update DOM once ---
+        container.innerHTML = html;
+    };
+
+    window.toggleAcctForm = function() {
+        const f = document.getElementById('add-acct-form');
+        if(f) f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    };
+
+    window.saveNewAccount = function() {
+        const name = document.getElementById('acct-name').value;
+        if(!name) return alert("Enter Name");
+        window.accounts.push(name);
+        saveData();
+        toggleAcctForm();
+        renderAccounts();
+        document.getElementById('acct-name').value = "";
+    };
+
+    window.deleteAccount = function(name) {
+        if(confirm(`Delete "${name}"?`)) {
+            window.accounts = window.accounts.filter(a => a !== name);
+            saveData();
+            renderAccounts();
+        }
+    };
+
+    // 2. Re-Initialize the Dropdown correctly
+    ;(function initBillForm() {
+        const sel = document.getElementById('bill-day');
+        if(sel) {
+            sel.innerHTML = "";
+            for(let i=1; i<=31; i++) {
+                // CHANGED: Added ${i} before getOrdinal(i)
+                // This makes it "1st", "2nd" instead of just "st", "nd"
+                sel.innerHTML += `<option value="${i}">${i}${getOrdinal(i)}</option>`;
+            }
+        }
+    })();
+
+// ==========================================
+    // 🔔 SMART NOTIFICATION TOGGLE
+    // ==========================================
+    
+    // 1. Initialize State on Load
+    let notificationsEnabled = localStorage.getItem('budget_notif_enabled') === 'true';
+
+    // 2. The Main Toggle Function
+    window.toggleNotifications = function() {
+        const btnIcon = document.getElementById('notif-toggle-icon');
+
+        if (!notificationsEnabled) {
+            // --- TRYING TO ENABLE ---
+            if (!("Notification" in window)) {
+                alert("This browser does not support notifications");
+                return;
+            }
+
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    notificationsEnabled = true;
+                    localStorage.setItem('budget_notif_enabled', 'true');
+                    
+                    // Update UI
+                    if(btnIcon) {
+                        btnIcon.className = "fa-solid fa-toggle-on";
+                        btnIcon.style.color = "var(--primary)";
+                    }
+
+                    new Notification("Budget Pro", { 
+                        body: "✅ Notifications enabled! We'll remind you about bills.", 
+                        icon: "https://cdn-icons-png.flaticon.com/512/2344/2344132.png" 
+                    });
+
+                    // Start checking immediately
+                    startNotificationTimers();
+                } else {
+                    alert("Permission denied. Please enable in Browser Settings.");
+                }
+            });
+
+        } else {
+            // --- TRYING TO DISABLE (MUTE) ---
+            notificationsEnabled = false;
+            localStorage.setItem('budget_notif_enabled', 'false');
+            
+            // Update UI
+            if(btnIcon) {
+                btnIcon.className = "fa-solid fa-toggle-off";
+                btnIcon.style.color = "var(--text-muted)";
+            }
+            
+            alert("🔕 Notifications muted.");
+        }
+    }
+
+    // 3. Logic to Run Checks (Only if Enabled)
+    function startNotificationTimers() {
+        if(!notificationsEnabled) return;
+        
+        // Run immediately
+        checkBillAlerts();
+        
+        // Check for 9 PM every minute
+        setInterval(() => {
+            if(!notificationsEnabled) return; // Stop if muted
+            
+            const now = new Date();
+            if (now.getHours() === 21 && now.getMinutes() === 0) {
+                new Notification("📝 Daily Update", {
+                    body: "It's 9 PM! Time to log your daily expenses.",
+                    icon: "https://cdn-icons-png.flaticon.com/512/2921/2921222.png"
+                });
+            }
+        }, 60000);
+    }
+
+    // 4. Check Bills (Helper)
+    window.checkBillAlerts = function() {
+        if (!notificationsEnabled || Notification.permission !== "granted") return;
+
+        const today = new Date();
+        const currentDay = today.getDate();
+        
+        // (Simplified logic for brevity - uses your existing data)
+        let overdueCount = 0, upcomingCount = 0;
+        
+        (window.bills || []).forEach(b => {
+            // Check if paid logic...
+            const isPaid = window.transactions.some(t => t.desc.toLowerCase().includes(b.name.toLowerCase()) && new Date(t.date).getMonth() === today.getMonth());
+            
+            if(!isPaid) {
+                if(b.day < currentDay) overdueCount++;
+                else if(b.day >= currentDay && b.day <= currentDay + 3) upcomingCount++;
+            }
+        });
+
+        if (overdueCount > 0) {
+            new Notification("⚠️ Bill Alert", { body: `You have ${overdueCount} overdue bills!` });
+        } else if (upcomingCount > 0) {
+            new Notification("📅 Upcoming Bills", { body: `You have ${upcomingCount} bills due soon.` });
+        }
+    }
+
+    // 5. Run on App Start (To set initial UI state)
+    ;(function initNotifs() {
+        const btnIcon = document.getElementById('notif-toggle-icon');
+        if(notificationsEnabled) {
+            if(btnIcon) {
+                btnIcon.className = "fa-solid fa-toggle-on";
+                btnIcon.style.color = "var(--primary)";
+            }
+            startNotificationTimers();
+        }
+    })();
+    
 </script>
 </body>
 </html>
