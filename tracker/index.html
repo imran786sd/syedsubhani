@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Tracker Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2dd4bf">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+    <div id="auth-wrapper">
+        <div class="auth-card active">
+            <div class="auth-logo"><i class="fa-solid fa-wallet"></i></div>
+            <div class="auth-title">Budget Pro</div>
+            <div class="auth-sub">Secure Cloud Sync</div>
+            
+            <button class="google-btn" onclick="handleGoogleLogin()">
+                <i class="fa-brands fa-google"></i> Sign in with Google
+            </button>
+            
+            <div style="margin-top:20px; font-size:0.8rem; color:var(--text-muted);">
+                Your data will be stored securely in your Google account.
+            </div>
+        </div>
+    </div>
+
+    <div id="app-wrapper" style="display: none;">
+        
+        <div id="sidebar">
+            <div class="app-title"><i class="fa-solid fa-wallet"></i> Budget Pro</div>
+            
+            <div class="profile-header-card" style="padding:15px; margin-bottom:15px; background:rgba(255,255,255,0.02); width:100%; border:none;">
+                <div style="display:flex; align-items:center; gap:10px; width:100%; position:relative; z-index:2;">
+                    <img id="sidebar-avatar" src="" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary);">
+                    <div style="text-align:left;">
+                        <div id="sidebar-username" style="font-weight:700; font-size:0.9rem;">User</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">Pro Member</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-btn" onclick="switchTab('goals')" style="margin-top:20px;">
+                <span><i class="fa-solid fa-bullseye" style="margin-right:10px; color:#f472b6;"></i> Savings Goals</span>
+                <i class="fa-solid fa-chevron-right" style="font-size:0.8rem;"></i>
+            </div>
+            
+            <div style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.5; margin-top:20px;">
+                Use the <strong>+</strong> button below to add transactions. <br><br>
+                <em>Note: Profile & Logout are now in the bottom tabs.</em>
+            </div>
+        </div>
+
+        <div id="calc-modal">
+            <div id="calc-content">
+                <div class="calc-header">
+                    <button class="calc-action-btn" style="background:none;border:none;color:var(--danger);" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                    <input type="date" id="calc-date" style="background:transparent; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:0.9rem; outline:none; text-align:center; width:130px;">
+                    <button class="calc-action-btn" style="background:none;border:none;color:var(--primary);" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
+                </div>
+                
+                <div class="calc-tabs">
+                    <div class="calc-tab active" id="tab-exp" onclick="setCalcType('expense')">EXPENSE</div>
+                    <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')">INCOME</div>
+                    <div class="calc-tab" id="tab-debt" onclick="setCalcType('debt')">DEBT</div>
+                </div>
+
+                <div class="calc-input-area">
+                    <div class="input-row">
+                        <select id="calc-cat" class="calc-pill-select" style="width:100%; font-weight:bold;"></select>
+                        
+                        <div id="debt-row-wrapper" style="display:none; width:100%; gap:10px;">
+                            <input type="text" id="calc-person" class="calc-pill-select" style="flex:1; font-weight:bold;" placeholder="Person Name">
+                            <select id="debt-dir" class="calc-pill-select" style="flex:0.7; font-size:0.85rem;">
+                                <option value="lent">Gave (Lent)</option>
+                                <option value="borrowed">Got (Borrow)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="margin-top:10px;">
+                        <select id="calc-method" class="calc-pill-select" style="flex:1;">
+                            </select>
+                    </div>
+                    
+                    <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (Optional)..." style="margin-top:10px;">
+                </div>
+
+                <div class="calc-display-wrapper"><div id="calc-display" class="calc-display">0</div></div>
+                
+                <div class="calc-keypad">
+                    <button class="key" onclick="calcInput('7')">7</button><button class="key" onclick="calcInput('8')">8</button><button class="key" onclick="calcInput('9')">9</button><button class="key op" onclick="calcInput('/')">÷</button>
+                    <button class="key" onclick="calcInput('4')">4</button><button class="key" onclick="calcInput('5')">5</button><button class="key" onclick="calcInput('6')">6</button><button class="key op" onclick="calcInput('*')">×</button>
+                    <button class="key" onclick="calcInput('1')">1</button><button class="key" onclick="calcInput('2')">2</button><button class="key" onclick="calcInput('3')">3</button><button class="key op" onclick="calcInput('-')">-</button>
+                    <button class="key clear" onclick="calcInput('clear')">C</button>
+                    <button class="key" onclick="calcInput('0')">0</button><button class="key" onclick="calcInput('.')">.</button><button class="key op" onclick="calcInput('+')">+</button>
+                    <button class="key del" onclick="calcInput('del')">⌫</button>
+                    <button class="key eq" style="grid-column: span 3; background:var(--primary); color:black;" onclick="saveCalc()">ENTER</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="main">
+            <div class="report-header">
+                <div class="header-top-row">
+                    <div class="report-title" id="page-title">Dashboard</div>
+                    <div class="header-controls">
+                        <button class="header-select" onclick="toggleTheme()" style="width:40px; padding:0; display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                            <i id="header-theme-icon" class="fa-solid fa-moon"></i>
+                        </button>
+                        
+                        <span id="loader" class="spinner" style="display:none;"></span>
+                        
+                        <select id="year-select" class="header-select" onchange="updateUI()"></select>
+
+                        <select class="header-select" id="period-select" onchange="updateUI()">
+                            <option value="all_time">All Time</option>
+                            <option value="all">All Year</option>
+                            <option value="custom">Custom Range</option>
+                            <option value="week">This Week</option>
+                            <option disabled>---</option>
+                            <option value="0">January</option>
+                            <option value="1">February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11" selected>December</option>
+                            <option disabled>---</option>
+                            <option value="q1">Q1 (Jan-Mar)</option>
+                            <option value="q2">Q2 (Apr-Jun)</option>
+                            <option value="q3">Q3 (Jul-Sep)</option>
+                            <option value="q4">Q4 (Oct-Dec)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="custom-date-controls" class="custom-date-row">
+                    <div class="date-input-group">
+                        <span class="date-label">From</span>
+                        <input type="date" id="custom-start" class="custom-date-input" onchange="updateUI()">
+                    </div>
+                    <div class="date-input-group">
+                        <span class="date-label">To</span>
+                        <input type="date" id="custom-end" class="custom-date-input" onchange="updateUI()">
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-dashboard" class="view-container active">
+                <div class="stats-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div class="stat-card" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 15px;">
+                        <div class="stat-title" style="color:#10b981; font-size:0.7rem;">Income</div>
+                        <div class="stat-val" id="total-inc" style="font-size:1.2rem;">...</div>
+                    </div>
+                    <div class="stat-card" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 15px;">
+                        <div class="stat-title" style="color:#ef4444; font-size:0.7rem;">Spend</div>
+                        <div class="stat-val" id="total-exp" style="font-size:1.2rem;">...</div>
+                    </div>
+                    <div class="stat-card" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 15px;">
+                        <div class="stat-title" style="color:#3b82f6; font-size:0.7rem;">Wallet Balance</div>
+                        <div class="stat-val" id="balance" style="font-size:1.2rem;">...</div>
+                    </div>
+                    <div class="stat-card" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px;">
+                        <div class="stat-title" style="color:#f59e0b; font-size:0.7rem;">Net Outstanding</div>
+                        <div class="stat-val" id="total-outstanding" style="font-size:1.2rem;">...</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-lower">
+                    <div class="flow-container">
+                        <div class="chart-header-row">
+                            <div class="chart-title"><i class="fa-solid fa-chart-line"></i> Expense Flow</div>
+                        </div>
+                        <div id="chart-flow"></div>
+                        <div id="flow-tooltip" class="flow-tooltip"></div>
+                        <div id="flow-daily-container" class="flow-daily-strip"></div>
+                    </div>
+
+                    <div class="top-cats-container">
+                        <div class="chart-header-row">
+                            <div class="chart-title">Spending Breakdown</div>
+                            <div class="chart-controls-right">
+                                <select id="chart-label-mode" class="chart-label-select" onchange="updateUI()">
+                                    <option value="name">Show: Name</option>
+                                    <option value="value">Show: Value</option>
+                                    <option value="percent">Show: %</option>
+                                    <option value="all">Show: All</option>
+                                </select>
+                                <div class="chart-switch-group">
+                                    <button class="chart-switch-btn active" onclick="switchChartType('donut', this)">Donut</button>
+                                    <button class="chart-switch-btn" onclick="switchChartType('sunburst', this)">Sunburst</button>
+                                    <button class="chart-switch-btn" onclick="switchChartType('bar', this)">Bar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="chart-cats"></div>
+                        <div id="cat-tooltip" class="chart-tooltip"></div> 
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-records" class="view-container">
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search records (e.g. >500)..." onkeyup="handleSearch()">
+                </div>
+                <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
+                    <span class="stat-title">Total Records (Period)</span>
+                    <span class="stat-val" style="color:var(--text-main)" id="records-page-total">...</span>
+                </div>
+                <div id="records-list-container"></div>
+            </div>
+
+            <div id="view-categories" class="view-container">
+                <div class="custom-tabs-header">
+                    <button class="tab-link-btn active" onclick="switchManageView('cats', this)">Categories</button>
+                    <button class="tab-link-btn" onclick="switchManageView('bills', this)">Subscriptions</button>
+                    <button class="tab-link-btn" onclick="switchManageView('accounts', this)">Accounts</button>
+                </div>
+
+                <div id="subview-cats">
+                    <div class="cat-section-title">Income Categories</div>
+                    <div id="cat-list-income"></div>
+                    <div class="cat-section-title">Expense Categories</div>
+                    <div id="cat-list-expense"></div>
+                </div>
+
+                <div id="subview-bills" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <div class="chart-title">Recurring Bills</div>
+                        <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleBillForm()">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
+                        <input type="hidden" id="bill-logo-url" value="">
+                        <select id="preset-cat-select" class="calc-pill-select" style="width:100%; margin-bottom:10px; font-weight:bold; color:var(--primary);" onchange="renderCategoryPresets()">
+                            <option value="" disabled selected>✨ Select Category to Auto-fill</option>
+                            <option value="ott">🎬 Movies & OTT</option>
+                            <option value="music">🎵 Music & Audio</option>
+                            <option value="utilities">⚡ Utilities & Bills</option>
+                            <option value="internet">🛜 Internet & Phone</option>
+                            <option value="manual">✏️ Custom / Manual</option>
+                        </select>
+
+                        <div id="preset-options" class="presets-scroll" style="margin-bottom:15px; display:none;"></div>
+                        <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;" onkeyup="autoDetectBillIcon()">
+                        
+                        <div class="input-row">
+                            <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
+                            <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
+                        </div>
+
+                        <div class="input-row" style="margin-top:10px;">
+                            <select id="bill-color" class="calc-pill-select" style="flex:1;">
+                                <option value="#e50914">Red</option><option value="#1db954">Green</option><option value="#ffffff">White</option><option value="#00a8e8">Blue</option><option value="#f59e0b">Orange</option><option value="#8b5cf6">Purple</option>
+                            </select>
+                            <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+                                <option value="fa-film">&#xf008; Movie</option><option value="fa-music">&#xf001; Music</option><option value="fa-bolt">&#xf0e7; Utility</option><option value="fa-wifi">&#xf1eb; Net</option><option value="fa-mobile-screen">&#xf3cd; Phone</option><option value="fa-dumbbell">&#xf44b; Gym</option><option value="fa-tv">&#xf26c; TV</option><option value="fa-play">&#xf04b; Play</option><option value="fa-house">&#xf015; Rent</option><option value="fa-fire">&#xf06d; Gas</option><option value="fa-droplet">&#xf043; Water</option><option value="fa-credit-card">&#xf09d; EMI</option>
+                            </select>
+                        </div>
+                        <button class="btn-goal-add" onclick="saveNewBill()" style="margin-top:10px; background:var(--primary); color:black;">Save Subscription</button>
+                    </div>
+
+                    <div class="calendar-wrapper">
+                        <div class="calendar-header">
+                            <button class="chart-switch-btn" onclick="changeBillMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                            <div id="cal-month-title" style="font-weight:800; font-size:1.1rem; letter-spacing:0.5px;">...</div>
+                            <button class="chart-switch-btn" onclick="changeBillMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar-grid" style="margin-bottom:10px;">
+                            <div class="cal-day-label">S</div><div class="cal-day-label">M</div><div class="cal-day-label">T</div><div class="cal-day-label">W</div><div class="cal-day-label">T</div><div class="cal-day-label">F</div><div class="cal-day-label">S</div>
+                        </div>
+                        <div id="calendar-grid" class="calendar-grid"></div>
+                        <div id="cal-summary" class="cal-summary-line"></div>
+                    </div>
+
+                    <div class="bill-filter-tabs">
+                        <button class="bill-filter-btn active" onclick="setBillFilter('all', this)">All</button>
+                        <button class="bill-filter-btn" onclick="setBillFilter('upcoming', this)">Upcoming</button>
+                        <button class="bill-filter-btn" onclick="setBillFilter('overdue', this)">Overdue</button>
+                        <button class="bill-filter-btn" onclick="setBillFilter('paid', this)">Paid</button>
+                    </div>
+                    <div id="bills-list-container"></div>
+                </div>
+
+                <div id="subview-accounts" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <div class="chart-title">Payment Methods</div>
+                        <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleAcctForm()"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <div id="add-acct-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
+                        <input type="text" id="acct-name" class="calc-pill-select" placeholder="Account Name (e.g. HDFC Bank)" style="width:100%; font-weight:bold; margin-bottom:10px;">
+                        <div class="input-row">
+                            <select id="acct-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+                                <option value="fa-building-columns">&#xf19c; Bank</option>
+                                <option value="fa-wallet">&#xf555; Wallet</option>
+                                <option value="fa-credit-card">&#xf09d; Card</option>
+                                <option value="fa-money-bill-1">&#xf3d1; Cash</option>
+                            </select>
+                        </div>
+                        <button class="btn-goal-add" onclick="saveNewAccount()" style="margin-top:10px; background:var(--secondary); color:black;">Add Account</button>
+                    </div>
+                    <div id="accounts-list-container"></div>
+                </div>
+            </div>
+
+            <div id="view-debts" class="view-container">
+                <div class="stat-card" style="margin-bottom:20px; background:rgba(168, 85, 247, 0.1); border-color:#a855f7;">
+                    <span class="stat-title" style="color:#a855f7">Net Outstanding</span>
+                    <span class="stat-val" style="color:#a855f7" id="debt-net-bal">...</span>
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;">Positive = People owe you</div>
+                </div>
+                <div id="debts-list-container"></div>
+            </div>
+
+            <div id="view-goals" class="view-container">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div class="chart-title">My Targets</div>
+                    <button class="nav-add-btn" style="width:35px; height:35px; font-size:1rem;" onclick="toggleGoalForm()"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <div id="add-goal-form">
+                    <div class="input-row">
+                        <input type="text" id="goal-name" class="calc-pill-select" placeholder="Goal Name (e.g. iPhone)" style="flex:2; font-weight:bold;">
+                        <div style="flex:1; position:relative;">
+                            <input type="number" id="goal-target" class="calc-pill-select" placeholder="Target Amount">
+                        </div>
+                    </div>
+                    <button class="btn-goal-add" onclick="saveNewGoal()" style="margin-top:10px; background:var(--primary); color:black;">Create Goal</button>
+                </div>
+                <div id="goals-list-container"></div>
+            </div>
+
+            <div id="view-income" class="view-container">
+                <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
+                    <span class="stat-title">Total Income (Period)</span>
+                    <span class="stat-val pos" id="income-page-total">...</span>
+                </div>
+                <div id="income-list-container"></div>
+            </div>
+
+            <div id="view-expenses" class="view-container">
+                <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
+                    <span class="stat-title">Total Expenses (Period)</span>
+                    <span class="stat-val neg" id="expense-page-total">...</span>
+                </div>
+                <div id="expense-list-container"></div>
+            </div>
+
+            <div id="view-profile" class="view-container">
+                <div class="profile-container">
+                    <div class="profile-header-card">
+                        <img id="main-profile-avatar" src="" class="profile-img-lg">
+                        <div class="profile-name-lg" id="main-profile-name">User</div>
+                        <div class="profile-badge-lg"><i class="fa-solid fa-circle-check"></i> Pro Member</div>
+                        <div class="profile-stats-grid">
+                            <div class="p-stat-box">
+                                <div class="p-stat-num" id="profile-total-tx">0</div>
+                                <div class="p-stat-lbl">Transactions</div>
+                            </div>
+                            <div class="p-stat-box">
+                                <div class="p-stat-num" style="color:var(--primary);">CLOUD</div>
+                                <div class="p-stat-lbl">Storage</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background:rgba(45, 212, 191, 0.1); color:var(--primary); padding:15px; border-radius:12px; font-size:0.85rem; border:1px solid rgba(45, 212, 191, 0.3); margin-bottom:20px; width:100%; display:flex; gap:10px; align-items:center;">
+                        <i class="fa-solid fa-cloud"></i>
+                        <div><strong>GOOGLE SYNC ENABLED</strong><br>Your data is backed up to your account.</div>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="settings-btn" onclick="toggleNotifications()">
+                            <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> App Notifications</span>
+                            <i id="notif-toggle-icon" class="fa-solid fa-toggle-off" style="font-size:1.2rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn" onclick="setDailyReminder()">
+                            <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> Set Daily Reminder</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn" onclick="toggleTheme()">
+                            <span><i id="theme-icon" class="fa-solid fa-moon" style="margin-right:10px; width:20px; text-align:center;"></i> <span id="theme-text">Dark Mode</span></span>
+                            <i class="fa-solid fa-toggle-off" id="theme-toggle-icon" style="font-size:1.2rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn" onclick="exportData()">
+                            <span><i class="fa-solid fa-file-csv" style="margin-right:10px; color:#10b981"></i> Export to Excel</span>
+                            <i class="fa-solid fa-download" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn" onclick="resetData()">
+                            <span><i class="fa-solid fa-rotate-left" style="margin-right:10px; color:var(--secondary)"></i> Clear All Data</span>
+                            <i class="fa-solid fa-chevron-right" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn" onclick="reportBug()">
+                            <span><i class="fa-solid fa-bug" style="margin-right:10px; color:#ef4444;"></i> Report Bug</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
+                        <div class="settings-btn danger" onclick="handleLogout()">
+                            <span><i class="fa-solid fa-arrow-right-from-bracket" style="margin-right:10px;"></i> Logout</span>
+                            <i class="fa-solid fa-chevron-right" style="font-size:0.8rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="bottom-nav">
+                <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Dash</button>
+                <button class="nav-btn" onclick="switchTab('records', this)"><i class="fa-solid fa-list"></i> Records</button>
+                <button class="nav-add-btn" onclick="openCalc()"><i class="fa-solid fa-plus"></i></button>
+                <button class="nav-btn" onclick="switchTab('categories', this)"><i class="fa-solid fa-wallet"></i> Account</button>
+                <button class="nav-btn" onclick="switchTab('debts', this)"><i class="fa-solid fa-handshake"></i> Debts</button>
+                <button class="nav-btn" onclick="switchTab('profile', this)"><i class="fa-solid fa-user-circle"></i> Profile</button>
+            </nav>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script type="module" src="firebase-init.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>
