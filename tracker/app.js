@@ -81,6 +81,9 @@
     // ==========================================
     // DATA LOGIC (CLOUD + LOCAL) - SMART MERGE
     // ==========================================
+    // ==========================================
+    // DATA LOGIC (CLOUD + LOCAL) - WITH DEMO AUTO-FILL
+    // ==========================================
     async function loadData() {
         // 1. Define Master List
         const defaultAccounts = ["Cash", "UPI", "GPay", "PhonePe", "Paytm", "Card", "Credit Card", "NetBanking"];
@@ -151,7 +154,14 @@
                 if(window.renderBills) window.renderBills();
                 if(window.renderAccounts) window.renderAccounts();
                 if(window.renderGoals) window.renderGoals();
-            } 
+            } else {
+                // --- 🌟 NEW: AUTO-GENERATE DATA FOR GUEST DEMO ---
+                // If cloud data is empty AND user is a Guest, generate fake data
+                if (auth.currentUser.isAnonymous) {
+                    console.log("Guest Demo: Generating Dummy Data...");
+                    generateDummyData(); // <--- TRIGGERS THE FAKE DATA
+                }
+            }
         } catch (e) { console.error("Cloud Load Error", e); }
         
         if(loader) loader.style.display = 'none';
