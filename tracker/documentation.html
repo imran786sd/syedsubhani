@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Tracker Pro - Documentation</title>
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f9f9f9; }
+        .container { max-width: 960px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+        h1 { color: #2dd4bf; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #0f172a; margin-top: 40px; border-left: 5px solid #2dd4bf; padding-left: 15px; }
+        h3 { color: #444; margin-top: 25px; }
+        p, li { font-size: 16px; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: #d63384; }
+        pre { background: #1e293b; color: #f1f5f9; padding: 15px; border-radius: 8px; overflow-x: auto; font-family: 'Courier New', Courier, monospace; }
+        .alert { background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; margin: 20px 0; }
+        .step { background: #e6fffa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b2f5ea; }
+        .footer { text-align: center; margin-top: 50px; font-size: 0.9rem; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+        img { max-width: 100%; border-radius: 8px; border: 1px solid #eee; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Budget Tracker Pro - Documentation</h1>
+        <p>Thank you for purchasing <strong>Budget Tracker Pro</strong>! This guide will help you set up your own Personal Finance PWA with Google Cloud Sync.</p>
+        
+        <div class="alert">
+            <strong>Requirements:</strong> You do not need a backend server (Node/PHP). You only need a standard web host (Netlify, Vercel, cPanel) and a free Google Firebase account.
+        </div>
+
+        <h2>1. Project Structure</h2>
+        <p>Once you unzip the download package, you will see the following files:</p>
+        <ul>
+            <li><code>index.html</code> - The main structure of the app.</li>
+            <li><code>style.css</code> - All styling, themes (Dark/Light), and responsive design.</li>
+            <li><code>app.js</code> - The core logic (Charts, Calculations, UI Rendering).</li>
+            <li><code>firebase-init.js</code> - Handles the connection to Google services.</li>
+            <li><code>config.js</code> - <strong>IMPORTANT:</strong> This is where you put your API Keys.</li>
+        </ul>
+
+        <h2>2. Getting Started (Firebase Setup)</h2>
+        <p>This app uses <strong>Google Firebase</strong> for authentication and database storage. It is free for small to medium apps.</p>
+
+        <div class="step">
+            <h3>Step A: Create Project</h3>
+            <ol>
+                <li>Go to <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a> and click <strong>Add Project</strong>.</li>
+                <li>Give it a name (e.g., "MyBudgetApp") and disable Google Analytics (optional).</li>
+                <li>Click <strong>Create Project</strong>.</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>Step B: Enable Authentication</h3>
+            <ol>
+                <li>In the Firebase sidebar, click <strong>Build</strong> &gt; <strong>Authentication</strong>.</li>
+                <li>Click <strong>Get Started</strong>.</li>
+                <li>Select <strong>Google</strong> from the Sign-in providers list.</li>
+                <li>Click <strong>Enable</strong>, select your support email, and click <strong>Save</strong>.</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>Step C: Create Database</h3>
+            <ol>
+                <li>In the sidebar, click <strong>Build</strong> &gt; <strong>Firestore Database</strong>.</li>
+                <li>Click <strong>Create Database</strong>.</li>
+                <li>Choose a location close to you (e.g., nam5 or asia-south1).</li>
+                <li><strong>Crucial:</strong> Start in <strong>Production Mode</strong>.</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>Step D: Copy API Keys</h3>
+            <ol>
+                <li>Click the <strong>Gear Icon (Settings)</strong> next to "Project Overview".</li>
+                <li>Scroll down to "Your apps" and click the <strong>&lt;/&gt; (Web)</strong> icon.</li>
+                <li>Register the app (e.g., "Budget Web").</li>
+                <li>You will see a code block with <code>const firebaseConfig = { ... }</code>.</li>
+                <li>Copy <strong>ONLY</strong> the keys inside the brackets.</li>
+                <li>Open your <code>config.js</code> file and paste them there.</li>
+            </ol>
+        </div>
+
+        <h2>3. Security Rules (Mandatory)</h2>
+        <p>To ensure user data is private, you must set up database rules.</p>
+        <ol>
+            <li>Go to <strong>Firestore Database</strong> &gt; <strong>Rules</strong> tab.</li>
+            <li>Delete everything there and paste the code below:</li>
+        </ol>
+        <pre>
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow users to read/write ONLY their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}</pre>
+        <p>Click <strong>Publish</strong>.</p>
+
+        <h2>4. Customization</h2>
+        <h3>Changing Currency</h3>
+        <p>The app is pre-configured for <strong>INR (₹)</strong> with Indian numbering formats (Lakh/Crore).</p>
+        <p>To change the symbol, open <code>app.js</code> and find the <code>formatMoney</code> function:</p>
+        <pre>
+function formatMoney(amount) {
+    const sym = "$"; // Change this symbol
+    return sym + parseFloat(amount).toLocaleString('en-US'); // Change 'en-IN' to 'en-US'
+}</pre>
+
+        <h3>Changing App Name</h3>
+        <p>Open <code>index.html</code> and look for the <code>&lt;title&gt;</code> tag and the <code>.app-title</code> div to rename the application.</p>
+
+        <h2>5. Credits & Libraries</h2>
+        <ul>
+            <li><strong>D3.js:</strong> Used for Data Visualization (Charts).</li>
+            <li><strong>FontAwesome 6:</strong> Used for Icons.</li>
+            <li><strong>Google Fonts:</strong> "Inter" font family.</li>
+        </ul>
+
+        <div class="footer">
+            &copy; 2025 Budget Tracker Pro. All Rights Reserved.
+        </div>
+    </div>
+
+</body>
+</html>
