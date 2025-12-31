@@ -1154,7 +1154,7 @@
         'music': [
             { name: "Spotify", price: 119, icon: "fa-music", color: "#1DB954", logo: "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg" },
             { name: "Apple Music", price: 99, icon: "fa-music", color: "#FA243C", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_Music_icon.svg" }, 
-            { name: "JioSaavn", price: 99, icon: "fa-music", color: "#2bc5b4", logo: "https://upload.wikimedia.org/wikipedia/commons/e/e8/JioSaavn_Logo.svg" }
+            { name: "JioSaavn", price: 99, icon: "fa-music", color: "#2bc5b4", logo: "" }
         ],
         'internet': [
             { name: "JioFiber", price: 699, icon: "fa-wifi", color: "#0f62fe", logo: "https://upload.wikimedia.org/wikipedia/commons/5/50/Jio_Logo.png" },
@@ -1507,7 +1507,7 @@
             if(!notificationsEnabled) return; 
             const now = new Date();
             if (now.getHours() === 21 && now.getMinutes() === 0) {
-                new Notification("📝 Daily Update", { body: "It's 9 PM! Time to log your daily expenses.", icon: "https://cdn-icons-png.flaticon.com/512/2921/2921222.png" });
+                new Notification("📝 Daily Update", { body: "It's 9 PM! Time to log your daily expenses."});
             }
         }, 60000);
     }
