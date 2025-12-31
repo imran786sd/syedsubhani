@@ -2,9 +2,13 @@
     let auth, db, currentUserUID;
     
     // Listen for custom event from the module script to know modules are ready
-    window.addEventListener('firebase-modules-loaded', () => {
+    if (window.firebaseModules) {
         initFirebase();
-    });
+    } else {
+        window.addEventListener('firebase-modules-loaded', () => {
+            initFirebase();
+        });
+    }
 
     async function initFirebase() {
         try {
