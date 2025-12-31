@@ -1186,6 +1186,4 @@ Browser: ${userAgent}
         // Open Email Client
         window.location.href = `mailto:${devEmail}?subject=${subject}&body=${body}`;
     }
-</script>
-</body>
-</html>
+
