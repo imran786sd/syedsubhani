@@ -1057,6 +1057,7 @@
                                 <div class="chart-switch-group">
                                     <button class="chart-switch-btn active" onclick="switchChartType('donut', this)">Donut</button>
                                     <button class="chart-switch-btn" onclick="switchChartType('sunburst', this)">Sunburst</button>
+                                    <button class="chart-switch-btn" onclick="switchChartType('bar', this)">Bar</button>
                                 </div>
                             </div>
                         </div>
@@ -2159,7 +2160,8 @@ function setDailyReminder() {
             const chartData = filtered.filter(t => t.type === 'income' || t.type === 'expense');
             renderExpenseFlow(chartData);
             if(currentChartType === 'donut') renderSpendingDonut(chartData);
-            else renderSpendingSunburst(chartData);
+            else if(currentChartType === 'sunburst') renderSpendingSunburst(chartData);
+            else if(currentChartType === 'bar') renderSpendingBar(chartData);
         } 
         else if (currentTab === 'debts') renderDebts(window.transactions); 
         else if (currentTab === 'records') renderRecordsList(filtered);
@@ -2447,6 +2449,109 @@ function setDailyReminder() {
                 const y_mid = -R_mid * Math.cos(angle);
                 return [c, [x_mid, y_mid], item.pos];
             });
+    }
+    // ==========================================
+    // NEW: BAR CHART RENDERER
+    // ==========================================
+    function renderSpendingBar(data) {
+        const container = document.getElementById('chart-cats');
+        const tooltip = document.getElementById('cat-tooltip');
+        container.innerHTML = ""; 
+        container.appendChild(tooltip);
+
+        // 1. Prepare Data
+        const map = {}; 
+        data.filter(t => t.type === 'expense').forEach(t => { 
+            const val = t.amount; // Native INR
+            let catName = t.desc.split('(')[0].trim(); 
+            map[catName] = (map[catName] || 0) + val; 
+        });
+        
+        // Sort largest to smallest and take top 10
+        const sorted = Object.keys(map)
+                             .map(k => ({name: k, val: map[k]}))
+                             .sort((a,b) => b.val - a.val)
+                             .slice(0, 10);
+
+        if(sorted.length === 0) { 
+            container.innerHTML += "<div class='empty-state' style='padding-top:150px;'>No expenses</div>"; 
+            return; 
+        }
+
+        // 2. Dimensions
+        const margin = {top: 20, right: 20, bottom: 40, left: 50}; // Left space for values
+        const width = container.clientWidth - margin.left - margin.right;
+        const height = (container.clientHeight || 400) - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart-cats").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // 3. Scales
+        const x = d3.scaleBand()
+            .range([0, width])
+            .domain(sorted.map(d => d.name))
+            .padding(0.3);
+            
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(sorted, d => d.val)])
+            .range([height, 0]);
+
+        const colors = d3.scaleOrdinal(d3.schemeSpectral[sorted.length > 2 ? sorted.length : 3]);
+
+        // 4. Draw Bars
+        svg.selectAll(".bar")
+            .data(sorted)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", d => x(d.name))
+            .attr("width", x.bandwidth())
+            .attr("y", d => y(d.val))
+            .attr("height", d => height - y(d.val))
+            .attr("rx", 6) // Rounded corners top
+            .attr("fill", (d, i) => colors(i))
+            .style("opacity", 0.8)
+            .on("mouseover", function(event, d) {
+                d3.select(this).style("opacity", 1).style("stroke", "#fff").style("stroke-width", 2);
+                tooltip.style.opacity = 1;
+                tooltip.innerHTML = `<strong>${d.name}</strong><br>${formatMoney(d.val)}`;
+                
+                // Tooltip positioning
+                const [mx, my] = d3.pointer(event, container);
+                tooltip.style.left = `${mx}px`;
+                tooltip.style.top = `${my - 40}px`;
+            })
+            .on("mouseout", function() {
+                d3.select(this).style("opacity", 0.8).style("stroke", "none");
+                tooltip.style.opacity = 0;
+            });
+
+        // 5. Add Labels (Amount on top of bars)
+        svg.selectAll(".label")
+            .data(sorted)
+            .enter().append("text")
+            .text(d => formatCompactMoney(d.val))
+            .attr("x", d => x(d.name) + x.bandwidth() / 2)
+            .attr("y", d => y(d.val) - 5)
+            .attr("text-anchor", "middle")
+            .style("fill", "var(--text-main)")
+            .style("font-size", "10px")
+            .style("font-weight", "bold");
+
+        // 6. X Axis (Category Names)
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).tickSize(0))
+            .selectAll("text")
+            .style("text-anchor", "middle")
+            .style("fill", "var(--text-muted)")
+            .style("font-size", "10px")
+            .attr("dy", "1em");
+            
+        // Remove axis lines for cleaner look
+        svg.selectAll(".domain").remove();
     }
 
     function renderCategories(data) {
