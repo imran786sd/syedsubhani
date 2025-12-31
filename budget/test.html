@@ -1314,6 +1314,10 @@
                             <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> App Notifications</span>
                             <i id="notif-toggle-icon" class="fa-solid fa-toggle-off" style="font-size:1.2rem; color:var(--text-muted)"></i>
                         </div>
+                        <div class="settings-btn" onclick="reportBug()">
+                            <span><i class="fa-solid fa-bug" style="margin-right:10px; color:#ef4444;"></i> Report Bug</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
+                        </div>
                         <div class="settings-btn" onclick="setDailyReminder()">
                         <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> Set Daily Reminder</span>
                         <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
@@ -3510,6 +3514,33 @@ function setDailyReminder() {
             startNotificationTimers();
         }
     })();
+    // ==========================================
+    // 🐞 REPORT BUG FUNCTION
+    // ==========================================
+    window.reportBug = function() {
+        // REPLACE THIS WITH YOUR EMAIL
+        const devEmail = "your-email@gmail.com"; 
+        
+        // Auto-detect device info to help you debug
+        const platform = navigator.platform;
+        const userAgent = navigator.userAgent;
+        const appVersion = "v1.0"; // You can change this when you update the app
+        
+        const subject = encodeURIComponent(`Bug Report: Budget Pro ${appVersion}`);
+        const body = encodeURIComponent(`
+Please describe the bug:
+-----------------------
+
+
+-----------------------
+Technical Info (Do not delete):
+Platform: ${platform}
+Browser: ${userAgent}
+        `);
+
+        // Open Email Client
+        window.location.href = `mailto:${devEmail}?subject=${subject}&body=${body}`;
+    }
     
 </script>
 </body>
