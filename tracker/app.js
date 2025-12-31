@@ -84,6 +84,51 @@
     // ==========================================
     // DATA LOGIC (CLOUD + LOCAL) - WITH DEMO AUTO-FILL
     // ==========================================
+    // ==========================================
+    function generateDummyData() {
+        console.log("Generating Demo Data...");
+        window.transactions = [];
+        window.goals = [{name: "New Laptop", target: 80000, saved: 25000}, {name: "Goa Trip", target: 20000, saved: 5000}];
+        window.bills = [
+            {name: "Netflix", amount: 649, day: 5, color: "#e50914", icon: "fa-film", logo: "https://upload.wikimedia.org/wikipedia/commons/7/75/Netflix_icon.svg"},
+            {name: "JioFiber", amount: 999, day: 15, color: "#0f62fe", icon: "fa-wifi", logo: "https://upload.wikimedia.org/wikipedia/commons/5/50/Jio_Logo.png"}
+        ];
+        
+        const today = new Date();
+        const methods = ["Card", "PhonePe", "GPay", "Paytm", "NetBanking", "Cash"];
+        
+        // Generate 60 days of fake transactions
+        for(let i=60; i>=0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+            const randMethod = methods[Math.floor(Math.random()*methods.length)];
+
+            // Income (Salary) every 30 days
+            if(i % 30 === 0) {
+                window.transactions.push({id: Date.now()+i, date: dateStr, desc: "Salary", amount: 45000, type: "income", method: "NetBanking"});
+            }
+            
+            // Random Expense
+            if (Math.random() > 0.3) { // 70% chance of expense per day
+                const amt = Math.floor(Math.random() * 2000) + 50;
+                const cats = ["Groceries", "Transport", "Dining Out", "Utilities", "Shopping", "Fuel"];
+                const cat = cats[Math.floor(Math.random() * cats.length)];
+                window.transactions.push({id: Date.now()+i+1, date: dateStr, desc: cat, amount: amt, type: "expense", method: randMethod});
+            }
+        }
+        
+        // Save to Cloud so it persists for this Guest Session
+        saveData();
+        
+        // Refresh UI
+        setTimeout(() => {
+            alert("✨ Demo Mode: Dashboard populated with sample data!");
+            updateUI();
+            if(window.renderBills) window.renderBills();
+            if(window.renderGoals) renderGoals();
+        }, 500);
+    }
     async function loadData() {
         // 1. Define Master List
         const defaultAccounts = ["Cash", "UPI", "GPay", "PhonePe", "Paytm", "Card", "Credit Card", "NetBanking"];
