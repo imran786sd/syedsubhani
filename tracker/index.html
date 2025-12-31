@@ -38,12 +38,12 @@
 
     <div id="app-wrapper" style="display: none;">
         
-        <div id="sidebar">
+        <nav id="sidebar" aria-label="Sidebar Navigation">
             <div class="app-title"><i class="fa-solid fa-wallet"></i> Budget Pro</div>
             
             <div class="profile-header-card" style="padding:15px; margin-bottom:15px; background:rgba(255,255,255,0.02); width:100%; border:none;">
                 <div style="display:flex; align-items:center; gap:10px; width:100%; position:relative; z-index:2;">
-                    <img id="sidebar-avatar" src="" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary);">
+                    <img id="sidebar-avatar" src="" alt="User Avatar" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary);">
                     <div style="text-align:left;">
                         <div id="sidebar-username" style="font-weight:700; font-size:0.9rem;">User</div>
                         <div style="font-size:0.7rem; color:var(--text-muted);">Pro Member</div>
@@ -51,7 +51,7 @@
                 </div>
             </div>
             
-            <div class="settings-btn" onclick="switchTab('goals')" style="margin-top:20px;">
+            <div class="settings-btn" onclick="switchTab('goals')" style="margin-top:20px;" role="button" tabindex="0">
                 <span><i class="fa-solid fa-bullseye" style="margin-right:10px; color:#f472b6;"></i> Savings Goals</span>
                 <i class="fa-solid fa-chevron-right" style="font-size:0.8rem;"></i>
             </div>
@@ -60,29 +60,33 @@
                 Use the <strong>+</strong> button below to add transactions. <br><br>
                 <em>Note: Profile & Logout are now in the bottom tabs.</em>
             </div>
-        </div>
+        </nav>
 
-        <div id="calc-modal">
-            <div id="calc-content">
+        <div id="calc-modal" aria-hidden="true">
+            <div id="calc-content" role="dialog" aria-modal="true" aria-labelledby="calc-title">
                 <div class="calc-header">
-                    <button class="calc-action-btn" style="background:none;border:none;color:var(--danger);" onclick="closeCalc()"><i class="fa-solid fa-xmark"></i> Cancel</button>
-                    <input type="date" id="calc-date" style="background:transparent; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:0.9rem; outline:none; text-align:center; width:130px;">
-                    <button class="calc-action-btn" style="background:none;border:none;color:var(--primary);" onclick="saveCalc()"><i class="fa-solid fa-check"></i> Save</button>
+                    <button class="calc-action-btn" style="background:none;border:none;color:var(--danger);" onclick="closeCalc()" aria-label="Cancel">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </button>
+                    <input type="date" id="calc-date" aria-label="Transaction Date" style="background:transparent; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:0.9rem; outline:none; text-align:center; width:130px;">
+                    <button class="calc-action-btn" style="background:none;border:none;color:var(--primary);" onclick="saveCalc()" aria-label="Save">
+                        <i class="fa-solid fa-check"></i> Save
+                    </button>
                 </div>
                 
                 <div class="calc-tabs">
-                    <div class="calc-tab active" id="tab-exp" onclick="setCalcType('expense')">EXPENSE</div>
-                    <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')">INCOME</div>
-                    <div class="calc-tab" id="tab-debt" onclick="setCalcType('debt')">DEBT</div>
+                    <div class="calc-tab active" id="tab-exp" onclick="setCalcType('expense')" role="button" tabindex="0">EXPENSE</div>
+                    <div class="calc-tab" id="tab-inc" onclick="setCalcType('income')" role="button" tabindex="0">INCOME</div>
+                    <div class="calc-tab" id="tab-debt" onclick="setCalcType('debt')" role="button" tabindex="0">DEBT</div>
                 </div>
 
                 <div class="calc-input-area">
                     <div class="input-row">
-                        <select id="calc-cat" class="calc-pill-select" style="width:100%; font-weight:bold;"></select>
+                        <select id="calc-cat" class="calc-pill-select" style="width:100%; font-weight:bold;" aria-label="Category"></select>
                         
                         <div id="debt-row-wrapper" style="display:none; width:100%; gap:10px;">
-                            <input type="text" id="calc-person" class="calc-pill-select" style="flex:1; font-weight:bold;" placeholder="Person Name">
-                            <select id="debt-dir" class="calc-pill-select" style="flex:0.7; font-size:0.85rem;">
+                            <input type="text" id="calc-person" class="calc-pill-select" style="flex:1; font-weight:bold;" placeholder="Person Name" aria-label="Person Name">
+                            <select id="debt-dir" class="calc-pill-select" style="flex:0.7; font-size:0.85rem;" aria-label="Debt Direction">
                                 <option value="lent">Gave (Lent)</option>
                                 <option value="borrowed">Got (Borrow)</option>
                             </select>
@@ -90,11 +94,11 @@
                     </div>
 
                     <div class="input-row" style="margin-top:10px;">
-                        <select id="calc-method" class="calc-pill-select" style="flex:1;">
+                        <select id="calc-method" class="calc-pill-select" style="flex:1;" aria-label="Payment Method">
                             </select>
                     </div>
                     
-                    <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (Optional)..." style="margin-top:10px;">
+                    <input type="text" id="calc-note" class="calc-note-input" placeholder="Note (Optional)..." style="margin-top:10px;" aria-label="Transaction Note">
                 </div>
 
                 <div class="calc-display-wrapper"><div id="calc-display" class="calc-display">0</div></div>
@@ -105,26 +109,26 @@
                     <button class="key" onclick="calcInput('1')">1</button><button class="key" onclick="calcInput('2')">2</button><button class="key" onclick="calcInput('3')">3</button><button class="key op" onclick="calcInput('-')">-</button>
                     <button class="key clear" onclick="calcInput('clear')">C</button>
                     <button class="key" onclick="calcInput('0')">0</button><button class="key" onclick="calcInput('.')">.</button><button class="key op" onclick="calcInput('+')">+</button>
-                    <button class="key del" onclick="calcInput('del')">⌫</button>
+                    <button class="key del" onclick="calcInput('del')" aria-label="Delete">⌫</button>
                     <button class="key eq" style="grid-column: span 3; background:var(--primary); color:black;" onclick="saveCalc()">ENTER</button>
                 </div>
             </div>
         </div>
 
-        <div id="main">
-            <div class="report-header">
+        <main id="main">
+            <header class="report-header">
                 <div class="header-top-row">
-                    <div class="report-title" id="page-title">Dashboard</div>
+                    <h1 class="report-title" id="page-title">Dashboard</h1>
                     <div class="header-controls">
-                        <button class="header-select" onclick="toggleTheme()" style="width:40px; padding:0; display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                        <button class="header-select" onclick="toggleTheme()" aria-label="Toggle Dark Mode" style="width:40px; padding:0; display:flex; align-items:center; justify-content:center; font-size:1rem;">
                             <i id="header-theme-icon" class="fa-solid fa-moon"></i>
                         </button>
                         
-                        <span id="loader" class="spinner" style="display:none;"></span>
+                        <span id="loader" class="spinner" style="display:none;" aria-label="Loading"></span>
                         
-                        <select id="year-select" class="header-select" onchange="updateUI()"></select>
+                        <select id="year-select" class="header-select" onchange="updateUI()" aria-label="Select Year"></select>
 
-                        <select class="header-select" id="period-select" onchange="updateUI()">
+                        <select class="header-select" id="period-select" onchange="updateUI()" aria-label="Select Period">
                             <option value="all_time">All Time</option>
                             <option value="all">All Year</option>
                             <option value="custom">Custom Range</option>
@@ -153,15 +157,15 @@
                 
                 <div id="custom-date-controls" class="custom-date-row">
                     <div class="date-input-group">
-                        <span class="date-label">From</span>
+                        <label for="custom-start" class="date-label">From</label>
                         <input type="date" id="custom-start" class="custom-date-input" onchange="updateUI()">
                     </div>
                     <div class="date-input-group">
-                        <span class="date-label">To</span>
+                        <label for="custom-end" class="date-label">To</label>
                         <input type="date" id="custom-end" class="custom-date-input" onchange="updateUI()">
                     </div>
                 </div>
-            </div>
+            </header>
 
             <div id="view-dashboard" class="view-container active">
                 <div class="stats-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
@@ -197,16 +201,16 @@
                         <div class="chart-header-row">
                             <div class="chart-title">Spending Breakdown</div>
                             <div class="chart-controls-right">
-                                <select id="chart-label-mode" class="chart-label-select" onchange="updateUI()">
+                                <select id="chart-label-mode" class="chart-label-select" onchange="updateUI()" aria-label="Chart Label Mode">
                                     <option value="name">Show: Name</option>
                                     <option value="value">Show: Value</option>
                                     <option value="percent">Show: %</option>
                                     <option value="all">Show: All</option>
                                 </select>
                                 <div class="chart-switch-group">
-                                    <button class="chart-switch-btn active" onclick="switchChartType('donut', this)">Donut</button>
-                                    <button class="chart-switch-btn" onclick="switchChartType('sunburst', this)">Sunburst</button>
-                                    <button class="chart-switch-btn" onclick="switchChartType('bar', this)">Bar</button>
+                                    <button class="chart-switch-btn active" onclick="switchChartType('donut', this)" aria-label="Donut Chart">Donut</button>
+                                    <button class="chart-switch-btn" onclick="switchChartType('sunburst', this)" aria-label="Sunburst Chart">Sunburst</button>
+                                    <button class="chart-switch-btn" onclick="switchChartType('bar', this)" aria-label="Bar Chart">Bar</button>
                                 </div>
                             </div>
                         </div>
@@ -219,7 +223,7 @@
             <div id="view-records" class="view-container">
                 <div class="search-container">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" id="search-input" class="search-input" placeholder="Search records (e.g. >500)..." onkeyup="handleSearch()">
+                    <input type="text" id="search-input" class="search-input" placeholder="Search records (e.g. >500)..." onkeyup="handleSearch()" aria-label="Search Records">
                 </div>
                 <div class="stat-card" style="margin-bottom:20px; flex-direction:row; justify-content:space-between; align-items:center;">
                     <span class="stat-title">Total Records (Period)</span>
@@ -245,14 +249,14 @@
                 <div id="subview-bills" style="display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <div class="chart-title">Recurring Bills</div>
-                        <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleBillForm()">
+                        <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleBillForm()" aria-label="Add Bill">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
 
                     <div id="add-bill-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
                         <input type="hidden" id="bill-logo-url" value="">
-                        <select id="preset-cat-select" class="calc-pill-select" style="width:100%; margin-bottom:10px; font-weight:bold; color:var(--primary);" onchange="renderCategoryPresets()">
+                        <select id="preset-cat-select" class="calc-pill-select" style="width:100%; margin-bottom:10px; font-weight:bold; color:var(--primary);" onchange="renderCategoryPresets()" aria-label="Bill Category Preset">
                             <option value="" disabled selected>✨ Select Category to Auto-fill</option>
                             <option value="ott">🎬 Movies & OTT</option>
                             <option value="music">🎵 Music & Audio</option>
@@ -262,18 +266,18 @@
                         </select>
 
                         <div id="preset-options" class="presets-scroll" style="margin-bottom:15px; display:none;"></div>
-                        <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;" onkeyup="autoDetectBillIcon()">
+                        <input type="text" id="bill-name" class="calc-pill-select" placeholder="Name (e.g. Netflix)" style="width:100%; font-weight:bold; margin-bottom:10px;" onkeyup="autoDetectBillIcon()" aria-label="Bill Name">
                         
                         <div class="input-row">
-                            <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;">
-                            <select id="bill-day" class="calc-pill-select" style="flex:1;"></select>
+                            <input type="number" id="bill-amount" class="calc-pill-select" placeholder="Amount" style="flex:1;" aria-label="Bill Amount">
+                            <select id="bill-day" class="calc-pill-select" style="flex:1;" aria-label="Bill Due Day"></select>
                         </div>
 
                         <div class="input-row" style="margin-top:10px;">
-                            <select id="bill-color" class="calc-pill-select" style="flex:1;">
+                            <select id="bill-color" class="calc-pill-select" style="flex:1;" aria-label="Bill Color">
                                 <option value="#e50914">Red</option><option value="#1db954">Green</option><option value="#ffffff">White</option><option value="#00a8e8">Blue</option><option value="#f59e0b">Orange</option><option value="#8b5cf6">Purple</option>
                             </select>
-                            <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+                            <select id="bill-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';" aria-label="Bill Icon">
                                 <option value="fa-film">&#xf008; Movie</option><option value="fa-music">&#xf001; Music</option><option value="fa-bolt">&#xf0e7; Utility</option><option value="fa-wifi">&#xf1eb; Net</option><option value="fa-mobile-screen">&#xf3cd; Phone</option><option value="fa-dumbbell">&#xf44b; Gym</option><option value="fa-tv">&#xf26c; TV</option><option value="fa-play">&#xf04b; Play</option><option value="fa-house">&#xf015; Rent</option><option value="fa-fire">&#xf06d; Gas</option><option value="fa-droplet">&#xf043; Water</option><option value="fa-credit-card">&#xf09d; EMI</option>
                             </select>
                         </div>
@@ -282,9 +286,9 @@
 
                     <div class="calendar-wrapper">
                         <div class="calendar-header">
-                            <button class="chart-switch-btn" onclick="changeBillMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button class="chart-switch-btn" onclick="changeBillMonth(-1)" aria-label="Previous Month"><i class="fa-solid fa-chevron-left"></i></button>
                             <div id="cal-month-title" style="font-weight:800; font-size:1.1rem; letter-spacing:0.5px;">...</div>
-                            <button class="chart-switch-btn" onclick="changeBillMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                            <button class="chart-switch-btn" onclick="changeBillMonth(1)" aria-label="Next Month"><i class="fa-solid fa-chevron-right"></i></button>
                         </div>
                         <div class="calendar-grid" style="margin-bottom:10px;">
                             <div class="cal-day-label">S</div><div class="cal-day-label">M</div><div class="cal-day-label">T</div><div class="cal-day-label">W</div><div class="cal-day-label">T</div><div class="cal-day-label">F</div><div class="cal-day-label">S</div>
@@ -305,12 +309,12 @@
                 <div id="subview-accounts" style="display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <div class="chart-title">Payment Methods</div>
-                        <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleAcctForm()"><i class="fa-solid fa-plus"></i></button>
+                        <button class="nav-add-btn" style="width:35px; height:35px; font-size:0.9rem;" onclick="toggleAcctForm()" aria-label="Add Account"><i class="fa-solid fa-plus"></i></button>
                     </div>
                     <div id="add-acct-form" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px dashed var(--glass-border); margin-bottom:20px; display:none;">
-                        <input type="text" id="acct-name" class="calc-pill-select" placeholder="Account Name (e.g. HDFC Bank)" style="width:100%; font-weight:bold; margin-bottom:10px;">
+                        <input type="text" id="acct-name" class="calc-pill-select" placeholder="Account Name (e.g. HDFC Bank)" style="width:100%; font-weight:bold; margin-bottom:10px;" aria-label="Account Name">
                         <div class="input-row">
-                            <select id="acct-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';">
+                            <select id="acct-icon" class="calc-pill-select" style="flex:1; font-family:'FontAwesome', 'Inter';" aria-label="Account Icon">
                                 <option value="fa-building-columns">&#xf19c; Bank</option>
                                 <option value="fa-wallet">&#xf555; Wallet</option>
                                 <option value="fa-credit-card">&#xf09d; Card</option>
@@ -335,13 +339,13 @@
             <div id="view-goals" class="view-container">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <div class="chart-title">My Targets</div>
-                    <button class="nav-add-btn" style="width:35px; height:35px; font-size:1rem;" onclick="toggleGoalForm()"><i class="fa-solid fa-plus"></i></button>
+                    <button class="nav-add-btn" style="width:35px; height:35px; font-size:1rem;" onclick="toggleGoalForm()" aria-label="Add Goal"><i class="fa-solid fa-plus"></i></button>
                 </div>
                 <div id="add-goal-form">
                     <div class="input-row">
-                        <input type="text" id="goal-name" class="calc-pill-select" placeholder="Goal Name (e.g. iPhone)" style="flex:2; font-weight:bold;">
+                        <input type="text" id="goal-name" class="calc-pill-select" placeholder="Goal Name (e.g. iPhone)" style="flex:2; font-weight:bold;" aria-label="Goal Name">
                         <div style="flex:1; position:relative;">
-                            <input type="number" id="goal-target" class="calc-pill-select" placeholder="Target Amount">
+                            <input type="number" id="goal-target" class="calc-pill-select" placeholder="Target Amount" aria-label="Target Amount">
                         </div>
                     </div>
                     <button class="btn-goal-add" onclick="saveNewGoal()" style="margin-top:10px; background:var(--primary); color:black;">Create Goal</button>
@@ -368,7 +372,7 @@
             <div id="view-profile" class="view-container">
                 <div class="profile-container">
                     <div class="profile-header-card">
-                        <img id="main-profile-avatar" src="" class="profile-img-lg">
+                        <img id="main-profile-avatar" src="" alt="Profile Avatar" class="profile-img-lg">
                         <div class="profile-name-lg" id="main-profile-name">User</div>
                         <div class="profile-badge-lg"><i class="fa-solid fa-circle-check"></i> Pro Member</div>
                         <div class="profile-stats-grid">
@@ -389,31 +393,31 @@
                     </div>
 
                     <div class="settings-group">
-                        <div class="settings-btn" onclick="toggleNotifications()">
+                        <div class="settings-btn" onclick="toggleNotifications()" role="button" tabindex="0">
                             <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> App Notifications</span>
                             <i id="notif-toggle-icon" class="fa-solid fa-toggle-off" style="font-size:1.2rem; color:var(--text-muted)"></i>
                         </div>
-                        <div class="settings-btn" onclick="setDailyReminder()">
+                        <div class="settings-btn" onclick="setDailyReminder()" role="button" tabindex="0">
                             <span><i class="fa-regular fa-bell" style="margin-right:10px; color:#60a5fa;"></i> Set Daily Reminder</span>
                             <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
                         </div>
-                        <div class="settings-btn" onclick="toggleTheme()">
+                        <div class="settings-btn" onclick="toggleTheme()" role="button" tabindex="0">
                             <span><i id="theme-icon" class="fa-solid fa-moon" style="margin-right:10px; width:20px; text-align:center;"></i> <span id="theme-text">Dark Mode</span></span>
                             <i class="fa-solid fa-toggle-off" id="theme-toggle-icon" style="font-size:1.2rem; color:var(--text-muted)"></i>
                         </div>
-                        <div class="settings-btn" onclick="exportData()">
+                        <div class="settings-btn" onclick="exportData()" role="button" tabindex="0">
                             <span><i class="fa-solid fa-file-csv" style="margin-right:10px; color:#10b981"></i> Export to Excel</span>
                             <i class="fa-solid fa-download" style="font-size:0.8rem; color:var(--text-muted)"></i>
                         </div>
-                        <div class="settings-btn" onclick="resetData()">
+                        <div class="settings-btn" onclick="resetData()" role="button" tabindex="0">
                             <span><i class="fa-solid fa-rotate-left" style="margin-right:10px; color:var(--secondary)"></i> Clear All Data</span>
                             <i class="fa-solid fa-chevron-right" style="font-size:0.8rem; color:var(--text-muted)"></i>
                         </div>
-                        <div class="settings-btn" onclick="reportBug()">
+                        <div class="settings-btn" onclick="reportBug()" role="button" tabindex="0">
                             <span><i class="fa-solid fa-bug" style="margin-right:10px; color:#ef4444;"></i> Report Bug</span>
                             <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.8rem; color:var(--text-muted)"></i>
                         </div>
-                        <div class="settings-btn danger" onclick="handleLogout()">
+                        <div class="settings-btn danger" onclick="handleLogout()" role="button" tabindex="0">
                             <span><i class="fa-solid fa-arrow-right-from-bracket" style="margin-right:10px;"></i> Logout</span>
                             <i class="fa-solid fa-chevron-right" style="font-size:0.8rem;"></i>
                         </div>
@@ -421,15 +425,15 @@
                 </div>
             </div>
 
-            <nav class="bottom-nav">
-                <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Dash</button>
-                <button class="nav-btn" onclick="switchTab('records', this)"><i class="fa-solid fa-list"></i> Records</button>
-                <button class="nav-add-btn" onclick="openCalc()"><i class="fa-solid fa-plus"></i></button>
-                <button class="nav-btn" onclick="switchTab('categories', this)"><i class="fa-solid fa-wallet"></i> Account</button>
-                <button class="nav-btn" onclick="switchTab('debts', this)"><i class="fa-solid fa-handshake"></i> Debts</button>
-                <button class="nav-btn" onclick="switchTab('profile', this)"><i class="fa-solid fa-user-circle"></i> Profile</button>
+            <nav class="bottom-nav" aria-label="Bottom Navigation">
+                <button class="nav-btn active" onclick="switchTab('dashboard', this)" aria-label="Dashboard"><i class="fa-solid fa-chart-pie"></i> Dash</button>
+                <button class="nav-btn" onclick="switchTab('records', this)" aria-label="Records"><i class="fa-solid fa-list"></i> Records</button>
+                <button class="nav-add-btn" onclick="openCalc()" aria-label="Add Transaction"><i class="fa-solid fa-plus"></i></button>
+                <button class="nav-btn" onclick="switchTab('categories', this)" aria-label="Accounts"><i class="fa-solid fa-wallet"></i> Account</button>
+                <button class="nav-btn" onclick="switchTab('debts', this)" aria-label="Debts"><i class="fa-solid fa-handshake"></i> Debts</button>
+                <button class="nav-btn" onclick="switchTab('profile', this)" aria-label="Profile"><i class="fa-solid fa-user-circle"></i> Profile</button>
             </nav>
-        </div>
+        </main>
     </div>
 
     <script src="config.js"></script>
