@@ -41,6 +41,15 @@
             alert("Login Failed: " + error.message);
         }
     }
+// Demo Login
+    window.handleGuestLogin = async function() {
+        try {
+            await window.firebaseModules.signInAnonymously(auth);
+            // The onAuthStateChanged listener will handle the rest automatically!
+        } catch (error) {
+            alert("Demo Login Failed: " + error.message);
+        }
+    }
 
     window.handleLogout = function() {
         if(confirm("Logout from Google Account?")) {
