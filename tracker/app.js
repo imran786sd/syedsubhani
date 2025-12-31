@@ -1,7 +1,7 @@
 // --- 2. FIREBASE LOGIC ---
     let auth, db, currentUserUID;
     
-    // Listen for custom event from the module script to know modules are ready
+    // Listen for custom event from the module script to know modules are ready - Fixed
     if (window.firebaseModules) {
         initFirebase();
     } else {
