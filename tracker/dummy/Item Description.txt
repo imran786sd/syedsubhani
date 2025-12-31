@@ -1,0 +1,107 @@
+Budget Tracker Pro – Serverless Expense Manager PWA
+<p align="center"> <img src="YOUR_BANNER_IMAGE_URL_HERE" alt="Budget Tracker Pro Banner"> </p>
+
+Stop Paying for Hosting. Start Managing Money Smarter.
+Budget Tracker Pro is a modern, lightweight, and completely serverless Progressive Web App (PWA) designed for personal finance management. Unlike traditional scripts that require expensive PHP hosting and MySQL databases, Budget Tracker Pro runs entirely on Google Firebase (Free Tier), meaning zero monthly server costs for you or your users.
+
+It comes pre-configured with Indian Numbering Logic (₹ Lakhs/Crores), making it the perfect solution for the South Asian market, or easily customizable for global currencies.
+
+🌟 Live Preview
+👉 Click Here to Try the Demo (Select "Try Demo" on the login screen to test without entering personal details!)
+
+🚀 Why Choose Budget Tracker Pro?
+📱 Installable PWA: Users can install it directly on their Android, iOS, or Desktop devices just like a native app.
+
+☁️ Real-Time Cloud Sync: Data is instantly synced across all devices using Google Firestore. Lose your phone? Your data is safe.
+
+🔒 Bank-Grade Security: Authentication is handled by Google Identity Platform. No passwords to store, no security headaches.
+
+⚡ Offline Capable: Works perfectly even without an internet connection. Data syncs automatically when online.
+
+🔥 Key Features
+💰 Smart Expense Tracking
+
+Intuitive "Calculator-style" input for fast logging.
+
+Visual charts (Donut, Sunburst, Bar) powered by D3.js.
+
+Dark Mode & Light Mode with Glassmorphism UI.
+
+🇮🇳 Native Indian Finance
+
+Built-in support for ₹ (INR) currency.
+
+Smart formatting for Lakhs (1.5L) and Crores (1Cr).
+
+Easily customizable to USD/Global formats in the code.
+
+🤝 Debt Manager & WhatsApp Integration
+
+Track who owes you money (Lent/Borrowed).
+
+One-Click Reminder: Send a pre-formatted WhatsApp reminder to debtors directly from the app.
+
+📅 Subscription Manager
+
+Track recurring bills (Netflix, Rent, EMI).
+
+Visual calendar view to see upcoming due dates.
+
+Auto-detects icons for popular services.
+
+🎯 Savings Goals
+
+Set targets (e.g., "New Phone", "Vacation").
+
+Visual progress bars to keep you motivated.
+
+📂 Power User Tools
+
+Excel Export: Download all data to CSV for analysis.
+
+Guest Mode: Let users try the app instantly without signing up.
+
+🛠️ Technology Stack
+Frontend: HTML5, CSS3 (Modern Variables), Vanilla JavaScript (ES6+).
+
+Backend: Google Firebase (Auth + Firestore). No Node.js or PHP required.
+
+Charts: D3.js (v7).
+
+Icons: FontAwesome 6.
+
+📦 What You Get
+Full Source Code (HTML, CSS, JS).
+
+manifest.json & sw.js for PWA functionality.
+
+Comprehensive HTML Documentation.
+
+Free updates for future bugs.
+
+📋 Easy Setup (5 Minutes)
+You do not need to be a coder to set this up.
+
+Create a free project on the Firebase Console.
+
+Copy your API Keys into config.js.
+
+Upload the files to any static host (GitHub Pages, Netlify, Vercel, or shared hosting).
+
+Done! Your app is live.
+
+Changelog
+Version 1.0 – Initial Release
+
+Initial launch of Budget Tracker Pro.
+
+PWA support added.
+
+Google Auth integration.
+
+Dark Mode enabled.
+
+Note: This is a standalone HTML5/JS application. It does not require a backend server like PHP or Node.js, but it requires a free Google Firebase account for the database.
+
+💡 Tags for CodeCanyon Upload:
+expense tracker, budget app, pwa, firebase, personal finance, indian finance, debt manager, wallet, money manager, invoice, receipt, javascript, serverless, mobile app, dark mode
