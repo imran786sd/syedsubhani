@@ -127,8 +127,8 @@ window.calcExpiry = () => {
     } 
 };
 
-// --- AUTOMATED ACCOUNTING ---
-async function addFinanceEntry(category, amount, mode, date, memberId) {
+// --- AUTOMATED ACCOUNTING (UPDATED: Snapshots Plan & Expiry) ---
+async function addFinanceEntry(category, amount, mode, date, memberId, plan, expiry) {
     try {
         await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
             type: 'income',
@@ -137,6 +137,9 @@ async function addFinanceEntry(category, amount, mode, date, memberId) {
             date: date,
             mode: mode || 'Cash',
             memberId: memberId || null,
+            // SNAPSHOT: Save the plan details AT THIS MOMENT
+            snapshotPlan: plan || null,
+            snapshotExpiry: expiry || null,
             createdAt: new Date()
         });
         console.log("Finance entry auto-added.");
@@ -322,11 +325,14 @@ function renderAgeCharts() {
 // --- CRUD OPERATIONS ---
 window.saveMember = async () => {
     const name = document.getElementById('inp-name').value;
+    const gender = document.getElementById('inp-gender').value; // Get Gender
     const phone = document.getElementById('inp-phone').value;
     const amount = document.getElementById('inp-amount').value;
     const dob = document.getElementById('inp-dob').value;
     const joinDate = document.getElementById('inp-join').value;
     const payMode = document.getElementById('inp-paymode').value;
+    const planDuration = document.getElementById('inp-plan').value;
+    const expiryDate = document.getElementById('inp-expiry').value;
     const imgEl = document.getElementById('preview-img');
     const imgSrc = imgEl ? imgEl.src : "";
     
@@ -335,9 +341,9 @@ window.saveMember = async () => {
     const finalPhoto = (imgSrc && imgSrc.includes('base64')) ? imgSrc : null;
 
     const data = {
-        name, phone, dob, joinDate,
-        expiryDate: document.getElementById('inp-expiry').value,
-        planDuration: document.getElementById('inp-plan').value,
+        name, gender, phone, dob, joinDate, // Save Gender
+        expiryDate: expiryDate,
+        planDuration: planDuration,
         lastPaidAmount: amount,
         photo: finalPhoto
     };
@@ -352,8 +358,8 @@ window.saveMember = async () => {
             // Save Member
             const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
             
-            // ✅ AUTO FINANCE ENTRY (New Membership)
-            await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate, docRef.id);
+            // ✅ AUTO FINANCE ENTRY (With Snapshot)
+            await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate, docRef.id, planDuration, expiryDate);
             
             if(confirm("Generate Invoice?")) window.generateInvoice(data);
         }
@@ -408,8 +414,8 @@ window.confirmRenewal = async () => {
         planDuration: plan
     });
 
-    // ✅ AUTO FINANCE ENTRY (Renewal)
-    await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr, id);
+    // ✅ AUTO FINANCE ENTRY (With Snapshot)
+    await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr, id, plan, newExpiry);
 
     window.closeRenewModal();
     alert(`Membership Renewed! New Expiry: ${newExpiry}`);
@@ -445,15 +451,17 @@ window.toggleHistory = async (id) => {
         
         snap.forEach(doc => {
             const t = doc.data();
-            // We pass the raw data as strings to the print function
-            // Note: We use JSON.stringify safely for text params to avoid quote issues
+            // IMPORTANT: Pass snapshot info to the print function
+            const safePlan = t.snapshotPlan || '';
+            const safeExpiry = t.snapshotExpiry || '';
+            
             html += `
                 <tr>
                     <td>${t.date}</td>
                     <td>${t.category}</td>
                     <td>${t.mode || '-'}</td>
                     <td style="color:${t.type==='income'?'#22c55e':'#ef4444'}">${t.amount}</td>
-                    <td><i class="fa-solid fa-print" style="cursor:pointer; color:#888;" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}')"></i></td>
+                    <td><i class="fa-solid fa-print" style="cursor:pointer; color:#888;" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}', '${safePlan}', '${safeExpiry}')"></i></td>
                 </tr>`;
         });
         
@@ -466,21 +474,129 @@ window.toggleHistory = async (id) => {
     }
 };
 
-// 2. Helper to print old invoice
-window.printHistoryInvoice = (memberId, amount, date, mode, category) => {
+// 2. Helper to print old invoice (Updated for Snapshot)
+window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expiry) => {
     const m = members.find(x => x.id === memberId);
     if (!m) return alert("Member data missing.");
 
-    // Create a temporary object to mimic a current transaction for the invoice generator
+    // Create a temporary object with HISTORICAL data
     const tempTransaction = {
         amount: amount,
         date: date,
         mode: mode,
-        category: category
+        category: category,
+        snapshotPlan: plan,      // Use the snapshot
+        snapshotExpiry: expiry   // Use the snapshot
     };
 
-    // Call the updated generator
     window.generateInvoice(m, tempTransaction);
+};
+
+// --- UPDATED INVOICE GENERATOR (Intelligent Snapshot Logic) ---
+window.generateInvoice = async (m, specificTransaction = null) => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // --- SETUP ---
+    const themeColor = [0, 150, 136];
+    const greyColor = [240, 240, 240];
+    let finalY = 0;
+
+    // --- DATA INTELLIGENCE ---
+    // If we have a specific transaction (History), use its snapshot data.
+    // If snapshot data is missing (old records), fall back to current member data.
+    const isHistory = !!specificTransaction;
+    
+    const amt = isHistory ? specificTransaction.amount : m.lastPaidAmount;
+    const date = isHistory ? specificTransaction.date : new Date().toISOString().split('T')[0];
+    const mode = isHistory ? specificTransaction.mode : 'Cash'; 
+    const category = isHistory ? specificTransaction.category : 'Membership Fees';
+    
+    // KEY FIX: Use Snapshot Plan/Expiry if available, otherwise current member's
+    const rawPlan = (isHistory && specificTransaction.snapshotPlan) ? specificTransaction.snapshotPlan : m.planDuration;
+    const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
+    
+    const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
+
+    // --- HEADER ---
+    doc.setFillColor(...themeColor);
+    doc.rect(0, 0, 210, 25, 'F');
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("THE ULTIMATE GYM 2.0", 14, 16);
+    
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Payment Receipt", 14, 35);
+    doc.line(14, 37, 196, 37);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
+    
+    doc.text(`Receipt #: ${receiptNo}`, 14, 45);
+    doc.text(`Date: ${date}`, 150, 45);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text("1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080", 14, 52);
+    doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, 57);
+
+    // --- MEMBER GRID (UPDATED WITH GENDER & SNAPSHOT DATA) ---
+    
+    doc.autoTable({
+        startY: 65,
+        theme: 'grid',
+        head: [],
+        body: [
+            ['Member ID', m.memberId || 'N/A', 'Name', m.name],
+            ['Gender', m.gender || 'N/A', 'Phone', m.phone], // ADDED GENDER ROW
+            ['Duration', planText, 'Valid Until', rawExpiry], // USED SNAPSHOT DATA
+            ['Payment Mode', mode, 'Amount Paid', `Rs. ${amt}`]
+        ],
+        styles: { fontSize: 10, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
+        columnStyles: {
+            0: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 },
+            1: { width: 60 },
+            2: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 },
+            3: { width: 60 }
+        }
+    });
+
+    finalY = doc.lastAutoTable.finalY + 10;
+
+    // --- PAYMENT DETAILS ---
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Payment Details", 14, finalY);
+    
+    doc.autoTable({
+        startY: finalY + 5,
+        head: [['Description', 'Date', 'Mode', 'Amount']],
+        body: [
+            [category, date, mode, `Rs. ${amt}`]
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: themeColor },
+        styles: { fontSize: 9, cellPadding: 3 }
+    });
+
+    finalY = doc.lastAutoTable.finalY + 20;
+
+    // --- FOOTER ---
+    doc.setFontSize(10);
+    doc.text("Receiver Sign:", 14, finalY);
+    doc.text("Authorized Signature", 150, finalY);
+    doc.line(14, finalY + 15, 60, finalY + 15);
+    doc.line(150, finalY + 15, 196, finalY + 15);
+
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Note: Fees once paid are not refundable.", 14, finalY + 25);
+    doc.text("Computer Generated Receipt.", 14, finalY + 30);
+
+    doc.save(`${m.name}_Receipt.pdf`);
 };
 
 // --- STANDARD ACTIONS ---
@@ -488,6 +604,7 @@ window.editMember = (id) => {
     const m = members.find(x => x.id === id); if(!m) return;
     editingMemberId = id;
     document.getElementById('inp-name').value = m.name; 
+    document.getElementById('inp-gender').value = m.gender || 'Male'; // Load Gender
     document.getElementById('inp-phone').value = m.phone; 
     document.getElementById('inp-amount').value = m.lastPaidAmount; 
     document.getElementById('inp-dob').value = m.dob;
@@ -594,106 +711,6 @@ function renderFinanceList() {
 }
 
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
-
-// --- UPDATED INVOICE GENERATOR (Support for Reprint) ---
-window.generateInvoice = async (m, specificTransaction = null) => {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // --- SETUP ---
-    const themeColor = [0, 150, 136];
-    const greyColor = [240, 240, 240];
-    let finalY = 0;
-
-    // --- DATA SELECTION (Current vs Historical) ---
-    // If specificTransaction is passed (from history), use its data. Otherwise use member's current data.
-    const amt = specificTransaction ? specificTransaction.amount : m.lastPaidAmount;
-    const date = specificTransaction ? specificTransaction.date : new Date().toISOString().split('T')[0];
-    const mode = specificTransaction ? specificTransaction.mode : 'Cash'; // Default if unknown
-    const category = specificTransaction ? specificTransaction.category : 'Membership Fees';
-
-    // --- HEADER ---
-    doc.setFillColor(...themeColor);
-    doc.rect(0, 0, 210, 25, 'F');
-    doc.setFontSize(20);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.text("THE ULTIMATE GYM 2.0", 14, 16);
-    
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Payment Receipt", 14, 35);
-    doc.line(14, 37, 196, 37);
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
-    
-    doc.text(`Receipt #: ${receiptNo}`, 14, 45);
-    doc.text(`Date: ${date}`, 150, 45);
-
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text("1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080", 14, 52);
-    doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, 57);
-
-    // --- MEMBER GRID ---
-    const planText = window.formatPlanDisplay ? window.formatPlanDisplay(m.planDuration) : m.planDuration;
-    
-    doc.autoTable({
-        startY: 65,
-        theme: 'grid',
-        head: [],
-        body: [
-            ['Member ID', m.memberId || 'N/A', 'Name', m.name],
-            ['Phone', m.phone, 'Duration', planText],
-            ['Joining Date', m.joinDate, 'Expiry Date', m.expiryDate],
-            ['Status', new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired', 'Payment Mode', mode]
-        ],
-        styles: { fontSize: 10, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
-        columnStyles: {
-            0: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 },
-            1: { width: 60 },
-            2: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 },
-            3: { width: 60 }
-        }
-    });
-
-    finalY = doc.lastAutoTable.finalY + 10;
-
-    // --- PAYMENT DETAILS ---
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Payment Details", 14, finalY);
-    
-    doc.autoTable({
-        startY: finalY + 5,
-        head: [['Description', 'Date', 'Mode', 'Amount']],
-        body: [
-            [category, date, mode, `Rs. ${amt}`]
-        ],
-        theme: 'striped',
-        headStyles: { fillColor: themeColor },
-        styles: { fontSize: 9, cellPadding: 3 }
-    });
-
-    finalY = doc.lastAutoTable.finalY + 20;
-
-    // --- FOOTER ---
-    doc.setFontSize(10);
-    doc.text("Receiver Sign:", 14, finalY);
-    doc.text("Authorized Signature", 150, finalY);
-    doc.line(14, finalY + 15, 60, finalY + 15);
-    doc.line(150, finalY + 15, 196, finalY + 15);
-
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("Note: Fees once paid are not refundable.", 14, finalY + 25);
-    doc.text("Computer Generated Receipt.", 14, finalY + 30);
-
-    doc.save(`${m.name}_Receipt.pdf`);
-};
-
 window.toggleMemberModal = () => { 
     const el = document.getElementById('modal-member'); 
     if(el.style.display !== 'flex') {
