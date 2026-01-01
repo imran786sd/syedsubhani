@@ -127,7 +127,7 @@ window.calcExpiry = () => {
     } 
 };
 
-// --- AUTOMATED ACCOUNTING (UPDATED: Snapshots Plan & Expiry) ---
+// --- AUTOMATED ACCOUNTING ---
 async function addFinanceEntry(category, amount, mode, date, memberId, plan, expiry) {
     try {
         await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
@@ -137,10 +137,9 @@ async function addFinanceEntry(category, amount, mode, date, memberId, plan, exp
             date: date,
             mode: mode || 'Cash',
             memberId: memberId || null,
-            // SNAPSHOT: Save the plan details AT THIS MOMENT
             snapshotPlan: plan || null,
             snapshotExpiry: expiry || null,
-            createdAt: new Date()
+            createdAt: new Date() // This saves the exact time
         });
         console.log("Finance entry auto-added.");
     } catch(e) { console.error("Auto-finance failed", e); }
@@ -325,7 +324,7 @@ function renderAgeCharts() {
 // --- CRUD OPERATIONS ---
 window.saveMember = async () => {
     const name = document.getElementById('inp-name').value;
-    const gender = document.getElementById('inp-gender').value; // Get Gender
+    const gender = document.getElementById('inp-gender').value;
     const phone = document.getElementById('inp-phone').value;
     const amount = document.getElementById('inp-amount').value;
     const dob = document.getElementById('inp-dob').value;
@@ -341,7 +340,7 @@ window.saveMember = async () => {
     const finalPhoto = (imgSrc && imgSrc.includes('base64')) ? imgSrc : null;
 
     const data = {
-        name, gender, phone, dob, joinDate, // Save Gender
+        name, gender, phone, dob, joinDate,
         expiryDate: expiryDate,
         planDuration: planDuration,
         lastPaidAmount: amount,
@@ -355,12 +354,8 @@ window.saveMember = async () => {
         } else {
             data.createdAt = new Date();
             data.memberId = window.generateMemberID(name, phone);
-            // Save Member
             const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
-            
-            // ✅ AUTO FINANCE ENTRY (With Snapshot)
             await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate, docRef.id, planDuration, expiryDate);
-            
             if(confirm("Generate Invoice?")) window.generateInvoice(data);
         }
         window.toggleMemberModal();
@@ -407,14 +402,12 @@ window.confirmRenewal = async () => {
     const newExpiry = d.toISOString().split('T')[0];
     const todayStr = today.toISOString().split('T')[0];
 
-    // Update Member
     await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, id), {
         expiryDate: newExpiry,
         lastPaidAmount: amount,
         planDuration: plan
     });
 
-    // ✅ AUTO FINANCE ENTRY (With Snapshot)
     await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr, id, plan, newExpiry);
 
     window.closeRenewModal();
@@ -422,7 +415,6 @@ window.confirmRenewal = async () => {
 };
 
 // --- HISTORY TOGGLE & PRINT LOGIC ---
-// 1. Toggle the table visibility
 window.toggleHistory = async (id) => {
     const panel = document.getElementById(`history-${id}`);
     if(panel.style.display === 'block') { panel.style.display = 'none'; return; }
@@ -443,25 +435,33 @@ window.toggleHistory = async (id) => {
             return;
         }
 
+        // ADDED "Time" COLUMN
         let html = `
             <table class="history-table">
-                <thead><tr><th>Date</th><th>Category</th><th>Mode</th><th>Amount</th><th>Action</th></tr></thead>
+                <thead><tr><th>Date</th><th>Time</th><th>Category</th><th>Mode</th><th>Amount</th><th>Action</th></tr></thead>
                 <tbody>
         `;
         
         snap.forEach(doc => {
             const t = doc.data();
-            // IMPORTANT: Pass snapshot info to the print function
             const safePlan = t.snapshotPlan || '';
             const safeExpiry = t.snapshotExpiry || '';
             
+            // CONVERT TIMESTAMP TO READABLE TIME
+            let timeStr = "-";
+            if(t.createdAt && t.createdAt.seconds) {
+                const dateObj = new Date(t.createdAt.seconds * 1000);
+                timeStr = dateObj.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+            }
+
             html += `
                 <tr>
                     <td>${t.date}</td>
+                    <td style="color:#888; font-size:0.75rem;">${timeStr}</td>
                     <td>${t.category}</td>
                     <td>${t.mode || '-'}</td>
                     <td style="color:${t.type==='income'?'#22c55e':'#ef4444'}">${t.amount}</td>
-                    <td><i class="fa-solid fa-print" style="cursor:pointer; color:#888;" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}', '${safePlan}', '${safeExpiry}')"></i></td>
+                    <td><i class="fa-solid fa-print" style="cursor:pointer; color:#888;" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}', '${safePlan}', '${safeExpiry}', '${timeStr}')"></i></td>
                 </tr>`;
         });
         
@@ -474,51 +474,46 @@ window.toggleHistory = async (id) => {
     }
 };
 
-// 2. Helper to print old invoice (Updated for Snapshot)
-window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expiry) => {
+// UPDATED: Receives Time
+window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expiry, timeStr) => {
     const m = members.find(x => x.id === memberId);
     if (!m) return alert("Member data missing.");
 
-    // Create a temporary object with HISTORICAL data
     const tempTransaction = {
         amount: amount,
         date: date,
         mode: mode,
         category: category,
-        snapshotPlan: plan,      // Use the snapshot
-        snapshotExpiry: expiry   // Use the snapshot
+        snapshotPlan: plan,
+        snapshotExpiry: expiry,
+        timeStr: timeStr // Pass time to invoice
     };
 
     window.generateInvoice(m, tempTransaction);
 };
 
-// --- UPDATED INVOICE GENERATOR (Intelligent Snapshot Logic) ---
+// --- UPDATED INVOICE GENERATOR ---
 window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // --- SETUP ---
     const themeColor = [0, 150, 136];
-    const greyColor = [240, 240, 240];
     let finalY = 0;
 
-    // --- DATA INTELLIGENCE ---
-    // If we have a specific transaction (History), use its snapshot data.
-    // If snapshot data is missing (old records), fall back to current member data.
     const isHistory = !!specificTransaction;
     
     const amt = isHistory ? specificTransaction.amount : m.lastPaidAmount;
     const date = isHistory ? specificTransaction.date : new Date().toISOString().split('T')[0];
+    const time = isHistory ? (specificTransaction.timeStr || '') : new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
     const mode = isHistory ? specificTransaction.mode : 'Cash'; 
     const category = isHistory ? specificTransaction.category : 'Membership Fees';
     
-    // KEY FIX: Use Snapshot Plan/Expiry if available, otherwise current member's
     const rawPlan = (isHistory && specificTransaction.snapshotPlan) ? specificTransaction.snapshotPlan : m.planDuration;
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
     
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // --- HEADER ---
+    // HEADER
     doc.setFillColor(...themeColor);
     doc.rect(0, 0, 210, 25, 'F');
     doc.setFontSize(20);
@@ -536,23 +531,22 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
     
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
-    doc.text(`Date: ${date}`, 150, 45);
+    doc.text(`Date: ${date}  ${time}`, 150, 45); // ADDED TIME HERE
 
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.text("1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080", 14, 52);
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, 57);
 
-    // --- MEMBER GRID (UPDATED WITH GENDER & SNAPSHOT DATA) ---
-    
+    // MEMBER GRID (With Gender & Expiry)
     doc.autoTable({
         startY: 65,
         theme: 'grid',
         head: [],
         body: [
             ['Member ID', m.memberId || 'N/A', 'Name', m.name],
-            ['Gender', m.gender || 'N/A', 'Phone', m.phone], // ADDED GENDER ROW
-            ['Duration', planText, 'Valid Until', rawExpiry], // USED SNAPSHOT DATA
+            ['Gender', m.gender || 'N/A', 'Phone', m.phone],
+            ['Duration', planText, 'Valid Until', rawExpiry], 
             ['Payment Mode', mode, 'Amount Paid', `Rs. ${amt}`]
         ],
         styles: { fontSize: 10, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
@@ -566,16 +560,16 @@ window.generateInvoice = async (m, specificTransaction = null) => {
 
     finalY = doc.lastAutoTable.finalY + 10;
 
-    // --- PAYMENT DETAILS ---
+    // DETAILS TABLE
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text("Payment Details", 14, finalY);
     
     doc.autoTable({
         startY: finalY + 5,
-        head: [['Description', 'Date', 'Mode', 'Amount']],
+        head: [['Description', 'Date & Time', 'Mode', 'Amount']],
         body: [
-            [category, date, mode, `Rs. ${amt}`]
+            [category, `${date} ${time}`, mode, `Rs. ${amt}`]
         ],
         theme: 'striped',
         headStyles: { fillColor: themeColor },
@@ -584,7 +578,6 @@ window.generateInvoice = async (m, specificTransaction = null) => {
 
     finalY = doc.lastAutoTable.finalY + 20;
 
-    // --- FOOTER ---
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
     doc.text("Authorized Signature", 150, finalY);
@@ -604,7 +597,7 @@ window.editMember = (id) => {
     const m = members.find(x => x.id === id); if(!m) return;
     editingMemberId = id;
     document.getElementById('inp-name').value = m.name; 
-    document.getElementById('inp-gender').value = m.gender || 'Male'; // Load Gender
+    document.getElementById('inp-gender').value = m.gender || 'Male'; 
     document.getElementById('inp-phone').value = m.phone; 
     document.getElementById('inp-amount').value = m.lastPaidAmount; 
     document.getElementById('inp-dob').value = m.dob;
@@ -658,11 +651,16 @@ function renderMembersList() {
         const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
         let statusClass = 'status-paid'; let statusText = 'Paid';
         if (daysLeft < 0) { statusClass = 'status-due'; statusText = 'Expired'; }
-        else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due in ${daysLeft} days`; }
+        else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due: ${daysLeft} days`; }
 
         const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
         const photoUrl = m.photo || placeholder;
         const planDisplay = window.formatPlanDisplay(m.planDuration);
+        
+        // GENDER ICON
+        let genderIcon = '';
+        if(m.gender === 'Male') genderIcon = '<i class="fa-solid fa-mars" style="color:#60a5fa; margin-left:5px;"></i>';
+        else if(m.gender === 'Female') genderIcon = '<i class="fa-solid fa-venus" style="color:#f472b6; margin-left:5px;"></i>';
 
         list.innerHTML += `
         <div class="member-row">
@@ -671,11 +669,14 @@ function renderMembersList() {
             <div class="info-block">
                 <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
                 <div class="name-phone-row">
-                    <span class="info-main">${m.name}</span>
+                    <span class="info-main">${m.name}</span>${genderIcon}
                     <span style="font-weight:400; font-size:0.8rem; color:#888; margin-left:8px;">${m.phone}</span>
                 </div>
             </div>
-            <div class="info-block"><div class="info-main">${m.joinDate}</div><div class="info-sub">${planDisplay} Plan</div></div>
+            <div class="info-block">
+                <div class="info-main" style="color:${daysLeft<0?'#ef4444':'inherit'}">Exp: ${m.expiryDate}</div>
+                <div class="info-sub">${planDisplay} Plan</div>
+            </div>
             <div><span class="status-badge ${statusClass}">${statusText}</span></div>
             <div class="row-actions" id="actions-${m.id}">
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
