@@ -32,16 +32,14 @@ onAuthStateChanged(auth, (user) => {
 
 // --- INITIALIZATION ---
 function initApp() {
-    // Set Today's Date in Header
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById("today-date").innerText = new Date().toLocaleDateString('en-IN', options);
-
-    // Load Data
     setupRealtimeListeners();
 }
 
 // --- DATABASE LISTENERS ---
 function setupRealtimeListeners() {
+    // 1. Members Listener
     const membersRef = collection(db, `gyms/${currentUser.uid}/members`);
     const qMembers = query(membersRef, orderBy("joinDate", "desc"));
 
@@ -51,24 +49,28 @@ function setupRealtimeListeners() {
         renderMembersList();
     });
 
-    // We can add Transaction listener here later for the Finance tab
+    // 2. Transactions Listener
+    const txRef = collection(db, `gyms/${currentUser.uid}/transactions`);
+    const qTx = query(txRef, orderBy("date", "desc"));
+
+    onSnapshot(qTx, (snapshot) => {
+        transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderFinanceList();
+    });
 }
 
 // --- NAVIGATION ---
 window.switchTab = (tabName) => {
-    // Hide all sections
     document.querySelectorAll(".view-section").forEach(el => el.style.display = "none");
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
     
-    // Show selected
     document.getElementById(`view-${tabName}`).style.display = "block";
     
-    // Highlight sidebar
     const navIndex = ['dashboard', 'members', 'finance'].indexOf(tabName);
     if(navIndex >= 0) document.querySelectorAll(".nav-item")[navIndex].classList.add("active");
 };
 
-// --- CORE LOGIC: DASHBOARD ---
+// --- VIEW: DASHBOARD ---
 function renderDashboard() {
     const today = new Date().toISOString().split('T')[0];
     let activeCount = 0;
@@ -79,38 +81,32 @@ function renderDashboard() {
     alertList.innerHTML = "";
 
     members.forEach(member => {
-        // Check Status
         const isExpired = member.expiryDate < today;
         
         if (!isExpired) {
             activeCount++;
-            
-            // Check if expiring in next 5 days
             const daysLeft = (new Date(member.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
             if (daysLeft <= 5 && daysLeft >= 0) {
                 expiringCount++;
                 createAlertItem(member, Math.ceil(daysLeft));
             }
         } else {
-            // Member is expired - add to alert list as urgent
             createAlertItem(member, -1); 
         }
 
+        // Simple revenue calculation from Members fee (Optional: can use finance data instead)
         revenue += parseInt(member.lastPaidAmount || 0);
     });
 
-    // Update Stats
     document.getElementById("stat-active").innerText = activeCount;
     document.getElementById("stat-expiring").innerText = expiringCount;
-    
-    // Format Revenue (Short format like 1.2k)
     document.getElementById("stat-revenue").innerText = "₹" + (revenue / 1000).toFixed(1) + "k";
 }
 
 function createAlertItem(member, daysLeft) {
     const list = document.getElementById("alert-list");
     const div = document.createElement("div");
-    div.className = "member-card"; // Reusing card style for alerts
+    div.className = "member-card"; 
     div.style.marginBottom = "10px";
     div.style.padding = "15px";
     
@@ -134,7 +130,7 @@ function createAlertItem(member, daysLeft) {
     list.appendChild(div);
 }
 
-// --- CORE LOGIC: MEMBERS ---
+// --- VIEW: MEMBERS ---
 function renderMembersList() {
     const list = document.getElementById("members-list");
     list.innerHTML = "";
@@ -176,20 +172,74 @@ function renderMembersList() {
     });
 }
 
-// --- ACTIONS ---
+// --- VIEW: FINANCE ---
+function renderFinanceList() {
+    const list = document.getElementById("finance-list");
+    list.innerHTML = "";
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    if (transactions.length === 0) {
+        list.innerHTML = '<div class="empty-state" style="text-align:center; padding:20px; color:#555;">No transactions yet</div>';
+    } else {
+        transactions.forEach(tx => {
+            if(tx.type === 'income') totalIncome += tx.amount;
+            else totalExpense += tx.amount;
+    
+            const isIncome = tx.type === 'income';
+            const color = isIncome ? '#22c55e' : '#ef4444';
+            const icon = isIncome ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+    
+            const item = document.createElement("div");
+            item.className = "member-card";
+            item.style.marginBottom = "10px";
+            item.style.display = "flex";
+            item.style.justifyContent = "space-between";
+            item.style.alignItems = "center";
+            item.style.padding = "15px";
+    
+            item.innerHTML = `
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <div style="width:40px; height:40px; border-radius:10px; background:${color}20; display:flex; align-items:center; justify-content:center; color:${color};">
+                        <i class="fa-solid ${icon}"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin:0;">${tx.category}</h4>
+                        <span style="font-size:0.8rem; color:#888;">${tx.date}</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:bold; color:${color};">
+                        ${isIncome ? '+' : '-'} ₹${tx.amount}
+                    </div>
+                    <i class="fa-solid fa-trash" style="color:#444; cursor:pointer; font-size:0.8rem; margin-top:5px;" onclick="deleteTx('${tx.id}')"></i>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    // Update Finance Summary Cards
+    document.getElementById("fin-income").innerText = "₹" + totalIncome;
+    document.getElementById("fin-expense").innerText = "₹" + totalExpense;
+    const profit = totalIncome - totalExpense;
+    const profitEl = document.getElementById("fin-profit");
+    profitEl.innerText = "₹" + profit;
+    profitEl.style.color = profit >= 0 ? "#22c55e" : "#ef4444";
+}
+
+// --- ACTIONS: MEMBERS ---
 
 window.toggleMemberModal = () => {
     const modal = document.getElementById("modal-member");
     modal.style.display = modal.style.display === "flex" ? "none" : "flex";
-    
-    // Set default date to today
     if(modal.style.display === "flex") {
         document.getElementById("inp-join").valueAsDate = new Date();
-        calcExpiry(); // Auto calc expiry based on default selection
+        calcExpiry(); 
     }
 };
 
-// Auto-Calculate Expiry Date based on Plan Selection
 window.calcExpiry = () => {
     const joinDateVal = document.getElementById("inp-join").value;
     const months = parseInt(document.getElementById("inp-plan").value);
@@ -207,7 +257,7 @@ window.saveMember = async () => {
     const joinDate = document.getElementById("inp-join").value;
     const expiryDate = document.getElementById("inp-expiry").value;
     const amount = document.getElementById("inp-amount").value;
-    const plan = document.getElementById("inp-plan").value; // Get plan months
+    const plan = document.getElementById("inp-plan").value; 
 
     if (!name || !phone || !amount) {
         alert("Please fill all fields!");
@@ -215,19 +265,14 @@ window.saveMember = async () => {
     }
 
     try {
-        // 1. Save to Database
         await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
             name, phone, joinDate, expiryDate, lastPaidAmount: amount, planDuration: plan, createdAt: new Date()
         });
 
-        // 2. Ask to Generate Invoice
-        if(confirm("Member Saved! Do you want to download the Receipt PDF?")) {
+        if(confirm("Member Saved! Download Receipt PDF?")) {
             generateInvoice(name, amount, expiryDate);
         }
-
-        window.toggleMemberModal(); // Close modal
-        
-        // Clear inputs
+        window.toggleMemberModal();
         document.getElementById("inp-name").value = "";
         document.getElementById("inp-phone").value = "";
         document.getElementById("inp-amount").value = "";
@@ -238,25 +283,60 @@ window.saveMember = async () => {
     }
 };
 
-// --- WHATSAPP INTEGRATION ---
-window.sendWhatsApp = (phone, name, expiry) => {
-    // Remove spaces/dashes from phone
-    let cleanPhone = phone.replace(/\D/g,'');
-    if(cleanPhone.length === 10) cleanPhone = "91" + cleanPhone; // Add India code if missing
+// --- ACTIONS: FINANCE ---
 
-    const msg = `Hello ${name}, polite reminder from Gym 2.0. Your membership expires on ${expiry}. Please renew to continue your fitness journey! 💪`;
-    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-    
-    window.open(url, '_blank');
+window.toggleTxModal = () => {
+    const modal = document.getElementById("modal-transaction");
+    modal.style.display = modal.style.display === "flex" ? "none" : "flex";
+    if(modal.style.display === "flex") {
+        document.getElementById("tx-date").valueAsDate = new Date();
+    }
 };
 
-// --- PDF GENERATOR (jsPDF) ---
+window.saveTransaction = async () => {
+    const type = document.getElementById("tx-type").value;
+    const date = document.getElementById("tx-date").value;
+    const category = document.getElementById("tx-category").value;
+    const amount = parseFloat(document.getElementById("tx-amount").value);
+
+    if (!category || !amount) {
+        alert("Please fill in Category and Amount");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
+            type, date, category, amount, createdAt: new Date()
+        });
+        window.toggleTxModal();
+        
+        document.getElementById("tx-category").value = "";
+        document.getElementById("tx-amount").value = "";
+    } catch (e) {
+        console.error(e);
+        alert("Error: " + e.message);
+    }
+};
+
+window.deleteTx = async (id) => {
+    if(confirm("Delete this entry?")) {
+        await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id));
+    }
+};
+
+// --- HELPERS ---
+window.sendWhatsApp = (phone, name, expiry) => {
+    let cleanPhone = phone.replace(/\D/g,'');
+    if(cleanPhone.length === 10) cleanPhone = "91" + cleanPhone; 
+    const msg = `Hello ${name}, polite reminder from Gym 2.0. Your membership expires on ${expiry}. Please renew to continue your fitness journey! 💪`;
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+};
+
 window.generateInvoice = (name, amount, expiry) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // Design the Bill
-    doc.setFillColor(239, 68, 68); // Red Header
+    doc.setFillColor(239, 68, 68); 
     doc.rect(0, 0, 210, 40, 'F');
     
     doc.setTextColor(255, 255, 255);
@@ -289,7 +369,6 @@ window.generateInvoice = (name, amount, expiry) => {
     doc.save(`${name}_Receipt.pdf`);
 };
 
-// --- SEARCH FILTER ---
 window.filterMembers = () => {
     const query = document.getElementById("member-search").value.toLowerCase();
     const cards = document.querySelectorAll("#members-list .member-card");
