@@ -51,10 +51,10 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 /* MEMBER LIST STYLING */
 .member-list-header { display: grid; grid-template-columns: 60px 1.5fr 1fr 1fr 1.5fr; padding: 10px 15px; background: var(--card-light); border-radius: 12px 12px 0 0; font-weight: 700; font-size: 0.8rem; color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 5px; }
 .detailed-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-.member-row { display: grid; grid-template-columns: 60px 1.5fr 1fr 1fr 1.5fr; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; align-items: center; transition: 0.2s; } .member-row:hover { border-color: var(--accent); background: rgba(255,255,255,0.02); }
+.member-row { display: grid; grid-template-columns: 60px 1.5fr 1fr 1fr 1.5fr; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; align-items: center; transition: 0.2s; position: relative; } 
+.member-row:hover { border-color: var(--accent); background: rgba(255,255,255,0.02); }
 .profile-circle { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); cursor: pointer; transition: transform 0.2s; } .profile-circle:hover { transform: scale(1.5); z-index: 10; border-color: var(--accent); }
 .info-block { display: flex; flex-direction: column; } 
-/* Name & Phone Row */
 .name-phone-row { display: flex; align-items: center; gap: 8px; }
 .info-main { font-weight: 600; font-size: 0.9rem; } .info-sub { font-size: 0.7rem; color: #888; }
 .member-id-tag { font-size: 0.65rem; background: #333; padding: 2px 6px; border-radius: 4px; color: #ccc; margin-bottom: 2px; width: fit-content; }
@@ -62,6 +62,9 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .status-paid { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); } .status-due { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); } .status-pending { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
 .row-actions { display: flex; gap: 8px; }
 .icon-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-light); display: flex; align-items: center; justify-content: center; color: #888; cursor: pointer; transition: 0.2s; } .icon-btn:hover { background: #fff; color: #000; } .icon-btn.whatsapp:hover { background: #25D366; color: white; border-color: #25D366; } .icon-btn.delete:hover { background: #ef4444; color: white; border-color: #ef4444; } .icon-btn.bill:hover { background: #3b82f6; color: white; border-color: #3b82f6; }
+
+/* MOBILE MENU KEBAB (Hidden on Desktop) */
+.mobile-kebab-btn { display: none; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; padding: 10px; position: absolute; right: 10px; top: 10px; }
 
 .section-top { display: flex; justify-content: space-between; margin-bottom: 25px; align-items: center; }
 .search-box { background: var(--card-bg); padding: 12px; border-radius: 12px; border: 1px solid var(--border); display: flex; gap: 10px; margin-bottom: 25px; } .search-box input { background: transparent; border: none; color: white; width: 100%; outline: none; }
@@ -85,7 +88,32 @@ input, select { width: 100%; background: var(--bg); border: 1px solid var(--bord
     .hero-card { height: 380px; } 
     .stats-container, .member-charts-container { display: flex; flex-direction: column; height: auto; }
     .grid-item { height: 300px; }
+    
+    /* MOBILE MEMBER LIST ADJUSTMENTS */
     .member-list-header { display: none; }
-    .member-row { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-    .row-actions { width: 100%; justify-content: space-between; margin-top: 10px; }
+    
+    .member-row { 
+        display: flex; 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 15px; 
+        padding-top: 40px; /* Space for Kebab Button */
+        position: relative; 
+    }
+    
+    .mobile-kebab-btn { display: block; } /* Show Toggle on Mobile */
+    
+    /* Hide Actions by Default on Mobile */
+    .row-actions { 
+        display: none; 
+        width: 100%; 
+        justify-content: space-between; 
+        background: var(--card-light);
+        padding: 10px;
+        border-radius: 8px;
+        margin-top: 5px;
+    }
+    
+    /* Show Actions when Toggled */
+    .row-actions.show { display: flex; }
 }
