@@ -85,31 +85,16 @@
                     <div class="grid-item plans-card">
                         <div class="card-header compact">
                             <span>Overall Memberships</span>
-                             <span style="font-size:0.7rem; color:#888">Active / Total</span>
+                            <div class="legend" style="font-size:0.75rem; font-weight:500;">
+                                <span class="dot white"></span> Active &nbsp;
+                                <span class="dot" style="background:#666"></span> Expired
+                            </div>
                         </div>
                         
                         <div class="plan-list">
-                            <div class="plan-row">
-                                <div class="donut-container" id="donut-platinum"></div>
-                                <div class="plan-details">
-                                    <span class="plan-name">Platinum (1 Yr)</span>
-                                    <small id="detail-platinum" class="plan-stat">0 Active / 0 Total</small>
-                                </div>
-                            </div>
-                             <div class="plan-row">
-                                <div class="donut-container" id="donut-gold"></div>
-                                <div class="plan-details">
-                                    <span class="plan-name">Gold (6 Mo)</span>
-                                    <small id="detail-gold" class="plan-stat">0 Active / 0 Total</small>
-                                </div>
-                            </div>
-                             <div class="plan-row">
-                                <div class="donut-container" id="donut-silver"></div>
-                                <div class="plan-details">
-                                    <span class="plan-name">Silver (<6 Mo)</span>
-                                    <small id="detail-silver" class="plan-stat">0 Active / 0 Total</small>
-                                </div>
-                            </div>
+                            <div class="plan-row" id="row-platinum"></div>
+                            <div class="plan-row" id="row-gold"></div>
+                            <div class="plan-row" id="row-silver"></div>
                         </div>
                     </div>
 
@@ -138,8 +123,7 @@
                             <span>Status</span>
                             <span>Progress</span>
                         </div>
-                        <div id="dash-member-list" class="dash-scroll-area">
-                            </div>
+                        <div id="dash-member-list" class="dash-scroll-area"></div>
                     </div>
 
                     <div class="grid-item acquisition-card">
