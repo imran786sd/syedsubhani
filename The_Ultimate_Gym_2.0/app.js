@@ -10,7 +10,7 @@ let memberChartInstance = null;
 let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
-// --- AUTH & INIT ---
+// --- AUTH ---
 window.handleGoogleLogin = async () => { try { await signInWithPopup(auth, provider); } catch (e) { alert(e.message); } };
 window.handleLogout = () => signOut(auth);
 
@@ -69,7 +69,7 @@ function renderDashboard() {
     if(!members.length && !transactions.length) return;
     const now = new Date().getTime();
 
-    // 1. HERO STATS
+    // 1. HERO
     const txIncome = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
     const txExpense = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
     const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
@@ -182,7 +182,7 @@ function updateMemberChart() {
     });
 }
 
-// --- CRUD & HELPERS ---
+// --- CRUD ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
@@ -200,7 +200,15 @@ window.toggleMemberModal = () => {
     } else { editingMemberId = null; }
     el.style.display = el.style.display === 'flex' ? 'none' : 'flex'; 
 };
-window.toggleTxModal = () => { const el = document.getElementById('modal-transaction'); el.style.display = el.style.display === 'flex' ? 'none' : 'flex'; if(el.style.display==='flex') document.getElementById('tx-date').valueAsDate = new Date(); };
+window.toggleTxModal = () => { 
+    const el = document.getElementById('modal-transaction'); 
+    if(el.style.display !== 'flex') {
+        if(!editingTxId) {
+            document.getElementById('tx-amount').value = ""; document.getElementById('tx-category').value = ""; document.getElementById('tx-date').valueAsDate = new Date();
+        }
+    } else { editingTxId = null; }
+    el.style.display = el.style.display === 'flex' ? 'none' : 'flex'; 
+};
 
 window.calcExpiry = () => { 
     const j = document.getElementById('inp-join').value; 
@@ -229,10 +237,22 @@ window.deleteMember = async (id) => { if(confirm("Delete member?")) await delete
 
 window.saveTransaction = async () => {
     const type = document.getElementById('tx-type').value; const cat = document.getElementById('tx-category').value; const amt = parseFloat(document.getElementById('tx-amount').value);
+    const date = document.getElementById('tx-date').value;
     if(!cat || !amt) return alert("Fill details");
-    await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), { type, category: cat, amount: amt, date: document.getElementById('tx-date').value, createdAt: new Date() });
+    const data = { type, category: cat, amount: amt, date };
+    if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; }
+    else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); }
     toggleTxModal();
 };
+
+window.editTransaction = (id) => {
+    const t = transactions.find(x => x.id === id); if(!t) return;
+    editingTxId = id;
+    document.getElementById('tx-type').value = t.type; document.getElementById('tx-category').value = t.category; document.getElementById('tx-amount').value = t.amount; document.getElementById('tx-date').value = t.date;
+    document.getElementById('modal-transaction').style.display = 'flex';
+};
+
+window.deleteTransaction = async (id) => { if(confirm("Delete transaction?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id)); };
 
 window.sendWhatsApp = (phone, name, expiry) => {
     let p = phone.replace(/\D/g,''); if(p.length===10) p="91"+p;
@@ -261,6 +281,25 @@ function renderMembersList() {
     });
 }
 
-function renderFinanceList() { const l=document.getElementById('finance-list'); l.innerHTML=''; let p=0; transactions.forEach(t=>{ if(t.type=='income') p+=t.amount; else p-=t.amount; l.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between"><span>${t.category}</span><span style="color:${t.type=='income'?'#22c55e':'#ef4444'}">${t.type=='income'?'+':'-'} ${t.amount}</span></div>`; }); document.getElementById('total-profit').innerText="₹"+p; }
+function renderFinanceList() { 
+    const list = document.getElementById('finance-list'); list.innerHTML = ""; 
+    let profit = 0; 
+    transactions.forEach(t => { 
+        if(t.type=='income') profit+=t.amount; else profit-=t.amount; 
+        list.innerHTML += `
+        <div class="member-card" style="display:flex;justify-content:space-between; align-items:center;">
+            <div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date}</small></div>
+            <div style="display:flex; gap:15px; align-items:center;">
+                <span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span>
+                <div style="display:flex; gap:10px;">
+                    <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
+                    <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
+                </div>
+            </div>
+        </div>`; 
+    }); 
+    document.getElementById('total-profit').innerText = "₹" + profit; 
+}
+
 window.generateInvoice = (name, amount, expiry) => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); const col = getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb').trim().split(',').map(x=>parseInt(x)); doc.setFillColor(col[0],col[1],col[2]); doc.rect(0,0,210,40,'F'); doc.setTextColor(255,255,255); doc.setFontSize(22); doc.text("GYM 2.0",105,20,null,null,"center"); doc.setTextColor(0,0,0); doc.setFontSize(14); doc.text(`Name: ${name}\nAmount: Rs.${amount}\nValid Till: ${expiry}`,20,60); doc.save(`${name}_Bill.pdf`); };
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('#members-list .member-card').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none'); };
