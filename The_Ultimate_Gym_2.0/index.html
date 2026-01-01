@@ -129,7 +129,21 @@
                 </div>
                 <div class="split-inputs"><input type="text" id="inp-name" placeholder="Full Name"><input type="tel" id="inp-phone" placeholder="Phone"></div>
                 <div class="split-inputs"><div><label>Date of Birth</label><input type="date" id="inp-dob"></div><div><label>Join Date</label><input type="date" id="inp-join"></div></div>
-                <div class="split-inputs"><div><label>Plan</label><select id="inp-plan" onchange="calcExpiry()"><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12">1 Year</option></select></div><div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div></div>
+                <div class="split-inputs">
+                    <div>
+                        <label>Plan</label>
+                        <select id="inp-plan" onchange="calcExpiry()">
+                            <option value="1d">1 Day</option>
+                            <option value="7d">7 Days</option>
+                            <option value="15d">15 Days</option>
+                            <option value="1m" selected>1 Month</option>
+                            <option value="3m">3 Months</option>
+                            <option value="6m">6 Months</option>
+                            <option value="1y">1 Year</option>
+                        </select>
+                    </div>
+                    <div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div>
+                </div>
                 <div class="split-inputs"><div><label>Expiry</label><input type="date" id="inp-expiry" readonly></div></div>
                 <button class="btn-save" onclick="saveMember()">Save Member</button>
             </div>
