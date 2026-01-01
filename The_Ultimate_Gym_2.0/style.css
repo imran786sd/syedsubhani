@@ -26,12 +26,27 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 #app-wrapper { display: flex; flex-direction: column; height: 100vh; }
 #main-content { flex: 1; padding: 25px; overflow-y: auto; }
 
-/* HEADER */
-.top-bar-redesigned { display: flex; justify-content: space-between; align-items: stretch; margin-bottom: 25px; gap: 20px; height: 70px; }
-.header-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 0 25px; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+/* HEADER (Redesigned with Time Inside) */
+.top-bar-redesigned { display: flex; justify-content: space-between; align-items: stretch; margin-bottom: 25px; gap: 20px; height: 80px; } /* Height increased slightly */
+
+.header-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 0 30px; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
 .brand-card { gap: 15px; } .brand-card i { font-size: 1.8rem; } .brand-card h2 { margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; }
-.time-display-center { display: flex; align-items: center; font-size: 1.8rem; font-weight: 800; letter-spacing: 1px; font-variant-numeric: tabular-nums; filter: drop-shadow(0 0 5px rgba(255,255,255,0.1)); }
-.nav-card { gap: 15px; padding: 0 15px; }
+
+/* NAV CARD (Now holds Time + Links) */
+.nav-card { flex: 1; justify-content: space-between; padding: 0 30px; }
+
+/* Time Block Styling */
+.time-block { display: flex; flex-direction: column; justify-content: center; }
+#clock-display { font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; line-height: 1; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.time-block small { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+
+/* Divider between Time and Links */
+.nav-divider-large { width: 1px; height: 40px; background: var(--border); margin: 0 30px; }
+
+/* Nav Links Container */
+.nav-links-container { display: flex; align-items: center; gap: 15px; }
+
 .nav-link { cursor: pointer; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; padding: 10px 15px; border-radius: 12px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
 .nav-link i { font-size: 1rem; }
 .nav-link:hover, .nav-link.active { background: rgba(var(--accent-rgb), 0.15); color: var(--accent); }
@@ -40,7 +55,7 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .logout-btn:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .mobile-menu-btn { display: none; font-size: 1.8rem; cursor: pointer; align-self: center; }
 
-/* --- DASHBOARD GRID --- */
+/* DASHBOARD GRID */
 .dashboard-grid { 
     display: grid; 
     grid-template-columns: 260px 320px 1fr; 
@@ -53,7 +68,7 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 0.95rem; }
 .card-header.compact { margin-bottom: 10px; }
 
-/* HERO CARD (Left) */
+/* HERO CARD */
 .hero-card { grid-row: span 2; padding: 0; border: none; }
 .hero-bg { width: 100%; height: 100%; object-fit: cover; filter: grayscale(80%) contrast(1.1) brightness(0.6); }
 .hero-overlay { position: absolute; inset: 0; padding: 25px; display: flex; flex-direction: column; background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(var(--accent-rgb), 0.2) 100%); }
@@ -73,43 +88,28 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .hero-block h3 { margin: 0; font-size: 1.4rem; font-weight: 800; line-height: 1; }
 .hero-block small { color: #ccc; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; }
 
-/* PLANS CARD (Center Top) */
+/* PLANS CARD */
 .plans-card { grid-column: 2; } 
-.plan-list { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 5px; } 
+.plan-list { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 6px; } 
 
-.plan-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-light); padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border); }
+.plan-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-light); padding: 10px 15px; border-radius: 12px; border: 1px solid var(--border); }
 .plan-left { display: flex; align-items: center; gap: 15px; }
 
-/* DONUT */
 .donut-svg-wrapper { width: 44px; height: 44px; position: relative; display: flex; align-items: center; justify-content: center; }
 .plan-name { font-weight: 700; font-size: 0.85rem; color: var(--text); line-height: 1.2; }
 
 /* PILLS STACK */
 .stat-stack { display: flex; flex-direction: column; gap: 5px; }
-.stat-pill { 
-    background: #111; 
-    border: 1px solid var(--border); 
-    border-radius: 20px; 
-    padding: 3px 0; 
-    width: 70px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-size: 0.75rem; 
-    font-weight: 700; 
-    color: white; 
-}
+.stat-pill { background: #111; border: 1px solid var(--border); border-radius: 20px; padding: 3px 0; width: 70px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: white; }
 
-/* FINANCE CARD (Moved to Center Bottom) */
-/* ✅ CHANGED GRID COLUMN TO 2 */
-.finance-card { grid-column: 2; } 
+/* FINANCE CARD */
+.finance-card { grid-column: 3; } 
 .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 4px 0 10px; }
 .dot.white { background: #fff; }
 .chart-wrapper.compact { flex: 1; position: relative; min-height: 0; max-height: 180px; }
 
-/* LIST CARD (Moved to Right Top) */
-/* ✅ CHANGED GRID COLUMN TO 3 */
-.list-card { grid-column: 3; }
+/* LIST CARD */
+.list-card { grid-column: 2; }
 .toggle-pill { background: var(--card-light); border-radius: 8px; padding: 3px; display: flex; border: 1px solid var(--border); }
 .toggle-btn { background: transparent; border: none; color: var(--text-muted); padding: 6px 12px; font-size: 0.7rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: 0.2s; flex: 1; }
 .toggle-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3); }
@@ -150,8 +150,8 @@ input:focus, select:focus { border-color: var(--accent); }
 
 @media (max-width: 1024px) {
     .top-bar-redesigned { height: auto; flex-wrap: wrap; }
-    .time-display-center { order: -1; width: 100%; justify-content: center; margin-bottom: 15px; }
-    .nav-card { display: none; } .mobile-menu-btn { display: block; }
+    .nav-card { width: 100%; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+    .nav-divider-large { display: none; }
     .dashboard-grid { display: flex; flex-direction: column; height: auto; gap: 25px; }
     .hero-card { height: 380px; } .finance-card { height: 280px; }
     #main-content { padding: 15px; padding-bottom: 30px; }
