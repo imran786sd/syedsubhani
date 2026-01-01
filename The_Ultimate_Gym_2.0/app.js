@@ -9,7 +9,6 @@ let financeChartInstance = null;
 let memberChartInstance = null;
 let ageCategoryChartInstance = null;
 let ageStatusChartInstance = null;
-let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
 // --- AUTH ---
@@ -57,8 +56,8 @@ function setupListeners() {
     onSnapshot(query(memRef, orderBy("joinDate", "desc")), (snap) => {
         members = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
-        renderMembersList(); // Updates member table
-        renderAgeCharts();   // Updates member charts
+        renderMembersList();
+        renderAgeCharts();
     });
     const txRef = collection(db, `gyms/${currentUser.uid}/transactions`);
     onSnapshot(query(txRef, orderBy("date", "desc")), (snap) => {
@@ -68,7 +67,7 @@ function setupListeners() {
     });
 }
 
-// --- DASHBOARD (HOME PAGE) ---
+// --- DASHBOARD ---
 function renderDashboard() {
     if(!members.length && !transactions.length) return;
     const now = new Date().getTime();
@@ -79,11 +78,12 @@ function renderDashboard() {
     const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
     const totalRev = txIncome + memIncome;
     const formatNum = (n) => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+    
     document.getElementById("hero-clients").innerText = members.length;
     document.getElementById("hero-revenue").innerText = "₹" + formatNum(totalRev);
     document.getElementById("hero-expense").innerText = "₹" + formatNum(txExpense);
 
-    // 2. PLANS (RESTORED)
+    // 2. PLANS
     const getStats = (minMo, maxMo) => {
         const planMembers = members.filter(m => {
             const mo = parseInt(m.planDuration);
@@ -154,7 +154,6 @@ function renderFilteredDashboardList() {
     });
 }
 
-// --- CHARTS (DASHBOARD) ---
 function updateFinanceChart(rev, exp) {
     const ctx = document.getElementById('financeChart').getContext('2d');
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -185,7 +184,7 @@ function updateMemberChart() {
     });
 }
 
-// --- MEMBERS TAB: AGE & STATUS CHARTS ---
+// --- MEMBERS: AGE & STATUS CHARTS ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
@@ -209,7 +208,7 @@ function renderAgeCharts() {
 
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     
-    // Chart 1: Category
+    // Chart 1
     const ctx1 = document.getElementById('ageCategoryChart').getContext('2d');
     if(ageCategoryChartInstance) ageCategoryChartInstance.destroy();
     ageCategoryChartInstance = new Chart(ctx1, {
@@ -218,7 +217,7 @@ function renderAgeCharts() {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } }
     });
 
-    // Chart 2: Status
+    // Chart 2
     const ctx2 = document.getElementById('ageStatusChart').getContext('2d');
     if(ageStatusChartInstance) ageStatusChartInstance.destroy();
     ageStatusChartInstance = new Chart(ctx2, {
@@ -235,9 +234,17 @@ function renderAgeCharts() {
 }
 
 // --- MEMBER LIST & ACTIONS ---
+
+// ✅ FIXED ID GENERATION: Gym + 4LettersName + 4DigitsPhone
 window.generateMemberID = (name, phone) => {
+    // 1. Get first 4 letters of name (remove spaces, uppercase)
     const n = name.replace(/\s/g, '').substring(0, 4).toUpperCase();
-    const p = phone.slice(-4);
+    
+    // 2. Get last 4 digits of phone
+    // clean phone first (remove non-digits), then slice last 4
+    const pStr = phone.toString().replace(/\D/g, ''); 
+    const p = pStr.length >= 4 ? pStr.slice(-4) : pStr.padEnd(4, '0'); // fallback if <4 digits
+
     return `GYM${n}${p}`;
 }
 
@@ -250,8 +257,11 @@ window.previewImage = (input) => {
 }
 
 window.saveMember = async () => {
-    const name = document.getElementById('inp-name').value; const phone = document.getElementById('inp-phone').value; const amount = document.getElementById('inp-amount').value;
-    const dob = document.getElementById('inp-dob').value; const imgSrc = document.getElementById('preview-img').src;
+    const name = document.getElementById('inp-name').value;
+    const phone = document.getElementById('inp-phone').value;
+    const amount = document.getElementById('inp-amount').value;
+    const dob = document.getElementById('inp-dob').value;
+    const imgSrc = document.getElementById('preview-img').src;
     
     if(!name || !amount || !dob) return alert("Fill Name, Fees and DOB");
 
@@ -294,6 +304,7 @@ window.renewMember = (id) => {
     alert("Update the Join Date and Payment to Renew.");
 };
 
+// ✅ RENDER LIST: PHONE AFTER NAME + EDIT BUTTON
 function renderMembersList() {
     const list = document.getElementById('members-list'); list.innerHTML = "";
     const today = new Date();
@@ -311,11 +322,18 @@ function renderMembersList() {
         list.innerHTML += `
         <div class="member-row">
             <div class="profile-img-container"><img src="${photoUrl}" class="profile-circle" onclick="editMember('${m.id}')"></div>
-            <div class="info-block"><div class="member-id-tag">${m.memberId || 'PENDING'}</div><div class="info-main">${m.name}</div><div class="info-sub">${m.phone}</div></div>
+            <div class="info-block">
+                <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
+                <div class="info-main">
+                    ${m.name}
+                    <span style="font-weight:400; font-size:0.8rem; color:#888; margin-left:8px;">${m.phone}</span>
+                </div>
+            </div>
             <div class="info-block"><div class="info-main">${m.joinDate}</div><div class="info-sub">${m.planDuration} Month Plan</div></div>
             <div><span class="status-badge ${statusClass}">${statusText}</span></div>
             <div class="row-actions">
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
+                <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
                 <div class="icon-btn whatsapp" onclick="window.open('${whatsappLink}', '_blank')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
                 <div class="icon-btn bill" onclick='generateInvoice(${JSON.stringify(m)})' title="Bill"><i class="fa-solid fa-file-invoice"></i></div>
                 <div class="icon-btn delete" onclick="deleteMember('${m.id}')" title="Delete"><i class="fa-solid fa-trash"></i></div>
@@ -328,13 +346,11 @@ function renderMembersList() {
 window.generateInvoice = (m) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    const primaryColor = [239, 68, 68]; // Red Accent
+    const primaryColor = [239, 68, 68];
 
-    // Header
     doc.setFillColor(...primaryColor); doc.rect(0, 0, 210, 40, 'F');
     doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.text("GYM RECEIPT", 105, 25, null, null, "center");
 
-    // Info
     doc.setTextColor(0, 0, 0); doc.setFontSize(10);
     doc.text(`Receipt #: ${Math.floor(Math.random()*10000)}`, 14, 50);
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 50);
@@ -353,7 +369,7 @@ window.generateInvoice = (m) => {
     doc.save(`${m.name}_Invoice.pdf`);
 };
 
-// --- NAVIGATION & OTHER ---
+// --- NAVIGATION ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
