@@ -13,7 +13,7 @@ let ageStatusChartInstance = null;
 let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
-// --- NAVIGATION ---
+// --- NAVIGATION (Defined early to prevent errors) ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
@@ -21,8 +21,17 @@ window.switchTab = (tab) => {
     document.getElementById(`tab-${tab}`).classList.add('active');
 };
 
+window.toggleMobileMenu = () => {
+    // Optional: Add mobile menu toggle logic here if needed
+    console.log("Mobile menu toggled");
+};
+
 // --- AUTH ---
-window.handleGoogleLogin = async () => { try { await signInWithPopup(auth, provider); } catch (e) { alert(e.message); } };
+window.handleGoogleLogin = async () => { 
+    try { await signInWithPopup(auth, provider); } 
+    catch (e) { alert("Login Failed: " + e.message); } 
+};
+
 window.handleLogout = () => signOut(auth);
 
 onAuthStateChanged(auth, (user) => {
@@ -44,8 +53,10 @@ function initApp() {
     setInterval(updateClock, 1000);
     setupListeners();
 }
+
 function updateClock() {
-    document.getElementById("clock-display").innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+    const el = document.getElementById("clock-display");
+    if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
 
 window.setTheme = (color) => {
@@ -53,11 +64,17 @@ window.setTheme = (color) => {
     localStorage.setItem('gymTheme', color);
     const root = document.documentElement;
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`.theme-${color}`).classList.add('active');
+    
+    const activeBtn = document.querySelector(`.theme-${color}`);
+    if(activeBtn) activeBtn.classList.add('active');
+
     const colors = { red: ['#ef4444','239, 68, 68'], blue: ['#3b82f6','59, 130, 246'], green: ['#22c55e','34, 197, 94'] };
     root.style.setProperty('--accent', colors[color][0]);
     root.style.setProperty('--accent-rgb', colors[color][1]);
-    document.getElementById('meta-theme-color').content = colors[color][0];
+    
+    const metaTheme = document.getElementById('meta-theme-color');
+    if(metaTheme) metaTheme.content = colors[color][0];
+    
     if(members.length > 0) renderDashboard();
 }
 
@@ -66,8 +83,8 @@ function setupListeners() {
     onSnapshot(query(memRef, orderBy("joinDate", "desc")), (snap) => {
         members = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
-        renderMembersList();
-        renderAgeCharts();
+        renderMembersList(); // Update Table
+        renderAgeCharts();   // Update New Charts
     });
     const txRef = collection(db, `gyms/${currentUser.uid}/transactions`);
     onSnapshot(query(txRef, orderBy("date", "desc")), (snap) => {
@@ -76,6 +93,55 @@ function setupListeners() {
         renderFinanceList();
     });
 }
+
+// --- HELPER FUNCTIONS (Must be defined before usage) ---
+
+// Format "15d" -> "15 Days"
+window.formatPlanDisplay = (plan) => {
+    if(!plan) return '';
+    if(plan.includes('d')) return plan.replace('d', ' Days');
+    if(plan.includes('m')) return plan.replace('m', ' Month' + (parseInt(plan)>1?'s':''));
+    if(plan.includes('y')) return plan.replace('y', ' Year' + (parseInt(plan)>1?'s':''));
+    return plan + ' Months';
+};
+
+window.generateMemberID = (name, phone) => {
+    const n = name ? name.replace(/\s/g, '').substring(0, 4).toUpperCase() : 'USER';
+    const pStr = phone ? phone.toString().replace(/\D/g, '') : '0000';
+    const p = pStr.length >= 4 ? pStr.slice(-4) : pStr.padEnd(4, '0');
+    return `GYM${n}${p}`;
+};
+
+window.previewImage = (input) => {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => document.getElementById('preview-img').src = e.target.result;
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+window.toggleRowAction = (id) => {
+    const row = document.getElementById(`actions-${id}`);
+    if (row) {
+        if (row.classList.contains('show')) row.classList.remove('show');
+        else row.classList.add('show');
+    }
+};
+
+window.calcExpiry = () => { 
+    const j = document.getElementById('inp-join').value; 
+    const plan = document.getElementById('inp-plan').value; 
+    if(j && plan) { 
+        const d = new Date(j);
+        const val = parseInt(plan);
+        // Add Days, Months, or Years based on selection
+        if(plan.includes('d')) d.setDate(d.getDate() + val);
+        else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
+        else d.setMonth(d.getMonth() + val); // default month logic
+
+        document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; 
+    } 
+};
 
 // --- DASHBOARD RENDERER ---
 function renderDashboard() {
@@ -98,6 +164,7 @@ function renderDashboard() {
         const planMembers = members.filter(m => {
             let dur = m.planDuration || "1m";
             let months = 0;
+            // Normalize everything to months for comparison
             if(dur.includes('d')) months = 0.5; // Days count as < 1 month
             else if(dur.includes('y')) months = parseInt(dur) * 12;
             else months = parseInt(dur);
@@ -134,7 +201,7 @@ function renderDashboard() {
     
     updatePlanUI('platinum', 'Platinum<br>Membership', getStats(12, 99));
     updatePlanUI('gold', 'Gold<br>Membership', getStats(6, 12));
-    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); 
+    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); // 0 to 6 months (includes days)
 
     updateFinanceChart(totalRev, txExpense);
     renderFilteredDashboardList();
@@ -257,43 +324,6 @@ function renderAgeCharts() {
     }
 }
 
-// --- HELPER FUNCTIONS ---
-window.formatPlanDisplay = (plan) => {
-    if(!plan) return '';
-    if(plan.includes('d')) return plan.replace('d', ' Days');
-    if(plan.includes('m')) return plan.replace('m', ' Month' + (parseInt(plan)>1?'s':''));
-    if(plan.includes('y')) return plan.replace('y', ' Year' + (parseInt(plan)>1?'s':''));
-    return plan + ' Months';
-};
-
-window.generateMemberID = (name, phone) => {
-    const n = name ? name.replace(/\s/g, '').substring(0, 4).toUpperCase() : 'USER';
-    const pStr = phone ? phone.toString().replace(/\D/g, '') : '0000';
-    const p = pStr.length >= 4 ? pStr.slice(-4) : pStr.padEnd(4, '0');
-    return `GYM${n}${p}`;
-};
-
-window.previewImage = (input) => {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = (e) => document.getElementById('preview-img').src = e.target.result;
-        reader.readAsDataURL(input.files[0]);
-    }
-};
-
-window.toggleRowAction = (id) => {
-    const row = document.getElementById(`actions-${id}`);
-    if (row) {
-        if (row.classList.contains('show')) row.classList.remove('show');
-        else row.classList.add('show');
-    }
-};
-
-window.toggleMobileMenu = () => {
-    // Basic placeholder for now
-    console.log("Mobile menu toggled");
-};
-
 // --- CRUD OPERATIONS ---
 window.saveMember = async () => {
     const name = document.getElementById('inp-name').value;
@@ -306,6 +336,7 @@ window.saveMember = async () => {
     
     if(!name || !amount || !dob || !joinDate) return alert("Please fill Name, Fees, Join Date and DOB");
 
+    // Use placeholder if no image uploaded
     const finalPhoto = (imgSrc && imgSrc.includes('base64')) ? imgSrc : null;
 
     const data = {
@@ -344,6 +375,7 @@ window.editMember = (id) => {
     document.getElementById('inp-expiry').value = m.expiryDate; 
     document.getElementById('inp-plan').value = m.planDuration || "1m";
     
+    // Safety check for photo
     const preview = document.getElementById('preview-img');
     if(preview) preview.src = m.photo || "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
     
@@ -408,7 +440,7 @@ function renderMembersList() {
                 <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
                 <div class="name-phone-row">
                     <span class="info-main">${m.name}</span>
-                    <span style="font-weight:400; font-size:0.8rem; color:#888;">${m.phone}</span>
+                    <span style="font-weight:400; font-size:0.8rem; color:#888; margin-left:8px;">${m.phone}</span>
                 </div>
             </div>
             <div class="info-block"><div class="info-main">${m.joinDate}</div><div class="info-sub">${planDisplay} Plan</div></div>
@@ -424,7 +456,6 @@ function renderMembersList() {
     });
 }
 
-// ... (Other functions: toggleMemberModal, calcExpiry, etc.) ...
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
 window.generateInvoice = (m) => {
     const { jsPDF } = window.jspdf; const doc = new jsPDF();
