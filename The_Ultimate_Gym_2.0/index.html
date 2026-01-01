@@ -63,20 +63,22 @@
 
                     <div class="stats-container">
                         <div class="grid-item plans-card">
-                            <div class="card-header compact"><span>Members by Age</span></div>
-                            <div class="chart-wrapper compact"><canvas id="ageCategoryChart"></canvas></div>
+                            <div class="card-header compact"><span>Overall Memberships</span><div class="legend" style="color:#888; font-size:0.7rem;"><span style="color:#fff">Active</span> / <span style="color:#666">Expired</span></div></div>
+                            <div class="plan-list">
+                                <div class="plan-row" id="row-platinum"></div>
+                                <div class="plan-row" id="row-gold"></div>
+                                <div class="plan-row" id="row-silver"></div>
+                            </div>
                         </div>
-                        
                         <div class="grid-item list-card">
-                            <div class="card-header"><span>Status by Age</span></div>
-                            <div class="chart-wrapper compact"><canvas id="ageStatusChart"></canvas></div>
+                            <div class="card-header"><span>Membership Status</span><div class="toggle-pill"><button class="toggle-btn active" id="btn-filter-active" onclick="setMemberFilter('active')">Active</button><button class="toggle-btn" id="btn-filter-expired" onclick="setMemberFilter('expired')">Expired</button></div></div>
+                            <div class="table-header"><span>Name</span><span>Status</span><span>Progress</span></div>
+                            <div id="dash-member-list" class="dash-scroll-area"></div>
                         </div>
-
                         <div class="grid-item finance-card">
                             <div class="card-header compact"><span>Finance Overview</span><div class="legend"><span class="dot accent-bg"></span> Rev <span class="dot white"></span> Exp</div></div>
                             <div class="chart-wrapper compact"><canvas id="financeChart"></canvas></div>
                         </div>
-
                         <div class="grid-item acquisition-card">
                             <div class="card-header"><span>Monthly Acquisition</span></div>
                             <div class="chart-wrapper-sm"><canvas id="memberChart"></canvas></div>
@@ -87,14 +89,22 @@
 
             <div id="view-members" class="view-section" style="display:none;">
                 <div class="section-top"><h2>Membership By Clients</h2><button class="btn-sm" onclick="toggleMemberModal()">+ New Member</button></div>
+                
+                <div class="member-charts-container">
+                    <div class="chart-card">
+                        <h4>Members by Age</h4>
+                        <div class="chart-box"><canvas id="ageCategoryChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <h4>Status by Age</h4>
+                        <div class="chart-box"><canvas id="ageStatusChart"></canvas></div>
+                    </div>
+                </div>
+
                 <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="member-search" placeholder="Search by ID, Name or Phone..." onkeyup="filterMembers()"></div>
                 
                 <div class="member-list-header">
-                    <span>Profile</span>
-                    <span>Details</span>
-                    <span>Join/Type</span>
-                    <span>Status</span>
-                    <span>Actions</span>
+                    <span>Profile</span><span>Details</span><span>Join/Type</span><span>Status</span><span>Actions</span>
                 </div>
                 <div id="members-list" class="detailed-list"></div>
             </div>
@@ -112,28 +122,15 @@
             <div class="modal-head"><h3>Member Details</h3><i class="fa-solid fa-xmark close" onclick="toggleMemberModal()"></i></div>
             <div class="modal-content">
                 <input type="hidden" id="inp-id">
-                
                 <div class="profile-upload-container">
                     <img id="preview-img" src="https://via.placeholder.com/100" onclick="document.getElementById('inp-file').click()">
                     <input type="file" id="inp-file" style="display:none;" accept="image/*" onchange="previewImage(this)">
                     <small>Click image to upload</small>
                 </div>
-
-                <div class="split-inputs">
-                    <input type="text" id="inp-name" placeholder="Full Name">
-                    <input type="tel" id="inp-phone" placeholder="Phone (10 digits)">
-                </div>
-                <div class="split-inputs">
-                    <div><label>Date of Birth</label><input type="date" id="inp-dob"></div>
-                    <div><label>Join Date</label><input type="date" id="inp-join"></div>
-                </div>
-                <div class="split-inputs">
-                    <div><label>Plan</label><select id="inp-plan" onchange="calcExpiry()"><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12">1 Year</option></select></div>
-                    <div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div>
-                </div>
-                <div class="split-inputs">
-                    <div><label>Expiry</label><input type="date" id="inp-expiry" readonly></div>
-                </div>
+                <div class="split-inputs"><input type="text" id="inp-name" placeholder="Full Name"><input type="tel" id="inp-phone" placeholder="Phone"></div>
+                <div class="split-inputs"><div><label>Date of Birth</label><input type="date" id="inp-dob"></div><div><label>Join Date</label><input type="date" id="inp-join"></div></div>
+                <div class="split-inputs"><div><label>Plan</label><select id="inp-plan" onchange="calcExpiry()"><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12">1 Year</option></select></div><div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div></div>
+                <div class="split-inputs"><div><label>Expiry</label><input type="date" id="inp-expiry" readonly></div></div>
                 <button class="btn-save" onclick="saveMember()">Save Member</button>
             </div>
         </div>
@@ -145,18 +142,7 @@
             <div class="modal-content">
                 <input type="hidden" id="tx-id">
                 <div class="split-inputs"><select id="tx-type"><option value="income">Income (+)</option><option value="expense">Expense (-)</option></select><input type="date" id="tx-date"></div>
-                <select id="tx-category">
-                    <option value="" disabled selected>Select Category</option>
-                    <option value="Membership Fees">Membership Fees</option>
-                    <option value="Rent">Rent</option>
-                    <option value="Salary">Salary</option>
-                    <option value="Equipment">Equipment Maintenance</option>
-                    <option value="Electricity Bill">Electricity Bill</option>
-                    <option value="Supplements">Supplements</option>
-                    <option value="Cleaning">Cleaning & Hygiene</option>
-                    <option value="Marketing">Marketing / Ads</option>
-                    <option value="Other">Other</option>
-                </select>
+                <select id="tx-category"><option value="" disabled selected>Select Category</option><option value="Membership Fees">Membership Fees</option><option value="Rent">Rent</option><option value="Salary">Salary</option><option value="Equipment">Equipment</option><option value="Electricity">Electricity</option><option value="Other">Other</option></select>
                 <input type="number" id="tx-amount" placeholder="Amount (₹)">
                 <button class="btn-save" onclick="saveTransaction()">Save Entry</button>
             </div>
