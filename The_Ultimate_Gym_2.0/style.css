@@ -40,8 +40,16 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .logout-btn:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .mobile-menu-btn { display: none; font-size: 1.8rem; cursor: pointer; align-self: center; }
 
-/* DASHBOARD GRID */
-.dashboard-grid { display: grid; grid-template-columns: 260px 1fr 280px; grid-template-rows: 220px 280px; gap: 20px; height: 520px; }
+/* --- DASHBOARD GRID --- */
+.dashboard-grid { 
+    display: grid; 
+    grid-template-columns: 260px 1fr 280px; 
+    /* ✅ HEIGHT INCREASED TO 340px */
+    grid-template-rows: 340px 280px; 
+    gap: 20px; 
+    height: 640px; 
+}
+
 .grid-item { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 0.95rem; }
 .card-header.compact { margin-bottom: 10px; }
@@ -66,21 +74,26 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .hero-block h3 { margin: 0; font-size: 1.4rem; font-weight: 800; line-height: 1; }
 .hero-block small { color: #ccc; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; }
 
-/* PLANS CARD (Now Center - Column 2) */
+/* PLANS CARD (Center) */
 .plans-card { grid-column: 2; } 
-.plan-list { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 8px; }
-.plan-row { display: flex; align-items: center; background: var(--card-light); padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); }
-.donut-container { width: 36px; height: 36px; border-radius: 50%; background: conic-gradient(var(--accent) 0deg, var(--border) 0deg); position: relative; display: flex; justify-content: center; align-items: center; margin-right: 12px; flex-shrink: 0; }
-.donut-container::after { content: ''; position: absolute; width: 26px; height: 26px; background: var(--card-light); border-radius: 50%; }
+.plan-list { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 12px; } 
+.plan-row { display: flex; align-items: center; background: var(--card-light); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+.donut-container { width: 44px; height: 44px; border-radius: 50%; background: conic-gradient(var(--accent) 0deg, var(--border) 0deg); position: relative; display: flex; justify-content: center; align-items: center; margin-right: 15px; flex-shrink: 0; }
+.donut-container::after { content: ''; position: absolute; width: 34px; height: 34px; background: var(--card-light); border-radius: 50%; }
 .plan-details { flex: 1; }
-.plan-name { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
-.plan-stat { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; }
+.plan-name { display: block; font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
 
-/* FINANCE CARD (Now Right - Column 3) */
+/* ✅ NEW ACTIVE/INACTIVE SIDE BY SIDE STYLES */
+.plan-stats-row { display: flex; gap: 15px; font-size: 0.8rem; font-weight: 600; }
+.stat-item { display: flex; align-items: center; gap: 6px; }
+.stat-active { color: #22c55e; }
+.stat-inactive { color: #ef4444; }
+
+/* FINANCE CARD (Right) */
 .finance-card { grid-column: 3; } 
 .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 4px 0 10px; }
 .dot.white { background: #fff; }
-.chart-wrapper.compact { flex: 1; position: relative; min-height: 0; max-height: 160px; }
+.chart-wrapper.compact { flex: 1; position: relative; min-height: 0; max-height: 200px; }
 
 /* LIST CARD */
 .list-card { grid-column: 2; }
