@@ -580,21 +580,160 @@ function renderFinanceList() {
 }
 
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
-window.generateInvoice = (m) => {
-    const { jsPDF } = window.jspdf; const doc = new jsPDF();
-    const primaryColor = [239, 68, 68];
-    doc.setFillColor(...primaryColor); doc.rect(0, 0, 210, 40, 'F');
-    doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.text("GYM RECEIPT", 105, 25, null, null, "center");
-    doc.setTextColor(0, 0, 0); doc.setFontSize(10);
-    doc.text(`Receipt #: ${Math.floor(Math.random()*10000)}`, 14, 50);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 50);
-    doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text("Member Details:", 14, 60);
-    doc.setFont(undefined, 'normal'); doc.setFontSize(10);
-    doc.text(`Name: ${m.name}`, 14, 66); doc.text(`ID: ${m.memberId || 'N/A'}`, 14, 71);
-    doc.text(`Phone: ${m.phone}`, 14, 76); doc.text(`Valid Until: ${m.expiryDate}`, 14, 81);
-    const planText = window.formatPlanDisplay(m.planDuration);
-    doc.autoTable({ startY: 90, head: [['Description', 'Duration', 'Amount']], body: [[`Gym Membership`, planText, `Rs. ${m.lastPaidAmount}`]], theme: 'grid', headStyles: { fillColor: primaryColor } });
-    doc.save(`${m.name}_Invoice.pdf`);
+// --- ADVANCED INVOICE GENERATION ---
+window.generateInvoice = async (m) => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // --- 1. SETUP & COLORS ---
+    const themeColor = [0, 150, 136]; // Teal color like the image
+    const greyColor = [240, 240, 240];
+    let finalY = 0; // To track vertical position
+
+    // --- 2. HEADER ---
+    // Gym Name Background
+    doc.setFillColor(...themeColor);
+    doc.rect(0, 0, 210, 25, 'F');
+    
+    // Title
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("THE ULTIMATE GYM 2.0", 14, 16);
+    
+    // Invoice Title
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0); // Black
+    doc.text("Payment Receipt", 14, 35);
+    doc.line(14, 37, 196, 37); // Underline
+
+    // Receipt Meta Data
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
+    const today = new Date().toLocaleDateString();
+    
+    doc.text(`Receipt #: ${receiptNo}`, 14, 45);
+    doc.text(`Date: ${today}`, 150, 45);
+
+    // Gym Address (Static for now)
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text("123 Fitness Street, Muscle City, 500001", 14, 52);
+    doc.text("Contact: +91 98765 43210 | email@gym.com", 14, 57);
+
+    // --- 3. MEMBER DETAILS GRID (Mimicking the Image Box Layout) ---
+    // We use autoTable to create the grid structure
+    
+    const planText = window.formatPlanDisplay ? window.formatPlanDisplay(m.planDuration) : m.planDuration;
+    
+    doc.autoTable({
+        startY: 65,
+        theme: 'grid', // This gives the box borders
+        head: [], // No headers for this section
+        body: [
+            ['Member ID', m.memberId || 'N/A', 'Name', m.name],
+            ['Phone', m.phone, 'Duration', planText],
+            ['Joining Date', m.joinDate, 'Expiry Date', m.expiryDate],
+            ['Status', new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired', 'Last Amount Paid', `Rs. ${m.lastPaidAmount}`]
+        ],
+        styles: { 
+            fontSize: 10, 
+            cellPadding: 3, 
+            lineColor: [200, 200, 200], 
+            lineWidth: 0.1 
+        },
+        columnStyles: {
+            0: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 }, // Labels Grey
+            1: { width: 60 },
+            2: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 }, // Labels Grey
+            3: { width: 60 }
+        }
+    });
+
+    finalY = doc.lastAutoTable.finalY + 10;
+
+    // --- 4. FETCH & DRAW PAYMENT HISTORY TABLE ---
+    // We need to fetch transactions for this user to show the "Receipt Summary" table
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Payment History / Receipt Summary", 14, finalY);
+    
+    // Fetch History Logic inside Invoice
+    let historyRows = [];
+    try {
+        // We reuse the firebase imports available in app.js context
+        const { collection, query, where, getDocs, orderBy } = await import("./firebase-init.js");
+        
+        // If member has an ID (saved in DB), fetch history. If it's a new unsaved member, show current payment only.
+        if (m.id || m.memberId) {
+            const memberIdToSearch = m.id || m.memberId; // Try both document ID or custom ID
+            // NOTE: This relies on the composite index you created earlier
+            const q = query(
+                collection(db, `gyms/${currentUser.uid}/transactions`),
+                where("memberId", "==", memberIdToSearch),
+                orderBy("date", "desc")
+            );
+            const snap = await getDocs(q);
+            
+            let srNo = 1;
+            snap.forEach(tDoc => {
+                const t = tDoc.data();
+                if(t.type === 'income') {
+                    historyRows.push([
+                        srNo++, 
+                        `Rs. ${t.amount}`, 
+                        t.date, 
+                        t.mode || 'Cash', 
+                        t.category
+                    ]);
+                }
+            });
+        }
+    } catch (e) {
+        console.log("Could not fetch history for invoice, showing current payment only", e);
+    }
+
+    // If no history found (or new member), add the current payment being made
+    if (historyRows.length === 0) {
+        historyRows.push([
+            1, 
+            `Rs. ${m.lastPaidAmount}`, 
+            new Date().toISOString().split('T')[0], 
+            'Current Payment', 
+            'New/Renew'
+        ]);
+    }
+
+    doc.autoTable({
+        startY: finalY + 5,
+        head: [['SR. No', 'Amount Paid', 'Date of Payment', 'Mode', 'Details']],
+        body: historyRows,
+        theme: 'striped',
+        headStyles: { fillColor: themeColor }, // Teal Header
+        styles: { fontSize: 9, cellPadding: 3 }
+    });
+
+    finalY = doc.lastAutoTable.finalY + 20;
+
+    // --- 5. FOOTER & SIGNATURE ---
+    if (finalY > 260) { doc.addPage(); finalY = 20; } // Add page if too long
+
+    doc.setFontSize(10);
+    doc.text("Receiver Sign:", 14, finalY);
+    doc.text("Authorized Signature", 150, finalY);
+    
+    doc.line(14, finalY + 15, 60, finalY + 15); // Line for sign
+    doc.line(150, finalY + 15, 196, finalY + 15); // Line for sign
+
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Note: Fees once paid are not refundable or transferable.", 14, finalY + 25);
+    doc.text("Computer Generated Receipt.", 14, finalY + 30);
+
+    // Save
+    doc.save(`${m.name}_Receipt.pdf`);
 };
 window.toggleMemberModal = () => { 
     const el = document.getElementById('modal-member'); 
