@@ -13,11 +13,13 @@ let ageStatusChartInstance = null;
 let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
-// --- CUSTOM CHART PLUGIN (Draws Numbers on Bars) ---
+// --- CUSTOM CHART PLUGIN (Updated for Horizontal Bars) ---
 const dataLabelPlugin = {
     id: 'dataLabels',
     afterDatasetsDraw(chart) {
         const ctx = chart.ctx;
+        const isHorizontal = chart.config.options.indexAxis === 'y'; // Check orientation
+
         chart.data.datasets.forEach((dataset, i) => {
             const meta = chart.getDatasetMeta(i);
             if (!meta.hidden) {
@@ -32,10 +34,24 @@ const dataLabelPlugin = {
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
                         
-                        // Position text inside the bar or on top
-                        const padding = 5;
                         const position = element.tooltipPosition();
-                        ctx.fillText(data.toString(), position.x, position.y + (dataset.stack ? 0 : -10)); 
+                        
+                        // Smart Positioning
+                        let x = position.x;
+                        let y = position.y;
+
+                        if (isHorizontal) {
+                            // Horizontal: Place number slightly to the right of the bar end
+                            // If stacked, place inside. If not stacked, place outside.
+                            x = position.x + (dataset.stack ? -10 : 15); 
+                            // Adjust color for contrast if inside bar
+                            if(dataset.stack) ctx.fillStyle = '#fff'; 
+                        } else {
+                            // Vertical: Place number on top
+                            y = position.y + (dataset.stack ? 0 : -10);
+                        }
+
+                        ctx.fillText(data.toString(), x, y); 
                     }
                 });
             }
@@ -296,11 +312,11 @@ function updateMemberChart() {
         type: 'bar',
         data: { labels: labels, datasets: [{ data: data, backgroundColor: accent, borderRadius: 4, barThickness: 10 }] },
         options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25 } }, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#888' } }, y: { display: false } } },
-        plugins: [dataLabelPlugin] // Use new global plugin
+        plugins: [dataLabelPlugin] 
     });
 }
 
-// --- UPDATED CHARTS (Gender & Numbers) ---
+// --- UPDATED CHARTS (Horizontal Bars & Gender) ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
@@ -323,14 +339,14 @@ function renderAgeCharts() {
         if(m.dob) {
             const birthDate = new Date(m.dob);
             let age = today.getFullYear() - birthDate.getFullYear();
-            let bucketIndex = 3; // Default 60+
+            let bucketIndex = 3; 
             
             if (age >= 18 && age <= 25) bucketIndex = 0;
             else if (age > 25 && age <= 40) bucketIndex = 1;
             else if (age > 40 && age <= 60) bucketIndex = 2;
 
             // Fill Gender Data
-            const g = m.gender || 'Male'; // Default to Male if missing
+            const g = m.gender || 'Male'; 
             if(genderData[g] !== undefined) genderData[g][bucketIndex]++;
             else genderData['Other'][bucketIndex]++;
 
@@ -343,7 +359,7 @@ function renderAgeCharts() {
 
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     
-    // 1. AGE x GENDER CHART (Stacked)
+    // 1. AGE x GENDER CHART (Horizontal Stacked)
     const ctx1 = document.getElementById('ageCategoryChart');
     if(ctx1) {
         if(ageCategoryChartInstance) ageCategoryChartInstance.destroy();
@@ -358,16 +374,17 @@ function renderAgeCharts() {
                 ] 
             },
             options: { 
+                indexAxis: 'y', // <--- MAKES IT HORIZONTAL
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, 
-                scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } 
+                scales: { x: { display: false, grid: {display:false} }, y: { grid: {display:false}, ticks: {color:'#fff'} } } 
             },
-            plugins: [dataLabelPlugin] // Show numbers on bars
+            plugins: [dataLabelPlugin] 
         });
     }
 
-    // 2. STATUS x AGE CHART (Grouped)
+    // 2. STATUS x AGE CHART (Horizontal Grouped)
     const ctx2 = document.getElementById('ageStatusChart');
     if(ctx2) {
         if(ageStatusChartInstance) ageStatusChartInstance.destroy();
@@ -381,12 +398,13 @@ function renderAgeCharts() {
                 ]
             },
             options: { 
+                indexAxis: 'y', // <--- MAKES IT HORIZONTAL
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, 
-                scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } 
+                scales: { x: { display: false, grid: {display:false} }, y: { grid: {display:false}, ticks: {color:'#fff'} } } 
             },
-            plugins: [dataLabelPlugin] // Show numbers on bars
+            plugins: [dataLabelPlugin]
         });
     }
 }
