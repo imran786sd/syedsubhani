@@ -619,8 +619,8 @@ window.generateInvoice = async (m) => {
     // Gym Address (Static for now)
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    doc.text("123 Fitness Street, Muscle City, 500001", 14, 52);
-    doc.text("Contact: +91 98765 43210 | email@gym.com", 14, 57);
+    doc.text("1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080", 14, 52);
+    doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, 57);
 
     // --- 3. MEMBER DETAILS GRID (Mimicking the Image Box Layout) ---
     // We use autoTable to create the grid structure
