@@ -102,7 +102,7 @@ function renderDashboard() {
     // 2. FINANCE CHART
     updateFinanceChart(totalRev, txExpense);
 
-    // 3. MEMBERSHIPS COUNTS (Active & Inactive)
+    // 3. MEMBERSHIPS COUNTS (Updated Stacked Pills)
     const getStats = (minMo, maxMo) => {
         const planMembers = members.filter(m => {
             const mo = parseInt(m.planDuration);
@@ -110,7 +110,7 @@ function renderDashboard() {
         });
         const total = planMembers.length;
         const active = planMembers.filter(m => new Date(m.expiryDate).getTime() > now).length;
-        const inactive = total - active; // ✅ Calculate Inactive
+        const inactive = total - active; 
         const pct = total === 0 ? 0 : (active / total) * 100;
         return { active, inactive, total, pct };
     };
@@ -119,23 +119,35 @@ function renderDashboard() {
     const gold = getStats(6, 12);
     const silver = getStats(0, 6);
 
-    const updatePlanUI = (id, stats) => {
-        // ✅ NEW SIDE-BY-SIDE HTML INJECTION
-        document.getElementById(`detail-${id}`).innerHTML = `
-            <div class="plan-stats-row">
-                <span class="stat-item stat-active"><i class="fa-solid fa-circle-check"></i> ${stats.active}</span>
-                <span class="stat-item stat-inactive"><i class="fa-solid fa-circle-xmark"></i> ${stats.inactive}</span>
-            </div>
-        `;
-        
+    const updatePlanUI = (id, label, stats) => {
+        // Stacked Pills UI Injection
+        const container = document.getElementById(`row-${id}`);
         const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
         const border = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
-        document.getElementById(`donut-${id}`).style.background = `conic-gradient(${accent} ${stats.pct*3.6}deg, ${border} 0deg)`;
+
+        if(container) {
+            container.innerHTML = `
+                <div class="plan-left">
+                    <div class="donut-container" style="background: conic-gradient(${accent} ${stats.pct*3.6}deg, ${border} 0deg);"></div>
+                    <div class="plan-name">${label}</div>
+                </div>
+                <div class="stat-stack">
+                    <div class="stat-pill">
+                        <span class="dot-indicator dot-white"></span>
+                        <span>${stats.active}</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="dot-indicator dot-grey"></span>
+                        <span>${stats.inactive}</span>
+                    </div>
+                </div>
+            `;
+        }
     };
 
-    updatePlanUI('platinum', plat);
-    updatePlanUI('gold', gold);
-    updatePlanUI('silver', silver);
+    updatePlanUI('platinum', 'Platinum<br>Membership', plat);
+    updatePlanUI('gold', 'Gold<br>Membership', gold);
+    updatePlanUI('silver', 'Silver<br>Membership', silver);
 
     // 4. FILTERED LIST
     renderFilteredDashboardList();
