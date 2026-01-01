@@ -1,10 +1,10 @@
 // --- FIREBASE CONFIGURATION ---
 // We use 'window.' to make these keys visible to the rest of the app
 window.firebaseConfig = {
-    apiKey: "AIzaSyBg10pA9GtC56C3XR4Fg4fxSzfJbdE83_U",
-    authDomain: "mahira-d7381.firebaseapp.com",
-    projectId: "mahira-d7381",
-    storageBucket: "mahira-d7381.firebasestorage.app",
-    messagingSenderId: "133863322272",
-    appId: "1:133863322272:web:b9e1ff1b4662a74b4f0fc5"
+    apiKey: "AIzaSyDaR4pZPQ7fD68KHmjvH1oxwgseW83ncvA",
+    authDomain: "the-ultimate-gym-2.firebaseapp.com",
+    projectId: "the-ultimate-gym-2",
+    storageBucket: "the-ultimate-gym-2.firebasestorage.app",
+    messagingSenderId: "836314437510",
+    appId: "1:836314437510:web:aa0066307393e250b6be07"
 };
