@@ -63,7 +63,7 @@
 
                     <div class="stats-container">
                         <div class="grid-item plans-card">
-                            <div class="card-header"><span>Overall Memberships</span><div class="legend" style="color:#888; font-size:0.7rem;"><span style="color:#fff">Active</span> / <span style="color:#666">Expired</span></div></div>
+                            <div class="card-header compact"><span>Overall Memberships</span><div class="legend" style="color:#888; font-size:0.7rem;"><span style="color:#fff">Active</span> / <span style="color:#666">Expired</span></div></div>
                             <div class="plan-list">
                                 <div class="plan-row" id="row-platinum"></div>
                                 <div class="plan-row" id="row-gold"></div>
@@ -76,7 +76,7 @@
                             <div id="dash-member-list" class="dash-scroll-area"></div>
                         </div>
                         <div class="grid-item finance-card">
-                            <div class="card-header"><span>Finance Overview</span><div class="legend"><span class="dot accent-bg"></span> Rev <span class="dot white"></span> Exp</div></div>
+                            <div class="card-header compact"><span>Finance Overview</span><div class="legend"><span class="dot accent-bg"></span> Rev <span class="dot white"></span> Exp</div></div>
                             <div class="chart-wrapper compact"><canvas id="financeChart"></canvas></div>
                         </div>
                         <div class="grid-item acquisition-card">
@@ -108,8 +108,8 @@
                 <input type="hidden" id="inp-id">
                 <input type="text" id="inp-name" placeholder="Full Name">
                 <input type="tel" id="inp-phone" placeholder="Phone">
-                <div class="split-inputs"><div><label>Join Date</label><input type="date" id="inp-join"></div><div><label>Plan</label><select id="inp-plan" onchange="calcExpiry()"><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12">1 Year</option></select></div></div>
-                <div class="split-inputs"><div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div><div><label>Expiry</label><input type="date" id="inp-expiry" readonly></div></div>
+                <div class="split-inputs"><div><label>Join</label><input type="date" id="inp-join"></div><div><label>Plan</label><select id="inp-plan" onchange="calcExpiry()"><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12">1 Year</option></select></div></div>
+                <div class="split-inputs"><div><label>Fees</label><input type="number" id="inp-amount"></div><div><label>Expiry</label><input type="date" id="inp-expiry" readonly></div></div>
                 <button class="btn-save" onclick="saveMember()">Save Member</button>
             </div>
         </div>
@@ -120,10 +120,7 @@
             <div class="modal-head"><h3>Transaction</h3><i class="fa-solid fa-xmark close" onclick="toggleTxModal()"></i></div>
             <div class="modal-content">
                 <input type="hidden" id="tx-id">
-                <div class="split-inputs">
-                    <select id="tx-type"><option value="income">Income (+)</option><option value="expense">Expense (-)</option></select>
-                    <input type="date" id="tx-date">
-                </div>
+                <div class="split-inputs"><select id="tx-type"><option value="income">Income</option><option value="expense">Expense</option></select><input type="date" id="tx-date"></div>
                 <select id="tx-category">
                     <option value="" disabled selected>Select Category</option>
                     <option value="Membership Fees">Membership Fees</option>
@@ -132,8 +129,8 @@
                     <option value="Equipment">Equipment Maintenance</option>
                     <option value="Electricity Bill">Electricity Bill</option>
                     <option value="Supplements">Supplements</option>
-                    <option value="Cleaning">Cleaning & Hygiene</option>
-                    <option value="Marketing">Marketing / Ads</option>
+                    <option value="Cleaning">Cleaning</option>
+                    <option value="Marketing">Marketing</option>
                     <option value="Other">Other</option>
                 </select>
                 <input type="number" id="tx-amount" placeholder="Amount (₹)">
