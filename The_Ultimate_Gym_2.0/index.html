@@ -11,7 +11,6 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -31,7 +30,6 @@
     </div>
 
     <div id="app-wrapper" style="display:none;">
-        
         <main id="main-content">
             
             <header class="top-bar-redesigned">
@@ -40,15 +38,23 @@
                     <h2>The Ultimate Gym 2.0 Dashboard</h2>
                 </div>
                 
-                <div class="time-display-center" id="clock-display">00:00 PM</div>
-
                 <div class="header-card nav-card">
-                    <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-link active"><i class="fa-solid fa-house"></i> Home</span>
-                    <span onclick="switchTab('members')" id="tab-members" class="nav-link"><i class="fa-solid fa-users"></i> Members</span>
-                    <span onclick="switchTab('finance')" id="tab-finance" class="nav-link"><i class="fa-solid fa-coins"></i> Finance</span>
-                    <div class="nav-divider"></div>
-                    <span onclick="handleLogout()" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</span>
+                    <div class="time-block">
+                        <div id="clock-display">00:00 PM</div>
+                        <small>Last Dashboard Refresh</small>
+                    </div>
+
+                    <div class="nav-divider-large"></div>
+
+                    <div class="nav-links-container">
+                        <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-link active"><i class="fa-solid fa-house"></i> Home</span>
+                        <span onclick="switchTab('members')" id="tab-members" class="nav-link"><i class="fa-solid fa-users"></i> Members</span>
+                        <span onclick="switchTab('finance')" id="tab-finance" class="nav-link"><i class="fa-solid fa-coins"></i> Finance</span>
+                        <div class="nav-divider"></div>
+                        <span onclick="handleLogout()" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</span>
+                    </div>
                 </div>
+                
                 <div class="mobile-menu-btn" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></div>
             </header>
             
@@ -64,7 +70,6 @@
                                 <div class="theme-btn theme-blue" onclick="setTheme('blue')"></div>
                                 <div class="theme-btn theme-green" onclick="setTheme('green')"></div>
                             </div>
-                            
                             <div class="hero-stats-blocks">
                                 <div class="hero-block">
                                     <i class="fa-solid fa-users accent-icon"></i>
@@ -85,15 +90,26 @@
                     <div class="grid-item plans-card">
                         <div class="card-header compact">
                             <span style="font-size: 0.9rem;">Overall Memberships</span>
-                            <div class="legend" style="font-size:0.7rem; font-weight:500; color:#888;">
+                            <div class="legend" style="font-size:0.7rem; font-weight:500;">
                                 <span style="color:#fff">Active</span> / <span style="color:#666">Expired</span>
                             </div>
                         </div>
-                        
                         <div class="plan-list">
                             <div class="plan-row" id="row-platinum"></div>
                             <div class="plan-row" id="row-gold"></div>
                             <div class="plan-row" id="row-silver"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid-item finance-card">
+                        <div class="card-header compact">
+                            <span>Finance Overview</span>
+                            <div class="legend">
+                                <span class="dot accent-bg"></span> Rev <span class="dot white"></span> Exp
+                            </div>
+                        </div>
+                        <div class="chart-wrapper compact">
+                            <canvas id="financeChart"></canvas>
                         </div>
                     </div>
 
@@ -111,18 +127,6 @@
                             <span>Progress</span>
                         </div>
                         <div id="dash-member-list" class="dash-scroll-area"></div>
-                    </div>
-
-                    <div class="grid-item finance-card">
-                        <div class="card-header compact">
-                            <span>Finance Overview</span>
-                            <div class="legend">
-                                <span class="dot accent-bg"></span> Rev <span class="dot white"></span> Exp
-                            </div>
-                        </div>
-                        <div class="chart-wrapper compact">
-                            <canvas id="financeChart"></canvas>
-                        </div>
                     </div>
 
                     <div class="grid-item acquisition-card">
