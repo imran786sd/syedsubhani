@@ -4,17 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Ultimate Gym 2.0 Dashboard</title>
+    
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ef4444" id="meta-theme-color">
     <link rel="icon" type="image/png" href="icons/icon-192.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <link rel="stylesheet" href="style.css">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+
     <div id="auth-wrapper">
         <div class="auth-card">
             <div class="gym-logo"><i class="fa-solid fa-dumbbell"></i></div>
@@ -26,13 +31,17 @@
     </div>
 
     <div id="app-wrapper" style="display:none;">
+        
         <main id="main-content">
+            
             <header class="top-bar-redesigned">
                 <div class="header-card brand-card">
                     <i class="fa-solid fa-dumbbell accent"></i>
                     <h2>The Ultimate Gym 2.0 Dashboard</h2>
                 </div>
+                
                 <div class="time-display-center" id="clock-display">00:00 PM</div>
+
                 <div class="header-card nav-card">
                     <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-link active"><i class="fa-solid fa-house"></i> Home</span>
                     <span onclick="switchTab('members')" id="tab-members" class="nav-link"><i class="fa-solid fa-users"></i> Members</span>
@@ -55,6 +64,7 @@
                                 <div class="theme-btn theme-blue" onclick="setTheme('blue')"></div>
                                 <div class="theme-btn theme-green" onclick="setTheme('green')"></div>
                             </div>
+                            
                             <div class="hero-stats-blocks">
                                 <div class="hero-block">
                                     <i class="fa-solid fa-users accent-icon"></i>
@@ -77,6 +87,7 @@
                             <span>Overall Memberships</span>
                              <span style="font-size:0.7rem; color:#888">Active / Total</span>
                         </div>
+                        
                         <div class="plan-list">
                             <div class="plan-row">
                                 <div class="donut-container" id="donut-platinum"></div>
@@ -85,14 +96,14 @@
                                     <small id="detail-platinum" class="plan-stat">0 Active / 0 Total</small>
                                 </div>
                             </div>
-                            <div class="plan-row">
+                             <div class="plan-row">
                                 <div class="donut-container" id="donut-gold"></div>
                                 <div class="plan-details">
                                     <span class="plan-name">Gold (6 Mo)</span>
                                     <small id="detail-gold" class="plan-stat">0 Active / 0 Total</small>
                                 </div>
                             </div>
-                            <div class="plan-row">
+                             <div class="plan-row">
                                 <div class="donut-container" id="donut-silver"></div>
                                 <div class="plan-details">
                                     <span class="plan-name">Silver (<6 Mo)</span>
@@ -127,7 +138,8 @@
                             <span>Status</span>
                             <span>Progress</span>
                         </div>
-                        <div id="dash-member-list" class="dash-scroll-area"></div>
+                        <div id="dash-member-list" class="dash-scroll-area">
+                            </div>
                     </div>
 
                     <div class="grid-item acquisition-card">
@@ -164,6 +176,7 @@
                 </div>
                 <div id="finance-list" class="list-container"></div>
             </div>
+
         </main>
     </div>
 
@@ -175,7 +188,15 @@
                 <input type="tel" id="inp-phone" placeholder="Phone">
                 <div class="split-inputs">
                     <div><label>Join Date</label><input type="date" id="inp-join"></div>
-                    <div><label>Plan</label><select id="inp-plan" onchange="calcExpiry()"><option value="1">Silver (1 Month)</option><option value="3">Silver (3 Months)</option><option value="6">Gold (6 Months)</option><option value="12">Platinum (1 Year)</option></select></div>
+                    <div>
+                        <label>Plan</label>
+                        <select id="inp-plan" onchange="calcExpiry()">
+                            <option value="1">Silver (1 Month)</option>
+                            <option value="3">Silver (3 Months)</option>
+                            <option value="6">Gold (6 Months)</option>
+                            <option value="12">Platinum (1 Year)</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="split-inputs">
                     <div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div>
