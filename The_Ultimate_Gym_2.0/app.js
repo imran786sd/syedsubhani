@@ -125,7 +125,7 @@ function renderDashboard() {
         
         // Calculate SVG Stroke for Donut
         const radius = 16;
-        const circumference = 2 * Math.PI * radius; // approx 100
+        const circumference = 2 * Math.PI * radius; 
         const strokeDash = (stats.pct / 100) * circumference;
 
         if(container) {
@@ -143,12 +143,10 @@ function renderDashboard() {
                 </div>
                 <div class="stat-stack">
                     <div class="stat-pill">
-                        <span class="dot-indicator dot-white"></span>
-                        <span>${stats.active}</span>
+                        <span style="color: #ffffff;">${stats.active}</span>
                     </div>
                     <div class="stat-pill">
-                        <span class="dot-indicator dot-grey"></span>
-                        <span>${stats.inactive}</span>
+                        <span style="color: #666666;">${stats.inactive}</span>
                     </div>
                 </div>
             `;
