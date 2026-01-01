@@ -7,83 +7,131 @@
     <style>
         :root {
             --primary: #2dd4bf;
+            --primary-dim: rgba(45, 212, 191, 0.1);
             --bg: #0f172a;
             --text: #e2e8f0;
+            --text-muted: #94a3b8;
             --card-bg: #1e293b;
             --border: #334155;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --warning-border: #f59e0b;
         }
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             line-height: 1.6;
             margin: 0;
             display: flex;
         }
-        /* Sidebar */
+        
+        /* Sidebar Navigation */
         .sidebar {
-            width: 250px;
+            width: 260px;
             height: 100vh;
             background: #0b1120;
-            padding: 20px;
+            padding: 25px;
             position: fixed;
             border-right: 1px solid var(--border);
             overflow-y: auto;
+            box-sizing: border-box;
         }
-        .sidebar h3 { color: var(--primary); margin-top: 0; }
-        .sidebar ul { list-style: none; padding: 0; }
-        .sidebar li { margin-bottom: 10px; }
-        .sidebar a { color: var(--text); text-decoration: none; display: block; padding: 8px; border-radius: 6px; transition: 0.2s; }
-        .sidebar a:hover { background: rgba(45, 212, 191, 0.1); color: var(--primary); }
+        .sidebar h3 { color: var(--primary); margin-top: 0; margin-bottom: 20px; font-size: 1.2rem; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar li { margin-bottom: 5px; }
+        .sidebar a { 
+            color: var(--text-muted); 
+            text-decoration: none; 
+            display: block; 
+            padding: 10px 12px; 
+            border-radius: 6px; 
+            transition: all 0.2s; 
+            font-size: 0.95rem;
+        }
+        .sidebar a:hover { background: var(--card-bg); color: white; }
+        .sidebar a.active { background: var(--primary-dim); color: var(--primary); font-weight: 600; }
         
         /* Main Content */
         .content {
-            margin-left: 290px;
-            padding: 40px;
-            max-width: 800px;
+            margin-left: 260px;
+            padding: 50px;
+            max-width: 900px;
+            width: 100%;
         }
-        h1, h2, h3 { color: white; }
-        h1 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 30px; }
-        h2 { margin-top: 40px; color: var(--primary); }
         
+        /* Typography */
+        h1, h2, h3 { color: white; margin-top: 0; }
+        h1 { 
+            border-bottom: 2px solid var(--border); 
+            padding-bottom: 15px; 
+            margin-bottom: 30px; 
+            font-size: 2.2rem;
+        }
+        h2 { 
+            margin-top: 50px; 
+            margin-bottom: 20px; 
+            color: var(--primary); 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        p { color: var(--text-muted); margin-bottom: 15px; }
+        strong { color: white; }
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
         /* Code Blocks */
         pre {
             background: #000;
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
             overflow-x: auto;
             border: 1px solid var(--border);
             color: #a5f3fc;
-        }
-        code { font-family: 'Consolas', monospace; }
-        
-        /* Alerts */
-        .alert {
-            background: rgba(245, 158, 11, 0.1);
-            border-left: 4px solid #f59e0b;
-            padding: 15px;
+            font-size: 0.9rem;
             margin: 20px 0;
-            border-radius: 4px;
         }
+        code { font-family: 'Consolas', 'Monaco', monospace; background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px; color: #e2e8f0; }
+        pre code { background: none; padding: 0; color: inherit; }
+
+        /* Step Cards */
         .step {
             background: var(--card-bg);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
             border: 1px solid var(--border);
         }
+        .step-header { display: flex; align-items: center; margin-bottom: 15px; }
         .step-num {
-            display: inline-block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: var(--primary);
             color: black;
-            width: 25px;
-            height: 25px;
-            text-align: center;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             font-weight: bold;
-            margin-right: 10px;
+            margin-right: 12px;
+            font-size: 0.9rem;
         }
-        img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin: 10px 0; }
+        .step-title { font-weight: 700; color: white; font-size: 1.1rem; }
+        
+        /* Feature Grid */
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .feature-item { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .feature-icon { font-size: 1.5rem; margin-bottom: 10px; display: block; }
+
+        /* Alerts */
+        .alert {
+            background: var(--warning-bg);
+            border-left: 4px solid var(--warning-border);
+            padding: 15px 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+            color: #fcd34d;
+        }
         
         /* Mobile */
         @media (max-width: 768px) {
@@ -97,148 +145,179 @@
     <nav class="sidebar">
         <h3>Budget Pro Docs</h3>
         <ul>
-            <li><a href="#intro">Introduction</a></li>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#firebase">1. Firebase Setup</a></li>
-            <li><a href="#config">2. Configuration</a></li>
-            <li><a href="#install">3. Installation</a></li>
-            <li><a href="#domain">4. Domain Whitelist</a></li>
-            <li><a href="#pwa">5. PWA Setup</a></li>
-            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#intro">1. Introduction</a></li>
+            <li><a href="#firebase">2. Firebase Setup</a></li>
+            <li><a href="#config">3. Connect App</a></li>
+            <li><a href="#upload">4. Upload & Go Live</a></li>
+            <li><a href="#domain">5. Domain Whitelist</a></li>
+            <li><a href="#pwa">6. PWA Customization</a></li>
+            <li><a href="#faq">7. FAQ & Admin</a></li>
         </ul>
     </nav>
 
     <div class="content">
         <h1 id="intro">Budget Tracker Pro - Documentation</h1>
-        <p>Thank you for purchasing <strong>Budget Tracker Pro</strong>. This documentation will guide you through setting up your own Serverless Expense Manager in less than 5 minutes.</p>
+        <p>Thank you for purchasing <strong>Budget Tracker Pro</strong>! This guide will help you launch your own Serverless Expense Manager in minutes. No coding knowledge required.</p>
         
         <div class="alert">
-            <strong>Requirement:</strong> You do NOT need a server (PHP/Node.js). You only need a free Google account for Firebase.
+            <strong>✅ No Server Costs:</strong> This app runs entirely on Google Firebase (Free Tier). You do not need PHP, MySQL, or Node.js hosting.
         </div>
 
-        <h2 id="features">Features</h2>
-        <ul>
-            <li>✅ <strong>Serverless:</strong> Runs entirely on Google Firebase (Free Tier).</li>
-            <li>✅ <strong>PWA Ready:</strong> Installable on Android, iOS, and Desktop.</li>
-            <li>✅ <strong>Cloud Sync:</strong> Real-time data sync across devices.</li>
-            <li>✅ <strong>Smart Debt Manager:</strong> Track who owes you money.</li>
-            <li>✅ <strong>Indian Finance:</strong> Native support for ₹ (INR), Lakhs, and Crores.</li>
-        </ul>
+        <div class="feature-grid">
+            <div class="feature-item"><span class="feature-icon">☁️</span><strong>Cloud Sync</strong></div>
+            <div class="feature-item"><span class="feature-icon">📱</span><strong>PWA Ready</strong></div>
+            <div class="feature-item"><span class="feature-icon">🔒</span><strong>Secure Auth</strong></div>
+            <div class="feature-item"><span class="feature-icon">🇮🇳</span><strong>Indian Format</strong></div>
+        </div>
 
-        <hr>
+        <hr style="border:0; border-top:1px solid var(--border); margin:40px 0;">
 
         <h2 id="firebase">Step 1: Firebase Setup</h2>
-        <p>This app uses Google Firebase for the database and authentication. It is free for small to medium apps.</p>
+        <p>We use Google Firebase to store data securely for free.</p>
 
         <div class="step">
-            <span class="step-num">1</span> <strong>Create Project</strong>
-            <p>Go to the <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--primary)">Firebase Console</a> and click "Add Project". Give it any name (e.g., "MyBudget").</p>
+            <div class="step-header">
+                <span class="step-num">1</span>
+                <span class="step-title">Create Project</span>
+            </div>
+            <p>Go to the <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a> and click <strong>Add Project</strong>. Name it anything (e.g., "MyBudgetApp") and disable Google Analytics for simpler setup.</p>
         </div>
 
         <div class="step">
-            <span class="step-num">2</span> <strong>Enable Authentication</strong>
-            <p>On the left sidebar, click <strong>Build -> Authentication</strong>.</p>
+            <div class="step-header">
+                <span class="step-num">2</span>
+                <span class="step-title">Enable Authentication</span>
+            </div>
+            <p>On the left sidebar, click <strong>Build > Authentication</strong>.</p>
             <ul>
-                <li>Click "Get Started".</li>
-                <li>Select <strong>Google</strong> as a Sign-in provider.</li>
-                <li>Enable it and save.</li>
+                <li>Click <strong>Get Started</strong>.</li>
+                <li>Select <strong>Google</strong> from the Sign-in providers list.</li>
+                <li>Toggle the switch to <strong>Enable</strong>.</li>
+                <li>Select your support email and click <strong>Save</strong>.</li>
             </ul>
         </div>
 
         <div class="step">
-            <span class="step-num">3</span> <strong>Enable Database</strong>
-            <p>On the left sidebar, click <strong>Build -> Firestore Database</strong>.</p>
+            <div class="step-header">
+                <span class="step-num">3</span>
+                <span class="step-title">Enable Database</span>
+            </div>
+            <p>On the left sidebar, click <strong>Build > Firestore Database</strong>.</p>
             <ul>
-                <li>Click "Create Database".</li>
-                <li>Select "Start in <strong>Production Mode</strong>".</li>
-                <li>Choose a location nearest to you (e.g., <code>asia-south1</code> for India).</li>
+                <li>Click <strong>Create Database</strong>.</li>
+                <li>Choose <strong>Start in Production Mode</strong>.</li>
+                <li>Select a location close to you (e.g., <code>asia-south1</code> for India) and click Enable.</li>
             </ul>
         </div>
         
         <div class="step">
-            <span class="step-num">4</span> <strong>Set Database Rules</strong>
-            <p>Go to the <strong>Rules</strong> tab in Firestore and paste this security rule to ensure users only see their own data:</p>
+            <div class="step-header">
+                <span class="step-num">4</span>
+                <span class="step-title">Set Security Rules</span>
+            </div>
+            <p>Go to the <strong>Rules</strong> tab inside Firestore Database and replace the code with this (copy-paste):</p>
 <pre>
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
+      // Security: Only allow users to read/write their OWN data
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
 </pre>
+            <p>Click <strong>Publish</strong>.</p>
         </div>
 
-        <h2 id="config">Step 2: Configuration</h2>
-        <p>Now connect your code to your new Firebase project.</p>
+        <h2 id="config">Step 2: Connect the App</h2>
+        <p>Now we link the code to your new database.</p>
         
         <ol>
-            <li>In Firebase Console, click the <strong>Gear Icon ⚙️</strong> -> Project Settings.</li>
+            <li>In the Firebase Console, click the <strong>Gear Icon ⚙️</strong> (Project Settings).</li>
             <li>Scroll down to "Your Apps" and click the <strong>Web (</>)</strong> icon.</li>
-            <li>Register the app (give it a nickname).</li>
-            <li>Copy the <code>firebaseConfig</code> object shown on screen.</li>
-            <li>Open <code>config.js</code> in your source folder and paste your keys there.</li>
+            <li>Register the app (enter any nickname).</li>
+            <li>You will see a <code>firebaseConfig</code> code block. Copy only the values inside the braces.</li>
+            <li>Open the file <code>config.js</code> in your source code folder.</li>
+            <li>Paste your keys into the placeholders.</li>
         </ol>
 
 <pre>
-// Example config.js
+// config.js
 const firebaseConfig = {
-    apiKey: "AIzaSyD...",
-    authDomain: "mybudget.firebaseapp.com",
-    projectId: "mybudget-123",
-    storageBucket: "mybudget.appspot.com",
-    messagingSenderId: "12345...",
-    appId: "1:12345..."
+    apiKey: "AIzaSyD-Your-API-Key-Here",
+    authDomain: "your-project.firebaseapp.com",
+    projectId: "your-project-id",
+    storageBucket: "your-project.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abc..."
 };
 </pre>
 
-        <h2 id="install">Step 3: Installation / Upload</h2>
-        <p>Since this is a static HTML5 app, you can host it anywhere for free.</p>
+        <h2 id="upload">Step 3: Upload & Go Live</h2>
+        <p>Since this app is built with static HTML/JS, you can host it for free on many platforms.</p>
         <ul>
-            <li><strong>GitHub Pages:</strong> (Recommended for Developers)</li>
-            <li><strong>Netlify / Vercel:</strong> Drag and drop the folder.</li>
-            <li><strong>cPanel / Shared Hosting:</strong> Upload files to `public_html`.</li>
+            <li><strong>GitHub Pages:</strong> (Best for developers)</li>
+            <li><strong>Netlify / Vercel:</strong> Simply drag and drop your project folder to deploy.</li>
+            <li><strong>cPanel / Shared Hosting:</strong> Upload all files to the <code>public_html</code> folder via FTP.</li>
         </ul>
 
-        <h2 id="domain">Step 4: Domain Whitelist (Critical) ⚠️</h2>
+        <h2 id="domain">Step 4: Domain Whitelist (CRITICAL) ⚠️</h2>
         <div class="alert">
-            If you skip this step, Google Login will fail with an error: <code>auth/unauthorized-domain</code>.
+            <strong>STOP! Do not skip this.</strong><br>
+            If you do not do this step, Google Login will fail with an error: <code>auth/unauthorized-domain</code>.
         </div>
-        <p>Google blocks sign-ins from unknown websites to prevent phishing. You must tell Firebase your website URL.</p>
+        <p>Google blocks sign-ins from unknown websites for security. You must authorize your website domain.</p>
+        
         <div class="step">
+            <div class="step-header">
+                <span class="step-num">!</span>
+                <span class="step-title">How to Whitelist</span>
+            </div>
             <ol>
-                <li>Go to <strong>Firebase Console -> Authentication -> Settings</strong>.</li>
+                <li>Go to <strong>Firebase Console > Authentication > Settings</strong> tab.</li>
                 <li>Click on <strong>Authorized Domains</strong>.</li>
-                <li>Click "Add Domain".</li>
-                <li>Enter your website domain (e.g., <code>syedsubhani.in</code> or <code>my-app.netlify.app</code>).</li>
-                <li>Click Add.</li>
+                <li>Click <strong>Add Domain</strong>.</li>
+                <li>Enter your live website URL (e.g., <code>budget-app.netlify.app</code> or <code>syedsubhani.in</code>).</li>
+                <li>Click <strong>Add</strong>.</li>
             </ol>
-            <p><em>Note: `localhost` is allowed by default for testing.</em></p>
+            <p><em>(Note: `localhost` is allowed by default for testing on your computer).</em></p>
         </div>
 
-        <h2 id="pwa">Step 5: PWA Setup (Optional)</h2>
-        <p>To make the "Install App" prompt appear with your own logo:</p>
+        <h2 id="pwa">Step 5: PWA Customization</h2>
+        <p>To make the app installable on phones with your own branding:</p>
         <ol>
-            <li>Replace the icons in the <code>icons/</code> folder with your own (must be 192x192 and 512x512).</li>
-            <li>Open <code>manifest.json</code> and update the "name" and "short_name" fields.</li>
+            <li><strong>Icons:</strong> Replace the images in the <code>icons/</code> folder. Keep the filenames and sizes (192x192, 512x512) exactly the same.</li>
+            <li><strong>Name:</strong> Open <code>manifest.json</code> and change the <code>"name"</code> and <code>"short_name"</code> fields to your app name.</li>
+            <li><strong>Theme Color:</strong> Open `manifest.json` and change <code>"theme_color"</code> to match your brand.</li>
         </ol>
 
-        <h2 id="faq">FAQ</h2>
+        <h2 id="faq">FAQ & Admin Panel</h2>
         
-        <strong>Q: Can I change the currency to USD?</strong>
-        <p>A: Yes. Open <code>app.js</code> and search for <code>formatMoney</code>. Change <code>en-IN</code> to <code>en-US</code> and <code>₹</code> to <code>$</code>.</p>
+        <div class="step">
+            <strong>Q: Where is the Admin Panel?</strong>
+            <p><strong>A: It's built into Google!</strong> Instead of a basic custom panel, this app uses the enterprise-grade <strong>Firebase Console</strong> as its backend admin suite.</p>
+            <ul>
+                <li><strong>View Users:</strong> Go to the <em>Authentication</em> tab to see all signed-up users. You can disable or delete accounts there.</li>
+                <li><strong>Manage Data:</strong> Go to the <em>Firestore Database</em> tab to view, edit, or delete any user's financial records in real-time.</li>
+                <li><strong>Analytics:</strong> Enable <em>Google Analytics</em> in the console to track daily active users and retention.</li>
+            </ul>
+        </div>
 
-        <strong>Q: Where is the admin panel?</strong>
-        <p>A: There is no admin panel. You can view/manage all user data directly inside the Firebase Console (Firestore Database).</p>
+        <div class="step">
+            <strong>Q: Can I change the currency to USD?</strong>
+            <p><strong>A: Yes.</strong> Open <code>app.js</code> and search for the function <code>formatMoney</code>. Change <code>en-IN</code> to <code>en-US</code> and replace the <code>₹</code> symbol with <code>$</code>.</p>
+        </div>
 
-        <strong>Q: Is the data secure?</strong>
-        <p>A: Yes. All data is stored on Google's servers. Authentication is handled via Google OAuth.</p>
+        <div class="step">
+            <strong>Q: How do I reset all data?</strong>
+            <p><strong>A:</strong> Use the "Clear All Data" button in the app's Profile tab settings. This wipes local storage. To wipe cloud data, delete the user document in Firebase Console.</p>
+        </div>
 
         <br><br>
-        <hr>
-        <p style="text-align:center; color:gray; font-size:0.9rem;">
-            &copy; 2024 Budget Tracker Pro. All Rights Reserved.
+        <hr style="border:0; border-top:1px solid var(--border);">
+        <p style="text-align:center; color:var(--text-muted); font-size:0.9rem;">
+            &copy; 2024 Budget Tracker Pro. Built for CodeCanyon.
         </p>
     </div>
 
