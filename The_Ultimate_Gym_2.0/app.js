@@ -132,7 +132,7 @@ function renderDashboard() {
     // 4. FILTERED LIST
     renderFilteredDashboardList();
 
-    // 5. ACQUISITION CHART (BAR CHART WITH LABELS)
+    // 5. ACQUISITION CHART (FIXED: Now shows numbers correctly)
     updateMemberChart();
 }
 
@@ -197,12 +197,12 @@ function updateFinanceChart(rev, exp) {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: { x: { display: false }, y: { display:false, grid: { display:false } } },
-            layout: { padding: { top: 10 } }
+            layout: { padding: { top: 25 } } // Added padding here too
         }
     });
 }
 
-// --- UPDATED: BAR CHART WITH COUNT LABELS ---
+// --- FIXED MEMBER CHART (Padding added so numbers show) ---
 function updateMemberChart() {
     const ctx = document.getElementById('memberChart').getContext('2d');
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -213,7 +213,6 @@ function updateMemberChart() {
     const labels = [];
     const dataPoints = [];
 
-    // Loop backwards 6 times (0 to 5)
     for(let i=5; i>=0; i--) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const monthName = months[d.getMonth()];
@@ -226,7 +225,7 @@ function updateMemberChart() {
         dataPoints.push(count);
     }
 
-    const displayData = members.length > 0 ? dataPoints : [5, 8, 12, 7, 10, 15]; // Fallback for demo
+    const displayData = members.length > 0 ? dataPoints : [5, 8, 12, 7, 10, 15];
 
     if(memberChartInstance) memberChartInstance.destroy();
     
@@ -242,7 +241,11 @@ function updateMemberChart() {
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true, 
+            maintainAspectRatio: false,
+            layout: {
+                padding: { top: 25 } // <--- THIS FIXES THE CUT OFF TEXT
+            },
             plugins: { legend: { display: false } },
             scales: { 
                 x: { 
@@ -252,7 +255,7 @@ function updateMemberChart() {
                 y: { display: false }
             }
         },
-        // THIS PLUGIN DRAWS THE NUMBERS
+        // DRAW NUMBERS ON TOP
         plugins: [{
             id: 'customLabels',
             afterDatasetsDraw(chart, args, options) {
@@ -262,12 +265,11 @@ function updateMemberChart() {
                     chart.getDatasetMeta(i).data.forEach((datapoint, index) => {
                         const { x, y } = datapoint;
                         const value = dataset.data[index];
-                        if(value > 0) { // Only draw if > 0
-                            ctx.font = 'bold 11px Inter';
-                            ctx.fillStyle = '#ffffff'; 
-                            ctx.textAlign = 'center';
-                            ctx.fillText(value, x, y - 5); // Draw 5px above the bar
-                        }
+                        // Always draw if value exists, even if 0
+                        ctx.font = 'bold 11px Inter';
+                        ctx.fillStyle = '#ffffff'; 
+                        ctx.textAlign = 'center';
+                        ctx.fillText(value, x, y - 5); 
                     });
                 });
                 ctx.restore();
