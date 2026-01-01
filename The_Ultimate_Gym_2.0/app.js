@@ -13,6 +13,36 @@ let ageStatusChartInstance = null;
 let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
+// --- CUSTOM CHART PLUGIN (Draws Numbers on Bars) ---
+const dataLabelPlugin = {
+    id: 'dataLabels',
+    afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        chart.data.datasets.forEach((dataset, i) => {
+            const meta = chart.getDatasetMeta(i);
+            if (!meta.hidden) {
+                meta.data.forEach((element, index) => {
+                    const data = dataset.data[index];
+                    if (data > 0) { // Only draw if number exists
+                        ctx.fillStyle = '#ffffff';
+                        const fontSize = 10;
+                        const fontStyle = 'bold';
+                        const fontFamily = 'Inter';
+                        ctx.font = Chart.helpers.fontString(fontSize, fontStyle, fontFamily);
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        
+                        // Position text inside the bar or on top
+                        const padding = 5;
+                        const position = element.tooltipPosition();
+                        ctx.fillText(data.toString(), position.x, position.y + (dataset.stack ? 0 : -10)); 
+                    }
+                });
+            }
+        });
+    }
+};
+
 // --- NAVIGATION ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
@@ -139,7 +169,7 @@ async function addFinanceEntry(category, amount, mode, date, memberId, plan, exp
             memberId: memberId || null,
             snapshotPlan: plan || null,
             snapshotExpiry: expiry || null,
-            createdAt: new Date() // This saves the exact time
+            createdAt: new Date() 
         });
         console.log("Finance entry auto-added.");
     } catch(e) { console.error("Auto-finance failed", e); }
@@ -266,57 +296,97 @@ function updateMemberChart() {
         type: 'bar',
         data: { labels: labels, datasets: [{ data: data, backgroundColor: accent, borderRadius: 4, barThickness: 10 }] },
         options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25 } }, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#888' } }, y: { display: false } } },
-        plugins: [{ id: 'lbl', afterDatasetsDraw(c) { const ctx=c.ctx; ctx.save(); c.data.datasets[0].data.forEach((v, i) => { const m=c.getDatasetMeta(0).data[i]; if(v>0) { ctx.font='bold 10px Inter'; ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.fillText(v, m.x, m.y-5); } }); ctx.restore(); } }]
+        plugins: [dataLabelPlugin] // Use new global plugin
     });
 }
 
-// --- AGE & STATUS CHARTS ---
+// --- UPDATED CHARTS (Gender & Numbers) ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
-    const ageGroups = { '18-25': 0, '25-40': 0, '40-60': 0, '60+': 0 };
-    const statusByAge = { '18-25': {active:0, inactive:0}, '25-40': {active:0, inactive:0}, '40-60': {active:0, inactive:0}, '60+': {active:0, inactive:0} };
+    
+    // Structure for Stacked Chart (Gender)
+    const ageBuckets = ['18-25', '25-40', '40-60', '60+'];
+    const genderData = {
+        'Male': [0, 0, 0, 0],
+        'Female': [0, 0, 0, 0],
+        'Other': [0, 0, 0, 0]
+    };
+    
+    // Structure for Status Chart (Active/Expired)
+    const statusData = {
+        'Active': [0, 0, 0, 0],
+        'Expired': [0, 0, 0, 0]
+    };
 
     members.forEach(m => {
         if(m.dob) {
             const birthDate = new Date(m.dob);
             let age = today.getFullYear() - birthDate.getFullYear();
-            let group = '60+';
-            if (age >= 18 && age <= 25) group = '18-25';
-            else if (age > 25 && age <= 40) group = '25-40';
-            else if (age > 40 && age <= 60) group = '40-60';
+            let bucketIndex = 3; // Default 60+
+            
+            if (age >= 18 && age <= 25) bucketIndex = 0;
+            else if (age > 25 && age <= 40) bucketIndex = 1;
+            else if (age > 40 && age <= 60) bucketIndex = 2;
 
-            ageGroups[group]++;
+            // Fill Gender Data
+            const g = m.gender || 'Male'; // Default to Male if missing
+            if(genderData[g] !== undefined) genderData[g][bucketIndex]++;
+            else genderData['Other'][bucketIndex]++;
+
+            // Fill Status Data
             const isActive = new Date(m.expiryDate) > today;
-            if(isActive) statusByAge[group].active++; else statusByAge[group].inactive++;
+            if(isActive) statusData['Active'][bucketIndex]++; 
+            else statusData['Expired'][bucketIndex]++;
         }
     });
 
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     
+    // 1. AGE x GENDER CHART (Stacked)
     const ctx1 = document.getElementById('ageCategoryChart');
     if(ctx1) {
         if(ageCategoryChartInstance) ageCategoryChartInstance.destroy();
         ageCategoryChartInstance = new Chart(ctx1.getContext('2d'), {
             type: 'bar',
-            data: { labels: Object.keys(ageGroups), datasets: [{ label: 'Members', data: Object.values(ageGroups), backgroundColor: accent, borderRadius: 4, barThickness: 20 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } }
+            data: { 
+                labels: ageBuckets, 
+                datasets: [
+                    { label: 'Male', data: genderData['Male'], backgroundColor: '#60a5fa', stack: 'Stack 0', borderRadius: 4 },
+                    { label: 'Female', data: genderData['Female'], backgroundColor: '#f472b6', stack: 'Stack 0', borderRadius: 4 },
+                    { label: 'Other', data: genderData['Other'], backgroundColor: '#9ca3af', stack: 'Stack 0', borderRadius: 4 }
+                ] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, 
+                scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } 
+            },
+            plugins: [dataLabelPlugin] // Show numbers on bars
         });
     }
 
+    // 2. STATUS x AGE CHART (Grouped)
     const ctx2 = document.getElementById('ageStatusChart');
     if(ctx2) {
         if(ageStatusChartInstance) ageStatusChartInstance.destroy();
         ageStatusChartInstance = new Chart(ctx2.getContext('2d'), {
             type: 'bar',
             data: {
-                labels: Object.keys(statusByAge),
+                labels: ageBuckets,
                 datasets: [
-                    { label: 'Active', data: Object.values(statusByAge).map(x=>x.active), backgroundColor: accent, borderRadius: 4, barThickness: 10 },
-                    { label: 'Expired', data: Object.values(statusByAge).map(x=>x.inactive), backgroundColor: '#444', borderRadius: 4, barThickness: 10 }
+                    { label: 'Active', data: statusData['Active'], backgroundColor: accent, borderRadius: 4, barThickness: 15 },
+                    { label: 'Expired', data: statusData['Expired'], backgroundColor: '#333', borderRadius: 4, barThickness: 15 }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, 
+                scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } 
+            },
+            plugins: [dataLabelPlugin] // Show numbers on bars
         });
     }
 }
