@@ -13,7 +13,7 @@ let ageStatusChartInstance = null;
 let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
-// --- NAVIGATION (Defined early to prevent errors) ---
+// --- NAVIGATION ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
@@ -94,9 +94,7 @@ function setupListeners() {
     });
 }
 
-// --- HELPER FUNCTIONS (Must be defined before usage) ---
-
-// Format "15d" -> "15 Days"
+// --- HELPER FUNCTIONS ---
 window.formatPlanDisplay = (plan) => {
     if(!plan) return '';
     if(plan.includes('d')) return plan.replace('d', ' Days');
@@ -134,14 +132,26 @@ window.calcExpiry = () => {
     if(j && plan) { 
         const d = new Date(j);
         const val = parseInt(plan);
-        // Add Days, Months, or Years based on selection
         if(plan.includes('d')) d.setDate(d.getDate() + val);
         else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
-        else d.setMonth(d.getMonth() + val); // default month logic
-
+        else d.setMonth(d.getMonth() + val); 
         document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; 
     } 
 };
+
+// --- AUTOMATED ACCOUNTING ---
+async function addFinanceEntry(category, amount, mode, date) {
+    try {
+        await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
+            type: 'income',
+            category: category,
+            amount: parseFloat(amount),
+            date: date,
+            mode: mode || 'Cash', 
+            createdAt: new Date()
+        });
+    } catch(e) { console.error("Auto-finance failed", e); }
+}
 
 // --- DASHBOARD RENDERER ---
 function renderDashboard() {
@@ -164,11 +174,9 @@ function renderDashboard() {
         const planMembers = members.filter(m => {
             let dur = m.planDuration || "1m";
             let months = 0;
-            // Normalize everything to months for comparison
-            if(dur.includes('d')) months = 0.5; // Days count as < 1 month
+            if(dur.includes('d')) months = 0.5; 
             else if(dur.includes('y')) months = parseInt(dur) * 12;
             else months = parseInt(dur);
-
             return months >= minMo && months < maxMo;
         });
         const total = planMembers.length;
@@ -201,7 +209,7 @@ function renderDashboard() {
     
     updatePlanUI('platinum', 'Platinum<br>Membership', getStats(12, 99));
     updatePlanUI('gold', 'Gold<br>Membership', getStats(6, 12));
-    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); // 0 to 6 months (includes days)
+    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); 
 
     updateFinanceChart(totalRev, txExpense);
     renderFilteredDashboardList();
@@ -273,7 +281,7 @@ function updateMemberChart() {
     });
 }
 
-// --- MEMBERS TAB: AGE & STATUS CHARTS ---
+// --- AGE & STATUS CHARTS ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
@@ -331,12 +339,12 @@ window.saveMember = async () => {
     const amount = document.getElementById('inp-amount').value;
     const dob = document.getElementById('inp-dob').value;
     const joinDate = document.getElementById('inp-join').value;
+    const payMode = document.getElementById('inp-paymode').value;
     const imgEl = document.getElementById('preview-img');
     const imgSrc = imgEl ? imgEl.src : "";
     
     if(!name || !amount || !dob || !joinDate) return alert("Please fill Name, Fees, Join Date and DOB");
 
-    // Use placeholder if no image uploaded
     const finalPhoto = (imgSrc && imgSrc.includes('base64')) ? imgSrc : null;
 
     const data = {
@@ -355,15 +363,66 @@ window.saveMember = async () => {
             data.createdAt = new Date();
             data.memberId = window.generateMemberID(name, phone);
             await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
+            await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate);
             if(confirm("Generate Invoice?")) window.generateInvoice(data);
         }
         window.toggleMemberModal();
     } catch (e) {
-        console.error(e);
-        alert("Error saving member. If you uploaded a photo, it might be too large.");
+        alert("Error saving member: " + e.message);
     }
 };
 
+// --- RENEWAL LOGIC ---
+window.renewMember = (id) => {
+    const m = members.find(x => x.id === id);
+    if(!m) return;
+    document.getElementById('renew-id').value = id;
+    document.getElementById('renew-name').innerText = m.name;
+    document.getElementById('renew-amount').value = ""; 
+    document.getElementById('modal-renew').style.display = 'flex';
+};
+
+window.closeRenewModal = () => { 
+    document.getElementById('modal-renew').style.display = 'none'; 
+};
+
+window.confirmRenewal = async () => {
+    const id = document.getElementById('renew-id').value;
+    const plan = document.getElementById('renew-plan').value;
+    const amount = document.getElementById('renew-amount').value;
+    const mode = document.getElementById('renew-paymode').value;
+    
+    if(!amount) return alert("Please enter the paid amount.");
+
+    const m = members.find(x => x.id === id);
+    if(!m) return alert("Member not found.");
+
+    const today = new Date();
+    const currentExpiry = new Date(m.expiryDate);
+    const startDate = (currentExpiry > today) ? currentExpiry : today;
+    
+    const d = new Date(startDate);
+    const val = parseInt(plan);
+    if(plan.includes('d')) d.setDate(d.getDate() + val);
+    else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
+    else d.setMonth(d.getMonth() + val);
+    
+    const newExpiry = d.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
+
+    await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, id), {
+        expiryDate: newExpiry,
+        lastPaidAmount: amount,
+        planDuration: plan
+    });
+
+    await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr);
+
+    window.closeRenewModal();
+    alert(`Membership Renewed! New Expiry: ${newExpiry}`);
+};
+
+// --- STANDARD ACTIONS ---
 window.editMember = (id) => {
     const m = members.find(x => x.id === id); if(!m) return;
     editingMemberId = id;
@@ -374,29 +433,24 @@ window.editMember = (id) => {
     document.getElementById('inp-join').value = m.joinDate; 
     document.getElementById('inp-expiry').value = m.expiryDate; 
     document.getElementById('inp-plan').value = m.planDuration || "1m";
-    
-    // Safety check for photo
     const preview = document.getElementById('preview-img');
     if(preview) preview.src = m.photo || "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
-    
     document.getElementById('modal-member').style.display = 'flex';
 };
 
 window.deleteMember = async (id) => { if(confirm("Delete member?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/members`, id)); };
 
-window.renewMember = (id) => {
-    window.editMember(id); 
-    alert("Update the Join Date and Payment to Renew.");
-};
-
 window.saveTransaction = async () => {
-    const type = document.getElementById('tx-type').value; const cat = document.getElementById('tx-category').value; const amt = parseFloat(document.getElementById('tx-amount').value);
-    const date = document.getElementById('tx-date').value;
-    if(!cat || !amt) return alert("Fill details");
-    const data = { type, category: cat, amount: amt, date };
-    if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; }
-    else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); }
-    window.toggleTxModal();
+    const type = document.getElementById('tx-type').value; 
+    const cat = document.getElementById('tx-category').value; 
+    const mode = document.getElementById('tx-paymode').value;
+    const amt = parseFloat(document.getElementById('tx-amount').value); 
+    const date = document.getElementById('tx-date').value; 
+    if(!cat || !amt) return alert("Fill details"); 
+    const data = { type, category: cat, amount: amt, date, mode }; 
+    if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; } 
+    else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); } 
+    window.toggleTxModal(); 
 };
 
 window.editTransaction = (id) => {
@@ -456,6 +510,26 @@ function renderMembersList() {
     });
 }
 
+function renderFinanceList() { 
+    const list = document.getElementById('finance-list'); list.innerHTML = ""; 
+    let p=0; 
+    transactions.forEach(t=>{ 
+        if(t.type=='income') p+=t.amount; else p-=t.amount; 
+        const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 5px; border-radius:4px; margin-right:5px;">${t.mode}</span>` : '';
+        list.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between; align-items:center;">
+            <div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date} ${modeBadge}</small></div>
+            <div style="display:flex; gap:15px; align-items:center;">
+                <span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span>
+                <div style="display:flex; gap:10px;">
+                    <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
+                    <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
+                </div>
+            </div>
+        </div>`; 
+    }); 
+    document.getElementById('total-profit').innerText="₹"+p; 
+}
+
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
 window.generateInvoice = (m) => {
     const { jsPDF } = window.jspdf; const doc = new jsPDF();
@@ -489,4 +563,3 @@ window.toggleMemberModal = () => {
 };
 window.calcExpiry = () => { const j = document.getElementById('inp-join').value; const plan = document.getElementById('inp-plan').value; if(j && plan) { const d = new Date(j); const val = parseInt(plan); if(plan.includes('d')) d.setDate(d.getDate() + val); else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val); else d.setMonth(d.getMonth() + val); document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; } };
 window.toggleTxModal = () => { document.getElementById('modal-transaction').style.display = document.getElementById('modal-transaction').style.display==='flex'?'none':'flex'; };
-function renderFinanceList() { const l=document.getElementById('finance-list'); l.innerHTML=''; let p=0; transactions.forEach(t=>{ if(t.type=='income') p+=t.amount; else p-=t.amount; l.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between; align-items:center;"><div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date}</small></div><div style="display:flex; gap:15px; align-items:center;"><span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span><div style="display:flex; gap:10px;"><i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i><i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i></div></div></div>`; }); document.getElementById('total-profit').innerText="₹"+p; }
