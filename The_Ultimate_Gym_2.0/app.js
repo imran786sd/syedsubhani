@@ -127,7 +127,7 @@ window.calcExpiry = () => {
     } 
 };
 
-// --- AUTOMATED ACCOUNTING (Updated to save memberId) ---
+// --- AUTOMATED ACCOUNTING ---
 async function addFinanceEntry(category, amount, mode, date, memberId) {
     try {
         await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
@@ -136,7 +136,7 @@ async function addFinanceEntry(category, amount, mode, date, memberId) {
             amount: parseFloat(amount),
             date: date,
             mode: mode || 'Cash',
-            memberId: memberId || null, // Link to member
+            memberId: memberId || null,
             createdAt: new Date()
         });
         console.log("Finance entry auto-added.");
@@ -268,7 +268,7 @@ function updateMemberChart() {
     });
 }
 
-// --- MEMBERS TAB: AGE & STATUS CHARTS ---
+// --- AGE & STATUS CHARTS ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
@@ -352,7 +352,7 @@ window.saveMember = async () => {
             // Save Member
             const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
             
-            // ✅ AUTO FINANCE ENTRY (Linked to Member ID)
+            // ✅ AUTO FINANCE ENTRY (New Membership)
             await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate, docRef.id);
             
             if(confirm("Generate Invoice?")) window.generateInvoice(data);
@@ -408,7 +408,7 @@ window.confirmRenewal = async () => {
         planDuration: plan
     });
 
-    // ✅ AUTO FINANCE ENTRY (Linked to Member ID)
+    // ✅ AUTO FINANCE ENTRY (Renewal) - NOW CORRECTLY LINKED
     await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr, id);
 
     window.closeRenewModal();
