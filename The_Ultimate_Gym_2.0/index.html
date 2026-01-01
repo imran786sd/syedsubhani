@@ -14,9 +14,9 @@
 
     <link rel="stylesheet" href="style.css">
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -33,55 +33,52 @@
 
     <div id="app-wrapper" style="display:none;">
         
-        <nav id="mobile-nav">
-            <div class="nav-item active" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-simple"></i></div>
-            <div class="nav-item" onclick="switchTab('members')"><i class="fa-solid fa-users"></i></div>
-            <div class="nav-item" onclick="switchTab('finance')"><i class="fa-solid fa-wallet"></i></div>
-            <div class="nav-item" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i></div>
-        </nav>
-
         <main id="main-content">
             
             <header class="top-bar">
-                <div>
-                    <h2 style="margin:0;">Fitness Dashboard</h2>
-                    <span style="color:#666; font-size:0.9rem;">Analysis Membership, Finance and Members Data</span>
+                <div class="header-left">
+                    <h2>Fitness Dashboard</h2>
+                    <span class="subtitle">Analysis Membership, Finance and Members Data</span>
                 </div>
-                <div class="top-right">
+                <div class="header-right">
                     <div class="time-display" id="clock-display">00:00 PM</div>
-                    <div class="top-links">
-                        <span onclick="switchTab('dashboard')" class="active-link">Home</span>
-                        <span onclick="switchTab('members')">Members</span>
-                        <span onclick="switchTab('finance')">Finance</span>
+                    <div class="nav-menu">
+                        <span onclick="switchTab('dashboard')" id="tab-dashboard" class="active">Home</span>
+                        <span onclick="switchTab('members')" id="tab-members">Members</span>
+                        <span onclick="switchTab('finance')" id="tab-finance">Finance</span>
+                        <span onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i></span>
+                    </div>
+                    <div class="mobile-menu-btn" onclick="toggleMobileMenu()">
                         <i class="fa-solid fa-bars"></i>
                     </div>
                 </div>
             </header>
             
             <div id="view-dashboard" class="view-section active">
-                
                 <div class="dashboard-grid">
                     
                     <div class="grid-item hero-card">
-                        <img src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=1000&auto=format&fit=crop" class="hero-bg" alt="Gym">
+                        <img src="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=1000&auto=format&fit=crop" class="hero-bg" alt="Gym Hero">
                         <div class="hero-overlay">
                             <div class="theme-badge">Orange<br>Theme</div>
-                            <div class="hero-stats">
-                                <div class="hero-stat-item">
-                                    <small>Members</small>
+                            
+                            <div class="hero-stats-container">
+                                <div class="hero-stat">
+                                    <small>Total Members</small>
                                     <h3 id="hero-clients">0</h3>
                                 </div>
-                                <div class="hero-stat-item">
-                                    <small>Revenue</small>
-                                    <h3 id="hero-revenue" style="color:var(--accent)">0M</h3>
+                                <div class="hero-stat">
+                                    <small>Total Revenue</small>
+                                    <h3 id="hero-revenue" style="color:var(--accent)">0</h3>
                                 </div>
-                                <div class="hero-stat-item">
+                                <div class="hero-stat">
                                     <small>Expenses</small>
-                                    <h3 id="hero-expense" style="color:#fbbf24">0M</h3>
+                                    <h3 id="hero-expense" style="color:#fbbf24">0</h3>
                                 </div>
                             </div>
+
                             <div class="dev-tag">
-                                <i class="fa-solid fa-bolt" style="color:var(--accent)"></i> Developed by Syed
+                                <i class="fa-solid fa-bolt" style="color:var(--accent)"></i> Generated by Gym 2.0
                             </div>
                         </div>
                     </div>
@@ -93,47 +90,67 @@
                                 <span class="dot orange"></span> Exp <span class="dot white"></span> Rev
                             </div>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-wrapper">
                             <canvas id="financeChart"></canvas>
                         </div>
-                        <div class="finance-summary">
-                            <div><h4 id="fin-rev-num">0</h4><small>Revenue</small></div>
-                            <div><h4 id="fin-exp-num">0</h4><small>Expenses</small></div>
-                            <div><h4 id="fin-prof-num" style="color:var(--accent)">0</h4><small>Profit</small></div>
+                        <div class="finance-summary-row">
+                            <div class="fs-item">
+                                <h4 id="fin-rev-num">0</h4><small>Revenue</small>
+                            </div>
+                            <div class="fs-item">
+                                <h4 id="fin-exp-num">0</h4><small>Expenses</small>
+                            </div>
+                            <div class="fs-item">
+                                <h4 id="fin-prof-num" style="color:var(--accent)">0</h4><small>Profit</small>
+                            </div>
                         </div>
                     </div>
 
                     <div class="grid-item plans-card">
-                        <div class="card-header">Overall Memberships</div>
-                        <div class="plan-row">
-                            <div class="circle-ring" style="border-color: #e5e7eb;"></div>
-                            <div class="plan-info">
-                                <span>Platinum (1 Year)</span>
+                        <div class="card-header">
+                            <span>Overall Memberships</span>
+                            <div class="status-dots">
+                                <span class="dot white"></span> Active
                             </div>
-                            <span class="plan-count" id="count-platinum">0</span>
                         </div>
-                        <div class="plan-row">
-                            <div class="circle-ring" style="border-color: #fbbf24;"></div>
-                            <div class="plan-info">
-                                <span>Gold (6 Months)</span>
+                        
+                        <div class="plan-list">
+                            <div class="plan-row">
+                                <div class="ring" style="border-color: #e5e7eb;"></div>
+                                <div class="plan-details">
+                                    <span class="plan-name">Platinum (1 Year)</span>
+                                </div>
+                                <div class="plan-count-box">
+                                    <span class="dot-small white"></span> <span id="count-platinum">0</span>
+                                </div>
                             </div>
-                            <span class="plan-count" id="count-gold">0</span>
-                        </div>
-                        <div class="plan-row">
-                            <div class="circle-ring" style="border-color: #9ca3af;"></div>
-                            <div class="plan-info">
-                                <span>Silver (1-3 Mo)</span>
+                            <div class="plan-row">
+                                <div class="ring" style="border-color: #fbbf24;"></div>
+                                <div class="plan-details">
+                                    <span class="plan-name">Gold (6 Months)</span>
+                                </div>
+                                <div class="plan-count-box">
+                                    <span class="dot-small white"></span> <span id="count-gold">0</span>
+                                </div>
                             </div>
-                            <span class="plan-count" id="count-silver">0</span>
+                            <div class="plan-row">
+                                <div class="ring" style="border-color: #9ca3af;"></div>
+                                <div class="plan-details">
+                                    <span class="plan-name">Silver (1-3 Mo)</span>
+                                </div>
+                                <div class="plan-count-box">
+                                    <span class="dot-small white"></span> <span id="count-silver">0</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="grid-item list-card">
                         <div class="card-header">
                             <span>Membership Status</span>
-                            <div class="toggle-btns">
-                                <button class="tiny-btn active">Active</button>
-                                <button class="tiny-btn">Expired</button>
+                            <div class="toggle-pill">
+                                <span class="active">Active</span>
+                                <span>Expired</span>
                             </div>
                         </div>
                         <div class="table-header">
@@ -141,16 +158,16 @@
                             <span>Status</span>
                             <span>Progress</span>
                         </div>
-                        <div id="dash-member-list" class="dash-list-scroll">
+                        <div id="dash-member-list" class="dash-scroll-area">
                             </div>
                     </div>
 
-                    <div class="grid-item chart-sm-card">
+                    <div class="grid-item acquisition-card">
                         <div class="card-header">
                             <span>Members Acquiring</span>
                             <span class="badge">Monthly</span>
                         </div>
-                        <div class="chart-container-sm">
+                        <div class="chart-wrapper-sm">
                             <canvas id="memberChart"></canvas>
                         </div>
                     </div>
@@ -159,22 +176,22 @@
             </div>
 
             <div id="view-members" class="view-section" style="display:none;">
-                <header class="section-head">
+                <div class="section-top">
                     <h2>Members Directory</h2>
-                    <button class="btn-action" onclick="toggleMemberModal()">+ New Member</button>
-                </header>
-                <div class="search-bar">
+                    <button class="btn-primary" onclick="toggleMemberModal()">+ New Member</button>
+                </div>
+                <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="member-search" placeholder="Search members..." onkeyup="filterMembers()">
+                    <input type="text" id="member-search" placeholder="Search by name..." onkeyup="filterMembers()">
                 </div>
                 <div id="members-list" class="grid-list"></div>
             </div>
 
             <div id="view-finance" class="view-section" style="display:none;">
-                <header class="section-head">
+                <div class="section-top">
                     <h2>Income & Expenses</h2>
-                    <button class="btn-action" onclick="toggleTxModal()">+ Add Entry</button>
-                </header>
+                    <button class="btn-primary" onclick="toggleTxModal()">+ Add Entry</button>
+                </div>
                 <div id="finance-list" class="list-container"></div>
             </div>
 
@@ -182,27 +199,43 @@
     </div>
 
     <div id="modal-member" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header"><h3>Add New Member</h3><i class="fa-solid fa-xmark close-btn" onclick="toggleMemberModal()"></i></div>
-            <div class="modal-body">
+        <div class="modal-box">
+            <div class="modal-head"><h3>Add New Member</h3><i class="fa-solid fa-xmark close" onclick="toggleMemberModal()"></i></div>
+            <div class="modal-content">
                 <input type="text" id="inp-name" placeholder="Full Name">
                 <input type="tel" id="inp-phone" placeholder="Phone">
-                <div class="row"><div class="col"><label>Join Date</label><input type="date" id="inp-join"></div><div class="col"><label>Plan</label><select id="inp-plan" onchange="calcExpiry()"><option value="1">Silver (1 Mo)</option><option value="3">Silver (3 Mo)</option><option value="6">Gold (6 Mo)</option><option value="12">Platinum (1 Yr)</option></select></div></div>
-                <div class="row"><div class="col"><input type="number" id="inp-amount" placeholder="Fees Paid"></div><div class="col"><input type="date" id="inp-expiry" readonly></div></div>
-                <button class="btn-save" onclick="saveMember()">Save</button>
+                <div class="split-inputs">
+                    <div><label>Join Date</label><input type="date" id="inp-join"></div>
+                    <div>
+                        <label>Plan</label>
+                        <select id="inp-plan" onchange="calcExpiry()">
+                            <option value="1">Silver (1 Month)</option>
+                            <option value="3">Silver (3 Months)</option>
+                            <option value="6">Gold (6 Months)</option>
+                            <option value="12">Platinum (1 Year)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="split-inputs">
+                    <div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div>
+                    <div><label>Expiry</label><input type="date" id="inp-expiry" readonly></div>
+                </div>
+                <button class="btn-save" onclick="saveMember()">Save & Generate Bill</button>
             </div>
         </div>
     </div>
 
     <div id="modal-transaction" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header"><h3>Transaction</h3><i class="fa-solid fa-xmark close-btn" onclick="toggleTxModal()"></i></div>
-            <div class="modal-body">
-                <select id="tx-type"><option value="income">Income</option><option value="expense">Expense</option></select>
-                <input type="date" id="tx-date">
-                <input type="text" id="tx-category" placeholder="Category">
-                <input type="number" id="tx-amount" placeholder="Amount">
-                <button class="btn-save" onclick="saveTransaction()">Save</button>
+        <div class="modal-box">
+            <div class="modal-head"><h3>Transaction</h3><i class="fa-solid fa-xmark close" onclick="toggleTxModal()"></i></div>
+            <div class="modal-content">
+                <div class="split-inputs">
+                    <select id="tx-type"><option value="income">Income (+)</option><option value="expense">Expense (-)</option></select>
+                    <input type="date" id="tx-date">
+                </div>
+                <input type="text" id="tx-category" placeholder="Category (e.g. Rent, Shake, Bill)">
+                <input type="number" id="tx-amount" placeholder="Amount (₹)">
+                <button class="btn-save" onclick="saveTransaction()">Save Entry</button>
             </div>
         </div>
     </div>
