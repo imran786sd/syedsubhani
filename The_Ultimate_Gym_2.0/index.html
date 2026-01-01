@@ -115,8 +115,30 @@
                     <h2>Income & Expenses</h2>
                     <button class="btn-action" onclick="toggleTxModal()"><i class="fa-solid fa-plus"></i> Add Entry</button>
                 </header>
+                
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-card" style="padding:15px;">
+                        <div class="stat-info">
+                            <h3>Total Income</h3>
+                            <span id="fin-income" style="color:#22c55e">₹0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="padding:15px;">
+                        <div class="stat-info">
+                            <h3>Total Expense</h3>
+                            <span id="fin-expense" style="color:#ef4444">₹0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="padding:15px;">
+                        <div class="stat-info">
+                            <h3>Net Profit</h3>
+                            <span id="fin-profit">₹0</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="finance-list" class="list-container">
-                    <div class="empty-state">No transactions yet</div>
+                    <div class="empty-state">Loading transactions...</div>
                 </div>
             </div>
 
@@ -165,8 +187,36 @@
         </div>
     </div>
 
+    <div id="modal-transaction" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Add Transaction</h3>
+                <i class="fa-solid fa-xmark close-btn" onclick="toggleTxModal()"></i>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col">
+                        <label>Type</label>
+                        <select id="tx-type">
+                            <option value="income">Income (+)</option>
+                            <option value="expense">Expense (-)</option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label>Date</label>
+                        <input type="date" id="tx-date">
+                    </div>
+                </div>
+
+                <input type="text" id="tx-category" placeholder="Category (e.g. Rent, Protein Powder, Bill)">
+                <input type="number" id="tx-amount" placeholder="Amount (₹)">
+                
+                <button class="btn-save" onclick="saveTransaction()">Save Entry</button>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
-    
     <script type="module" src="app.js"></script>
 
 </body>
