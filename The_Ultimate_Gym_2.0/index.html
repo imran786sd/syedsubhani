@@ -6,16 +6,17 @@
     <title>The Ultimate Gym 2.0</title>
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ef4444">
+    <meta name="theme-color" content="#f97316">
     <link rel="icon" type="image/png" href="icons/icon-192.png">
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -23,123 +24,158 @@
         <div class="auth-card">
             <div class="gym-logo"><i class="fa-solid fa-dumbbell"></i></div>
             <h1>THE ULTIMATE<br><span class="accent">GYM 2.0</span></h1>
-            <p>Member Management & Billing System</p>
+            <p>Fitness Dashboard</p>
             <button class="btn-login" onclick="handleGoogleLogin()">
-                <i class="fa-brands fa-google"></i> Login as Owner
+                <i class="fa-brands fa-google"></i> Login to Dashboard
             </button>
         </div>
     </div>
 
     <div id="app-wrapper" style="display:none;">
         
-        <nav id="sidebar">
-            <div class="brand">
-                <i class="fa-solid fa-dumbbell"></i> GYM 2.0
-            </div>
-            
-            <div class="nav-links">
-                <div class="nav-item active" onclick="switchTab('dashboard')">
-                    <i class="fa-solid fa-chart-line"></i> Dashboard
-                </div>
-                <div class="nav-item" onclick="switchTab('members')">
-                    <i class="fa-solid fa-users"></i> Members
-                </div>
-                <div class="nav-item" onclick="switchTab('finance')">
-                    <i class="fa-solid fa-sack-dollar"></i> Finance
-                </div>
-            </div>
-
-            <div class="nav-footer">
-                <div class="user-badge" onclick="handleLogout()">
-                    <i class="fa-solid fa-right-from-bracket"></i> Logout
-                </div>
-            </div>
+        <nav id="mobile-nav">
+            <div class="nav-item active" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-simple"></i></div>
+            <div class="nav-item" onclick="switchTab('members')"><i class="fa-solid fa-users"></i></div>
+            <div class="nav-item" onclick="switchTab('finance')"><i class="fa-solid fa-wallet"></i></div>
+            <div class="nav-item" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i></div>
         </nav>
 
         <main id="main-content">
             
+            <header class="top-bar">
+                <div>
+                    <h2 style="margin:0;">Fitness Dashboard</h2>
+                    <span style="color:#666; font-size:0.9rem;">Analysis Membership, Finance and Members Data</span>
+                </div>
+                <div class="top-right">
+                    <div class="time-display" id="clock-display">00:00 PM</div>
+                    <div class="top-links">
+                        <span onclick="switchTab('dashboard')" class="active-link">Home</span>
+                        <span onclick="switchTab('members')">Members</span>
+                        <span onclick="switchTab('finance')">Finance</span>
+                        <i class="fa-solid fa-bars"></i>
+                    </div>
+                </div>
+            </header>
+            
             <div id="view-dashboard" class="view-section active">
-                <header>
-                    <h2>Dashboard</h2>
-                    <div class="date-badge" id="today-date">...</div>
-                </header>
+                
+                <div class="dashboard-grid">
+                    
+                    <div class="grid-item hero-card">
+                        <img src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=1000&auto=format&fit=crop" class="hero-bg" alt="Gym">
+                        <div class="hero-overlay">
+                            <div class="theme-badge">Orange<br>Theme</div>
+                            <div class="hero-stats">
+                                <div class="hero-stat-item">
+                                    <small>Members</small>
+                                    <h3 id="hero-clients">0</h3>
+                                </div>
+                                <div class="hero-stat-item">
+                                    <small>Revenue</small>
+                                    <h3 id="hero-revenue" style="color:var(--accent)">0M</h3>
+                                </div>
+                                <div class="hero-stat-item">
+                                    <small>Expenses</small>
+                                    <h3 id="hero-expense" style="color:#fbbf24">0M</h3>
+                                </div>
+                            </div>
+                            <div class="dev-tag">
+                                <i class="fa-solid fa-bolt" style="color:var(--accent)"></i> Developed by Syed
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon green"><i class="fa-solid fa-users"></i></div>
-                        <div class="stat-info">
-                            <h3>Active Members</h3>
-                            <span id="stat-active">0</span>
+                    <div class="grid-item finance-card">
+                        <div class="card-header">
+                            <span>Finance Overview</span>
+                            <div class="legend">
+                                <span class="dot orange"></span> Exp <span class="dot white"></span> Rev
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="financeChart"></canvas>
+                        </div>
+                        <div class="finance-summary">
+                            <div><h4 id="fin-rev-num">0</h4><small>Revenue</small></div>
+                            <div><h4 id="fin-exp-num">0</h4><small>Expenses</small></div>
+                            <div><h4 id="fin-prof-num" style="color:var(--accent)">0</h4><small>Profit</small></div>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                        <div class="stat-info">
-                            <h3>Expiring Soon</h3>
-                            <span id="stat-expiring">0</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon blue"><i class="fa-solid fa-wallet"></i></div>
-                        <div class="stat-info">
-                            <h3>Revenue (M)</h3>
-                            <span id="stat-revenue">₹0</span>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="section-header">
-                    <h3>⚠️ Needs Attention (Expiring & Unpaid)</h3>
-                </div>
-                <div id="alert-list" class="list-container">
+                    <div class="grid-item plans-card">
+                        <div class="card-header">Overall Memberships</div>
+                        <div class="plan-row">
+                            <div class="circle-ring" style="border-color: #e5e7eb;"></div>
+                            <div class="plan-info">
+                                <span>Platinum (1 Year)</span>
+                            </div>
+                            <span class="plan-count" id="count-platinum">0</span>
+                        </div>
+                        <div class="plan-row">
+                            <div class="circle-ring" style="border-color: #fbbf24;"></div>
+                            <div class="plan-info">
+                                <span>Gold (6 Months)</span>
+                            </div>
+                            <span class="plan-count" id="count-gold">0</span>
+                        </div>
+                        <div class="plan-row">
+                            <div class="circle-ring" style="border-color: #9ca3af;"></div>
+                            <div class="plan-info">
+                                <span>Silver (1-3 Mo)</span>
+                            </div>
+                            <span class="plan-count" id="count-silver">0</span>
+                        </div>
                     </div>
+
+                    <div class="grid-item list-card">
+                        <div class="card-header">
+                            <span>Membership Status</span>
+                            <div class="toggle-btns">
+                                <button class="tiny-btn active">Active</button>
+                                <button class="tiny-btn">Expired</button>
+                            </div>
+                        </div>
+                        <div class="table-header">
+                            <span>Name</span>
+                            <span>Status</span>
+                            <span>Progress</span>
+                        </div>
+                        <div id="dash-member-list" class="dash-list-scroll">
+                            </div>
+                    </div>
+
+                    <div class="grid-item chart-sm-card">
+                        <div class="card-header">
+                            <span>Members Acquiring</span>
+                            <span class="badge">Monthly</span>
+                        </div>
+                        <div class="chart-container-sm">
+                            <canvas id="memberChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
             </div>
 
             <div id="view-members" class="view-section" style="display:none;">
-                <header>
+                <header class="section-head">
                     <h2>Members Directory</h2>
-                    <button class="btn-action" onclick="toggleMemberModal()"><i class="fa-solid fa-user-plus"></i> New Member</button>
+                    <button class="btn-action" onclick="toggleMemberModal()">+ New Member</button>
                 </header>
-
                 <div class="search-bar">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="member-search" placeholder="Search by name or phone..." onkeyup="filterMembers()">
+                    <input type="text" id="member-search" placeholder="Search members..." onkeyup="filterMembers()">
                 </div>
-
-                <div id="members-list" class="grid-list">
-                    </div>
+                <div id="members-list" class="grid-list"></div>
             </div>
 
             <div id="view-finance" class="view-section" style="display:none;">
-                <header>
+                <header class="section-head">
                     <h2>Income & Expenses</h2>
-                    <button class="btn-action" onclick="toggleTxModal()"><i class="fa-solid fa-plus"></i> Add Entry</button>
+                    <button class="btn-action" onclick="toggleTxModal()">+ Add Entry</button>
                 </header>
-                
-                <div class="stats-grid" style="margin-bottom: 20px;">
-                    <div class="stat-card" style="padding:15px;">
-                        <div class="stat-info">
-                            <h3>Total Income</h3>
-                            <span id="fin-income" style="color:#22c55e">₹0</span>
-                        </div>
-                    </div>
-                    <div class="stat-card" style="padding:15px;">
-                        <div class="stat-info">
-                            <h3>Total Expense</h3>
-                            <span id="fin-expense" style="color:#ef4444">₹0</span>
-                        </div>
-                    </div>
-                    <div class="stat-card" style="padding:15px;">
-                        <div class="stat-info">
-                            <h3>Net Profit</h3>
-                            <span id="fin-profit">₹0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="finance-list" class="list-container">
-                    <div class="empty-state">Loading transactions...</div>
-                </div>
+                <div id="finance-list" class="list-container"></div>
             </div>
 
         </main>
@@ -147,77 +183,31 @@
 
     <div id="modal-member" class="modal-overlay">
         <div class="modal-card">
-            <div class="modal-header">
-                <h3>Add New Member</h3>
-                <i class="fa-solid fa-xmark close-btn" onclick="toggleMemberModal()"></i>
-            </div>
+            <div class="modal-header"><h3>Add New Member</h3><i class="fa-solid fa-xmark close-btn" onclick="toggleMemberModal()"></i></div>
             <div class="modal-body">
-                <input type="text" id="inp-name" placeholder="Full Name (e.g. Rahul Sharma)">
-                <input type="tel" id="inp-phone" placeholder="Phone Number (for WhatsApp)">
-                
-                <div class="row">
-                    <div class="col">
-                        <label>Join Date</label>
-                        <input type="date" id="inp-join">
-                    </div>
-                    <div class="col">
-                        <label>Plan Duration</label>
-                        <select id="inp-plan" onchange="calcExpiry()">
-                            <option value="1">1 Month</option>
-                            <option value="3">3 Months</option>
-                            <option value="6">6 Months</option>
-                            <option value="12">1 Year</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col">
-                        <label>Fees Paid</label>
-                        <input type="number" id="inp-amount" placeholder="₹ Amount">
-                    </div>
-                    <div class="col">
-                        <label>Expiry Date</label>
-                        <input type="date" id="inp-expiry" readonly style="background:#222; color:#777;">
-                    </div>
-                </div>
-
-                <button class="btn-save" onclick="saveMember()">Save & Generate Invoice</button>
+                <input type="text" id="inp-name" placeholder="Full Name">
+                <input type="tel" id="inp-phone" placeholder="Phone">
+                <div class="row"><div class="col"><label>Join Date</label><input type="date" id="inp-join"></div><div class="col"><label>Plan</label><select id="inp-plan" onchange="calcExpiry()"><option value="1">Silver (1 Mo)</option><option value="3">Silver (3 Mo)</option><option value="6">Gold (6 Mo)</option><option value="12">Platinum (1 Yr)</option></select></div></div>
+                <div class="row"><div class="col"><input type="number" id="inp-amount" placeholder="Fees Paid"></div><div class="col"><input type="date" id="inp-expiry" readonly></div></div>
+                <button class="btn-save" onclick="saveMember()">Save</button>
             </div>
         </div>
     </div>
 
     <div id="modal-transaction" class="modal-overlay">
         <div class="modal-card">
-            <div class="modal-header">
-                <h3>Add Transaction</h3>
-                <i class="fa-solid fa-xmark close-btn" onclick="toggleTxModal()"></i>
-            </div>
+            <div class="modal-header"><h3>Transaction</h3><i class="fa-solid fa-xmark close-btn" onclick="toggleTxModal()"></i></div>
             <div class="modal-body">
-                <div class="row">
-                    <div class="col">
-                        <label>Type</label>
-                        <select id="tx-type">
-                            <option value="income">Income (+)</option>
-                            <option value="expense">Expense (-)</option>
-                        </select>
-                    </div>
-                    <div class="col">
-                        <label>Date</label>
-                        <input type="date" id="tx-date">
-                    </div>
-                </div>
-
-                <input type="text" id="tx-category" placeholder="Category (e.g. Rent, Protein Powder, Bill)">
-                <input type="number" id="tx-amount" placeholder="Amount (₹)">
-                
-                <button class="btn-save" onclick="saveTransaction()">Save Entry</button>
+                <select id="tx-type"><option value="income">Income</option><option value="expense">Expense</option></select>
+                <input type="date" id="tx-date">
+                <input type="text" id="tx-category" placeholder="Category">
+                <input type="number" id="tx-amount" placeholder="Amount">
+                <button class="btn-save" onclick="saveTransaction()">Save</button>
             </div>
         </div>
     </div>
 
     <script src="config.js"></script>
     <script type="module" src="app.js"></script>
-
 </body>
 </html>
