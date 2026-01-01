@@ -30,17 +30,37 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .body-row { height: 620px; } 
 .stats-container { display: grid; grid-template-columns: 1.6fr 1fr; grid-template-rows: 300px 280px; gap: 20px; }
 
-/* CARD STYLES */
+/* CARD STYLES - UNIFORM PADDING */
 .header-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 0 25px; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .brand-card { gap: 15px; } .brand-card i { font-size: 1.8rem; } .brand-card h2 { margin: 0; font-size: 1.1rem; font-weight: 800; }
 .menu-card { justify-content: space-between; } 
 .time-section { display: flex; flex-direction: column; } .clock-text { font-size: 1.5rem; font-weight: 800; } .time-section small { color: #666; font-size: 0.7rem; }
 .nav-links { display: flex; gap: 30px; align-items: center; } .nav-item { cursor: pointer; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; transition: 0.2s; } .nav-item:hover, .nav-item.active { color: #fff; } .nav-icon { font-size: 1.2rem; cursor: pointer; color: var(--text-muted); }
 
-.grid-item { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 0.95rem; } .card-header.compact { margin-bottom: 10px; }
+/* STANDARD CARD PADDING (20px) */
+.grid-item { 
+    background: var(--card-bg); 
+    border-radius: 16px; 
+    border: 1px solid var(--border); 
+    padding: 20px; /* SAME PADDING FOR ALL 4 CARDS */
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    position: relative; 
+}
 
-/* HERO */
+/* STANDARD HEADER MARGIN */
+.card-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; /* SAME MARGIN FOR ALL HEADERS */
+    font-weight: 700; 
+    font-size: 0.95rem; 
+    min-height: 24px; /* Ensure alignment */
+}
+
+/* HERO (Override padding) */
 .hero-card { padding: 0; border: none; } .hero-bg { width: 100%; height: 100%; object-fit: cover; filter: grayscale(80%) contrast(1.1) brightness(0.6); }
 .hero-overlay { position: absolute; inset: 0; padding: 25px; display: flex; flex-direction: column; background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(var(--accent-rgb), 0.2) 100%); }
 .theme-selector-container { display: flex; align-items: center; gap: 10px; margin-bottom: auto; background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 20px; align-self: flex-start; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); }
@@ -89,11 +109,8 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .finance-summary-bar { background: var(--card-light); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); text-align: right; font-weight: 600; }
 
 /* BUTTONS */
-/* Small Buttons for Top Right */
 .btn-sm { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; width: auto; display: inline-flex; align-items: center; gap: 6px; }
 .btn-sm:hover { filter: brightness(1.1); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.3); }
-
-/* Full Width Save Button for Modals */
 .btn-save { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1rem; }
 .btn-save:hover { filter: brightness(1.1); box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3); }
 
@@ -109,4 +126,5 @@ input, select { width: 100%; background: var(--bg); border: 1px solid var(--bord
     .header-row { height: auto; } .menu-card { flex-direction: column; align-items: flex-start; gap: 20px; padding: 20px; }
     .hero-card { height: 380px; } .stats-container { display: flex; flex-direction: column; height: auto; }
     .grid-item { height: 300px; }
+    #main-content { padding: 15px; padding-bottom: 30px; }
 }
