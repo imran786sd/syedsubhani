@@ -1,4 +1,4 @@
-import { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, query, onSnapshot, orderBy, doc, deleteDoc, updateDoc } from "./firebase-init.js";
+import { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, query, onSnapshot, orderBy, doc, deleteDoc, updateDoc, where, getDocs } from "./firebase-init.js";
 
 // --- GLOBAL VARIABLES ---
 let currentUser = null;
@@ -21,17 +21,10 @@ window.switchTab = (tab) => {
     document.getElementById(`tab-${tab}`).classList.add('active');
 };
 
-window.toggleMobileMenu = () => {
-    // Optional: Add mobile menu toggle logic here if needed
-    console.log("Mobile menu toggled");
-};
+window.toggleMobileMenu = () => { console.log("Mobile menu toggled"); };
 
 // --- AUTH ---
-window.handleGoogleLogin = async () => { 
-    try { await signInWithPopup(auth, provider); } 
-    catch (e) { alert("Login Failed: " + e.message); } 
-};
-
+window.handleGoogleLogin = async () => { try { await signInWithPopup(auth, provider); } catch (e) { alert("Login Failed: " + e.message); } };
 window.handleLogout = () => signOut(auth);
 
 onAuthStateChanged(auth, (user) => {
@@ -64,17 +57,12 @@ window.setTheme = (color) => {
     localStorage.setItem('gymTheme', color);
     const root = document.documentElement;
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-    
     const activeBtn = document.querySelector(`.theme-${color}`);
     if(activeBtn) activeBtn.classList.add('active');
-
     const colors = { red: ['#ef4444','239, 68, 68'], blue: ['#3b82f6','59, 130, 246'], green: ['#22c55e','34, 197, 94'] };
     root.style.setProperty('--accent', colors[color][0]);
     root.style.setProperty('--accent-rgb', colors[color][1]);
-    
-    const metaTheme = document.getElementById('meta-theme-color');
-    if(metaTheme) metaTheme.content = colors[color][0];
-    
+    document.getElementById('meta-theme-color').content = colors[color][0];
     if(members.length > 0) renderDashboard();
 }
 
@@ -83,8 +71,8 @@ function setupListeners() {
     onSnapshot(query(memRef, orderBy("joinDate", "desc")), (snap) => {
         members = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
-        renderMembersList(); // Update Table
-        renderAgeCharts();   // Update New Charts
+        renderMembersList(); 
+        renderAgeCharts();
     });
     const txRef = collection(db, `gyms/${currentUser.uid}/transactions`);
     onSnapshot(query(txRef, orderBy("date", "desc")), (snap) => {
@@ -134,22 +122,24 @@ window.calcExpiry = () => {
         const val = parseInt(plan);
         if(plan.includes('d')) d.setDate(d.getDate() + val);
         else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
-        else d.setMonth(d.getMonth() + val); 
+        else d.setMonth(d.getMonth() + val);
         document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; 
     } 
 };
 
-// --- AUTOMATED ACCOUNTING ---
-async function addFinanceEntry(category, amount, mode, date) {
+// --- AUTOMATED ACCOUNTING (Updated to save memberId) ---
+async function addFinanceEntry(category, amount, mode, date, memberId) {
     try {
         await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
             type: 'income',
             category: category,
             amount: parseFloat(amount),
             date: date,
-            mode: mode || 'Cash', 
+            mode: mode || 'Cash',
+            memberId: memberId || null, // Link to member
             createdAt: new Date()
         });
+        console.log("Finance entry auto-added.");
     } catch(e) { console.error("Auto-finance failed", e); }
 }
 
@@ -157,8 +147,6 @@ async function addFinanceEntry(category, amount, mode, date) {
 function renderDashboard() {
     if(!members.length && !transactions.length) return;
     const now = new Date().getTime();
-
-    // 1. HERO STATS
     const txIncome = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
     const txExpense = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
     const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
@@ -169,7 +157,6 @@ function renderDashboard() {
     document.getElementById("hero-revenue").innerText = "₹" + formatNum(totalRev);
     document.getElementById("hero-expense").innerText = "₹" + formatNum(txExpense);
 
-    // 2. PLANS STATS
     const getStats = (minMo, maxMo) => {
         const planMembers = members.filter(m => {
             let dur = m.planDuration || "1m";
@@ -281,7 +268,7 @@ function updateMemberChart() {
     });
 }
 
-// --- AGE & STATUS CHARTS ---
+// --- MEMBERS TAB: AGE & STATUS CHARTS ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
@@ -362,8 +349,12 @@ window.saveMember = async () => {
         } else {
             data.createdAt = new Date();
             data.memberId = window.generateMemberID(name, phone);
-            await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
-            await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate);
+            // Save Member
+            const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
+            
+            // ✅ AUTO FINANCE ENTRY (Linked to Member ID)
+            await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate, docRef.id);
+            
             if(confirm("Generate Invoice?")) window.generateInvoice(data);
         }
         window.toggleMemberModal();
@@ -410,16 +401,71 @@ window.confirmRenewal = async () => {
     const newExpiry = d.toISOString().split('T')[0];
     const todayStr = today.toISOString().split('T')[0];
 
+    // Update Member
     await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, id), {
         expiryDate: newExpiry,
         lastPaidAmount: amount,
         planDuration: plan
     });
 
-    await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr);
+    // ✅ AUTO FINANCE ENTRY (Linked to Member ID)
+    await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr, id);
 
     window.closeRenewModal();
     alert(`Membership Renewed! New Expiry: ${newExpiry}`);
+};
+
+// --- HISTORY TOGGLE ---
+window.toggleHistory = async (id) => {
+    const panel = document.getElementById(`history-${id}`);
+    
+    // Toggle Visibility
+    if(panel.style.display === 'block') {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = 'block';
+    panel.innerHTML = '<div style="color:#888; font-size:0.8rem;">Loading...</div>';
+
+    // Query Transactions with memberId == id
+    const q = query(
+        collection(db, `gyms/${currentUser.uid}/transactions`),
+        where("memberId", "==", id),
+        orderBy("date", "desc")
+    );
+
+    try {
+        const snap = await getDocs(q);
+        if(snap.empty) {
+            panel.innerHTML = '<div style="color:#888; font-size:0.8rem;">No payment history found.</div>';
+            return;
+        }
+
+        let html = `
+            <table class="history-table">
+                <thead><tr><th>Date</th><th>Category</th><th>Mode</th><th>Amount</th></tr></thead>
+                <tbody>
+        `;
+        
+        snap.forEach(doc => {
+            const t = doc.data();
+            html += `
+                <tr>
+                    <td>${t.date}</td>
+                    <td>${t.category}</td>
+                    <td>${t.mode || '-'}</td>
+                    <td style="color:${t.type==='income'?'#22c55e':'#ef4444'}">${t.amount}</td>
+                </tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        panel.innerHTML = html;
+
+    } catch (e) {
+        console.error(e);
+        panel.innerHTML = '<div style="color:#ef4444; font-size:0.8rem;">Error loading history.</div>';
+    }
 };
 
 // --- STANDARD ACTIONS ---
@@ -447,6 +493,7 @@ window.saveTransaction = async () => {
     const amt = parseFloat(document.getElementById('tx-amount').value); 
     const date = document.getElementById('tx-date').value; 
     if(!cat || !amt) return alert("Fill details"); 
+    // Manual transactions usually don't have memberId
     const data = { type, category: cat, amount: amt, date, mode }; 
     if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; } 
     else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); } 
@@ -480,7 +527,7 @@ function renderMembersList() {
         const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
         let statusClass = 'status-paid'; let statusText = 'Paid';
         if (daysLeft < 0) { statusClass = 'status-due'; statusText = 'Expired'; }
-        else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due in ${daysLeft} days`; }
+        else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due: ${daysLeft} days`; }
 
         const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
         const photoUrl = m.photo || placeholder;
@@ -502,10 +549,12 @@ function renderMembersList() {
             <div class="row-actions" id="actions-${m.id}">
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
                 <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
+                <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
                 <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${m.expiryDate}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
                 <div class="icon-btn bill" onclick='generateInvoice(${JSON.stringify(m)})' title="Bill"><i class="fa-solid fa-file-invoice"></i></div>
                 <div class="icon-btn delete" onclick="deleteMember('${m.id}')" title="Delete"><i class="fa-solid fa-trash"></i></div>
             </div>
+            <div id="history-${m.id}" class="history-panel"></div>
         </div>`;
     });
 }
