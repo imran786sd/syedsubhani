@@ -203,13 +203,20 @@
 
                 <div class="split-inputs">
                     <input type="text" id="inp-name" placeholder="Full Name">
+                    <select id="inp-gender" style="max-width: 100px;">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="split-inputs">
                     <input type="tel" id="inp-phone" placeholder="Phone">
-                </div>
-                <div class="split-inputs">
                     <div><label>Date of Birth</label><input type="date" id="inp-dob"></div>
-                    <div><label>Join Date</label><input type="date" id="inp-join"></div>
                 </div>
+                
                 <div class="split-inputs">
+                    <div><label>Join Date</label><input type="date" id="inp-join"></div>
                     <div>
                         <label>Plan</label>
                         <select id="inp-plan" onchange="calcExpiry()">
@@ -222,9 +229,10 @@
                             <option value="1y">1 Year</option>
                         </select>
                     </div>
-                    <div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div>
                 </div>
+                
                 <div class="split-inputs">
+                    <div><label>Fees Paid</label><input type="number" id="inp-amount" placeholder="₹"></div>
                     <div>
                         <label>Payment Mode</label>
                         <select id="inp-paymode">
@@ -234,8 +242,9 @@
                             <option value="Bank">Net Banking</option>
                         </select>
                     </div>
-                    <div><label>Expiry</label><input type="date" id="inp-expiry" readonly></div>
                 </div>
+                <div><label>Expiry</label><input type="date" id="inp-expiry" readonly></div>
+                
                 <button class="btn-save" onclick="saveMember()">Save Member</button>
             </div>
         </div>
