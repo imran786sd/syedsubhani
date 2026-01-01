@@ -102,7 +102,7 @@ function renderDashboard() {
     // 2. FINANCE CHART
     updateFinanceChart(totalRev, txExpense);
 
-    // 3. MEMBERSHIPS COUNTS (Updated Stacked Pills)
+    // 3. MEMBERSHIPS COUNTS & SVG DONUTS
     const getStats = (minMo, maxMo) => {
         const planMembers = members.filter(m => {
             const mo = parseInt(m.planDuration);
@@ -120,15 +120,25 @@ function renderDashboard() {
     const silver = getStats(0, 6);
 
     const updatePlanUI = (id, label, stats) => {
-        // Stacked Pills UI Injection
         const container = document.getElementById(`row-${id}`);
         const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-        const border = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+        
+        // Calculate SVG Stroke for Donut
+        const radius = 16;
+        const circumference = 2 * Math.PI * radius; // approx 100
+        const strokeDash = (stats.pct / 100) * circumference;
 
         if(container) {
             container.innerHTML = `
                 <div class="plan-left">
-                    <div class="donut-container" style="background: conic-gradient(${accent} ${stats.pct*3.6}deg, ${border} 0deg);"></div>
+                    <div class="donut-svg-wrapper">
+                        <svg width="44" height="44" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r="16" fill="none" stroke="#333" stroke-width="4" />
+                            <circle cx="20" cy="20" r="16" fill="none" stroke="${accent}" stroke-width="4"
+                                stroke-dasharray="${strokeDash} ${circumference}"
+                                transform="rotate(-90 20 20)" style="transition: stroke-dasharray 0.5s ease;" />
+                        </svg>
+                    </div>
                     <div class="plan-name">${label}</div>
                 </div>
                 <div class="stat-stack">
