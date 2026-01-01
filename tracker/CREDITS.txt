@@ -1,0 +1,20 @@
+CREDITS & LICENSES
+==================
+
+1. D3.js (Data Visualization)
+   - License: ISC License
+   - Source: https://d3js.org/
+
+2. FontAwesome Free (Icons)
+   - License: CC BY 4.0 (Icons), MIT (Code)
+   - Source: https://fontawesome.com/
+
+3. Google Fonts (Inter Font)
+   - License: SIL Open Font License (OFL)
+   - Source: https://fonts.google.com/specimen/Inter
+
+4. Google Firebase (Backend SDK)
+   - License: Apache 2.0
+   - Source: https://firebase.google.com/
+
+All other code is custom written.
