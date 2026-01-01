@@ -31,13 +31,17 @@
     </div>
 
     <div id="app-wrapper" style="display:none;">
+        
         <main id="main-content">
+            
             <header class="top-bar-redesigned">
                 <div class="header-card brand-card">
                     <i class="fa-solid fa-dumbbell accent"></i>
                     <h2>The Ultimate Gym 2.0 Dashboard</h2>
                 </div>
+                
                 <div class="time-display-center" id="clock-display">00:00 PM</div>
+
                 <div class="header-card nav-card">
                     <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-link active"><i class="fa-solid fa-house"></i> Home</span>
                     <span onclick="switchTab('members')" id="tab-members" class="nav-link"><i class="fa-solid fa-users"></i> Members</span>
@@ -60,6 +64,7 @@
                                 <div class="theme-btn theme-blue" onclick="setTheme('blue')"></div>
                                 <div class="theme-btn theme-green" onclick="setTheme('green')"></div>
                             </div>
+                            
                             <div class="hero-stats-blocks">
                                 <div class="hero-block">
                                     <i class="fa-solid fa-users accent-icon"></i>
@@ -80,9 +85,8 @@
                     <div class="grid-item plans-card">
                         <div class="card-header compact">
                             <span style="font-size: 0.9rem;">Overall Memberships</span>
-                            <div class="legend" style="font-size:0.7rem; font-weight:500;">
-                                <span class="dot white"></span> Active &nbsp;
-                                <span class="dot" style="background:#444"></span> Expired
+                            <div class="legend" style="font-size:0.7rem; font-weight:500; color:#888;">
+                                <span style="color:#fff">Active</span> / <span style="color:#666">Expired</span>
                             </div>
                         </div>
                         
