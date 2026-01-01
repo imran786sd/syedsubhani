@@ -40,11 +40,11 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .logout-btn:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .mobile-menu-btn { display: none; font-size: 1.8rem; cursor: pointer; align-self: center; }
 
-/* DASHBOARD GRID - UPDATED HEIGHT */
+/* DASHBOARD GRID */
 .dashboard-grid { 
     display: grid; 
     grid-template-columns: 260px 1fr 280px; 
-    grid-template-rows: 340px 280px; /* Top row 340px */
+    grid-template-rows: 340px 280px; 
     gap: 20px; 
     height: 640px; 
 }
@@ -73,27 +73,26 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .hero-block h3 { margin: 0; font-size: 1.4rem; font-weight: 800; line-height: 1; }
 .hero-block small { color: #ccc; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; }
 
-/* PLANS CARD (Center) */
+/* PLANS CARD */
 .plans-card { grid-column: 2; } 
 .plan-list { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 10px; } 
 
-/* ROW LAYOUT */
-.plan-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-light); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+.plan-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-light); padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border); }
 .plan-left { display: flex; align-items: center; gap: 15px; }
 
-/* DONUT */
-.donut-container { width: 48px; height: 48px; border-radius: 50%; background: conic-gradient(var(--accent) 0deg, var(--border) 0deg); position: relative; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
-.donut-container::after { content: ''; position: absolute; width: 38px; height: 38px; background: var(--card-light); border-radius: 50%; }
-.plan-name { font-weight: 700; font-size: 1rem; color: var(--text); line-height: 1.2; }
+/* SVG Donut Wrapper */
+.donut-svg-wrapper { width: 44px; height: 44px; position: relative; display: flex; align-items: center; justify-content: center; }
+/* Font Reduction */
+.plan-name { font-weight: 700; font-size: 0.85rem; color: var(--text); line-height: 1.2; }
 
-/* PILLS STACK */
+/* STACKED PILLS (Small Font) */
 .stat-stack { display: flex; flex-direction: column; gap: 6px; }
-.stat-pill { background: #111; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; min-width: 65px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: white; }
-.dot-indicator { width: 8px; height: 8px; border-radius: 50%; display: block; }
+.stat-pill { background: #111; border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; min-width: 55px; display: flex; align-items: center; justify-content: space-between; font-size: 0.7rem; font-weight: 600; color: white; }
+.dot-indicator { width: 6px; height: 6px; border-radius: 50%; display: block; }
 .dot-white { background: #ffffff; box-shadow: 0 0 5px rgba(255,255,255,0.5); }
-.dot-grey { background: #666666; }
+.dot-grey { background: #555555; }
 
-/* FINANCE CARD (Right) */
+/* FINANCE CARD */
 .finance-card { grid-column: 3; } 
 .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 4px 0 10px; }
 .dot.white { background: #fff; }
