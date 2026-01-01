@@ -13,7 +13,7 @@ let ageStatusChartInstance = null;
 let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
-// --- NAVIGATION (Defined early to prevent errors) ---
+// --- NAVIGATION ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
@@ -21,17 +21,8 @@ window.switchTab = (tab) => {
     document.getElementById(`tab-${tab}`).classList.add('active');
 };
 
-window.toggleMobileMenu = () => {
-    // Optional: Add mobile menu toggle logic here if needed
-    console.log("Mobile menu toggled");
-};
-
 // --- AUTH ---
-window.handleGoogleLogin = async () => { 
-    try { await signInWithPopup(auth, provider); } 
-    catch (e) { alert("Login Failed: " + e.message); } 
-};
-
+window.handleGoogleLogin = async () => { try { await signInWithPopup(auth, provider); } catch (e) { alert(e.message); } };
 window.handleLogout = () => signOut(auth);
 
 onAuthStateChanged(auth, (user) => {
@@ -53,10 +44,8 @@ function initApp() {
     setInterval(updateClock, 1000);
     setupListeners();
 }
-
 function updateClock() {
-    const el = document.getElementById("clock-display");
-    if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+    document.getElementById("clock-display").innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
 
 window.setTheme = (color) => {
@@ -64,17 +53,11 @@ window.setTheme = (color) => {
     localStorage.setItem('gymTheme', color);
     const root = document.documentElement;
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-    
-    const activeBtn = document.querySelector(`.theme-${color}`);
-    if(activeBtn) activeBtn.classList.add('active');
-
+    document.querySelector(`.theme-${color}`).classList.add('active');
     const colors = { red: ['#ef4444','239, 68, 68'], blue: ['#3b82f6','59, 130, 246'], green: ['#22c55e','34, 197, 94'] };
     root.style.setProperty('--accent', colors[color][0]);
     root.style.setProperty('--accent-rgb', colors[color][1]);
-    
-    const metaTheme = document.getElementById('meta-theme-color');
-    if(metaTheme) metaTheme.content = colors[color][0];
-    
+    document.getElementById('meta-theme-color').content = colors[color][0];
     if(members.length > 0) renderDashboard();
 }
 
@@ -83,8 +66,8 @@ function setupListeners() {
     onSnapshot(query(memRef, orderBy("joinDate", "desc")), (snap) => {
         members = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
-        renderMembersList(); // Update Table
-        renderAgeCharts();   // Update New Charts
+        renderMembersList();
+        renderAgeCharts();
     });
     const txRef = collection(db, `gyms/${currentUser.uid}/transactions`);
     onSnapshot(query(txRef, orderBy("date", "desc")), (snap) => {
@@ -93,47 +76,6 @@ function setupListeners() {
         renderFinanceList();
     });
 }
-
-// --- HELPER FUNCTIONS (Must be defined before usage) ---
-
-// Format "15d" -> "15 Days"
-window.formatPlanDisplay = (plan) => {
-    if(!plan) return '';
-    if(plan.includes('d')) return plan.replace('d', ' Days');
-    if(plan.includes('m')) return plan.replace('m', ' Month' + (parseInt(plan)>1?'s':''));
-    if(plan.includes('y')) return plan.replace('y', ' Year' + (parseInt(plan)>1?'s':''));
-    return plan + ' Months';
-};
-
-window.generateMemberID = (name, phone) => {
-    const n = name ? name.replace(/\s/g, '').substring(0, 4).toUpperCase() : 'USER';
-    const pStr = phone ? phone.toString().replace(/\D/g, '') : '0000';
-    const p = pStr.length >= 4 ? pStr.slice(-4) : pStr.padEnd(4, '0');
-    return `GYM${n}${p}`;
-};
-
-window.previewImage = (input) => {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = (e) => document.getElementById('preview-img').src = e.target.result;
-        reader.readAsDataURL(input.files[0]);
-    }
-};
-
-window.calcExpiry = () => { 
-    const j = document.getElementById('inp-join').value; 
-    const plan = document.getElementById('inp-plan').value; 
-    if(j && plan) { 
-        const d = new Date(j);
-        const val = parseInt(plan);
-        // Add Days, Months, or Years based on selection
-        if(plan.includes('d')) d.setDate(d.getDate() + val);
-        else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
-        else d.setMonth(d.getMonth() + val); // default month logic
-
-        document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; 
-    } 
-};
 
 // --- DASHBOARD RENDERER ---
 function renderDashboard() {
@@ -156,7 +98,6 @@ function renderDashboard() {
         const planMembers = members.filter(m => {
             let dur = m.planDuration || "1m";
             let months = 0;
-            // Normalize everything to months for comparison
             if(dur.includes('d')) months = 0.5; // Days count as < 1 month
             else if(dur.includes('y')) months = parseInt(dur) * 12;
             else months = parseInt(dur);
@@ -193,7 +134,7 @@ function renderDashboard() {
     
     updatePlanUI('platinum', 'Platinum<br>Membership', getStats(12, 99));
     updatePlanUI('gold', 'Gold<br>Membership', getStats(6, 12));
-    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); // 0 to 6 months (includes days)
+    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); 
 
     updateFinanceChart(totalRev, txExpense);
     renderFilteredDashboardList();
@@ -316,6 +257,43 @@ function renderAgeCharts() {
     }
 }
 
+// --- HELPER FUNCTIONS ---
+window.formatPlanDisplay = (plan) => {
+    if(!plan) return '';
+    if(plan.includes('d')) return plan.replace('d', ' Days');
+    if(plan.includes('m')) return plan.replace('m', ' Month' + (parseInt(plan)>1?'s':''));
+    if(plan.includes('y')) return plan.replace('y', ' Year' + (parseInt(plan)>1?'s':''));
+    return plan + ' Months';
+};
+
+window.generateMemberID = (name, phone) => {
+    const n = name ? name.replace(/\s/g, '').substring(0, 4).toUpperCase() : 'USER';
+    const pStr = phone ? phone.toString().replace(/\D/g, '') : '0000';
+    const p = pStr.length >= 4 ? pStr.slice(-4) : pStr.padEnd(4, '0');
+    return `GYM${n}${p}`;
+};
+
+window.previewImage = (input) => {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => document.getElementById('preview-img').src = e.target.result;
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+window.toggleRowAction = (id) => {
+    const row = document.getElementById(`actions-${id}`);
+    if (row) {
+        if (row.classList.contains('show')) row.classList.remove('show');
+        else row.classList.add('show');
+    }
+};
+
+window.toggleMobileMenu = () => {
+    // Basic placeholder for now
+    console.log("Mobile menu toggled");
+};
+
 // --- CRUD OPERATIONS ---
 window.saveMember = async () => {
     const name = document.getElementById('inp-name').value;
@@ -328,7 +306,6 @@ window.saveMember = async () => {
     
     if(!name || !amount || !dob || !joinDate) return alert("Please fill Name, Fees, Join Date and DOB");
 
-    // Use placeholder if no image uploaded
     const finalPhoto = (imgSrc && imgSrc.includes('base64')) ? imgSrc : null;
 
     const data = {
@@ -367,7 +344,6 @@ window.editMember = (id) => {
     document.getElementById('inp-expiry').value = m.expiryDate; 
     document.getElementById('inp-plan').value = m.planDuration || "1m";
     
-    // Safety check for photo
     const preview = document.getElementById('preview-img');
     if(preview) preview.src = m.photo || "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
     
@@ -407,12 +383,10 @@ window.sendWhatsApp = (phone, name, expiry) => {
     else alert("Invalid phone number");
 }
 
-// --- RENDER LIST ---
 function renderMembersList() {
     const list = document.getElementById('members-list'); 
     if(!list) return;
     list.innerHTML = "";
-    
     const today = new Date();
 
     members.forEach(m => {
@@ -422,13 +396,13 @@ function renderMembersList() {
         if (daysLeft < 0) { statusClass = 'status-due'; statusText = 'Expired'; }
         else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due in ${daysLeft} days`; }
 
-        // Use Base64 placeholder instead of external URL to prevent 404/Network errors
         const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
         const photoUrl = m.photo || placeholder;
         const planDisplay = window.formatPlanDisplay(m.planDuration);
 
         list.innerHTML += `
         <div class="member-row">
+            <i class="fa-solid fa-ellipsis-vertical mobile-kebab-btn" onclick="toggleRowAction('${m.id}')"></i>
             <div class="profile-img-container"><img src="${photoUrl}" class="profile-circle" onclick="editMember('${m.id}')"></div>
             <div class="info-block">
                 <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
@@ -439,7 +413,7 @@ function renderMembersList() {
             </div>
             <div class="info-block"><div class="info-main">${m.joinDate}</div><div class="info-sub">${planDisplay} Plan</div></div>
             <div><span class="status-badge ${statusClass}">${statusText}</span></div>
-            <div class="row-actions">
+            <div class="row-actions" id="actions-${m.id}">
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
                 <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
                 <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${m.expiryDate}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
@@ -450,39 +424,24 @@ function renderMembersList() {
     });
 }
 
-// --- HELPERS (MODALS & FILTERS) ---
-window.filterMembers = () => { 
-    const q = document.getElementById('member-search').value.toLowerCase(); 
-    document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); 
-};
-
+// ... (Other functions: toggleMemberModal, calcExpiry, etc.) ...
+window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
 window.generateInvoice = (m) => {
-    const { jsPDF } = window.jspdf; 
-    const doc = new jsPDF();
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
     const primaryColor = [239, 68, 68];
-
     doc.setFillColor(...primaryColor); doc.rect(0, 0, 210, 40, 'F');
     doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.text("GYM RECEIPT", 105, 25, null, null, "center");
-
     doc.setTextColor(0, 0, 0); doc.setFontSize(10);
     doc.text(`Receipt #: ${Math.floor(Math.random()*10000)}`, 14, 50);
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 50);
-
     doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text("Member Details:", 14, 60);
     doc.setFont(undefined, 'normal'); doc.setFontSize(10);
     doc.text(`Name: ${m.name}`, 14, 66); doc.text(`ID: ${m.memberId || 'N/A'}`, 14, 71);
     doc.text(`Phone: ${m.phone}`, 14, 76); doc.text(`Valid Until: ${m.expiryDate}`, 14, 81);
-
     const planText = window.formatPlanDisplay(m.planDuration);
-    doc.autoTable({
-        startY: 90, head: [['Description', 'Duration', 'Amount']],
-        body: [[`Gym Membership`, planText, `Rs. ${m.lastPaidAmount}`]],
-        theme: 'grid', headStyles: { fillColor: primaryColor }
-    });
-
+    doc.autoTable({ startY: 90, head: [['Description', 'Duration', 'Amount']], body: [[`Gym Membership`, planText, `Rs. ${m.lastPaidAmount}`]], theme: 'grid', headStyles: { fillColor: primaryColor } });
     doc.save(`${m.name}_Invoice.pdf`);
 };
-
 window.toggleMemberModal = () => { 
     const el = document.getElementById('modal-member'); 
     if(el.style.display !== 'flex') {
@@ -490,7 +449,6 @@ window.toggleMemberModal = () => {
             document.getElementById('inp-name').value = ""; document.getElementById('inp-phone').value = "";
             document.getElementById('inp-amount').value = ""; document.getElementById('inp-dob').value = "";
             document.getElementById('inp-join').valueAsDate = new Date();
-            // Reset image safely
             const img = document.getElementById('preview-img');
             if(img) img.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
             window.calcExpiry();
@@ -498,18 +456,6 @@ window.toggleMemberModal = () => {
     } else { editingMemberId = null; }
     el.style.display = el.style.display==='flex'?'none':'flex'; 
 };
-
+window.calcExpiry = () => { const j = document.getElementById('inp-join').value; const plan = document.getElementById('inp-plan').value; if(j && plan) { const d = new Date(j); const val = parseInt(plan); if(plan.includes('d')) d.setDate(d.getDate() + val); else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val); else d.setMonth(d.getMonth() + val); document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; } };
 window.toggleTxModal = () => { document.getElementById('modal-transaction').style.display = document.getElementById('modal-transaction').style.display==='flex'?'none':'flex'; };
-
-function renderFinanceList() { 
-    const list = document.getElementById('finance-list'); list.innerHTML = ""; 
-    let p=0; 
-    transactions.forEach(t=>{ 
-        if(t.type=='income') p+=t.amount; else p-=t.amount; 
-        list.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between; align-items:center;">
-            <div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date}</small></div>
-            <div style="display:flex; gap:15px; align-items:center;"><span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span><div style="display:flex; gap:10px;"><i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i><i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i></div></div>
-        </div>`; 
-    }); 
-    document.getElementById('total-profit').innerText="₹"+p; 
-}
+function renderFinanceList() { const l=document.getElementById('finance-list'); l.innerHTML=''; let p=0; transactions.forEach(t=>{ if(t.type=='income') p+=t.amount; else p-=t.amount; l.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between; align-items:center;"><div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date}</small></div><div style="display:flex; gap:15px; align-items:center;"><span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span><div style="display:flex; gap:10px;"><i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i><i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i></div></div></div>`; }); document.getElementById('total-profit').innerText="₹"+p; }
