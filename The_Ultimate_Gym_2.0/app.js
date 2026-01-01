@@ -408,27 +408,22 @@ window.confirmRenewal = async () => {
         planDuration: plan
     });
 
-    // ✅ AUTO FINANCE ENTRY (Renewal) - NOW CORRECTLY LINKED
+    // ✅ AUTO FINANCE ENTRY (Renewal)
     await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr, id);
 
     window.closeRenewModal();
     alert(`Membership Renewed! New Expiry: ${newExpiry}`);
 };
 
-// --- HISTORY TOGGLE ---
+// --- HISTORY TOGGLE & PRINT LOGIC ---
+// 1. Toggle the table visibility
 window.toggleHistory = async (id) => {
     const panel = document.getElementById(`history-${id}`);
-    
-    // Toggle Visibility
-    if(panel.style.display === 'block') {
-        panel.style.display = 'none';
-        return;
-    }
+    if(panel.style.display === 'block') { panel.style.display = 'none'; return; }
 
     panel.style.display = 'block';
     panel.innerHTML = '<div style="color:#888; font-size:0.8rem;">Loading...</div>';
 
-    // Query Transactions with memberId == id
     const q = query(
         collection(db, `gyms/${currentUser.uid}/transactions`),
         where("memberId", "==", id),
@@ -444,18 +439,21 @@ window.toggleHistory = async (id) => {
 
         let html = `
             <table class="history-table">
-                <thead><tr><th>Date</th><th>Category</th><th>Mode</th><th>Amount</th></tr></thead>
+                <thead><tr><th>Date</th><th>Category</th><th>Mode</th><th>Amount</th><th>Action</th></tr></thead>
                 <tbody>
         `;
         
         snap.forEach(doc => {
             const t = doc.data();
+            // We pass the raw data as strings to the print function
+            // Note: We use JSON.stringify safely for text params to avoid quote issues
             html += `
                 <tr>
                     <td>${t.date}</td>
                     <td>${t.category}</td>
                     <td>${t.mode || '-'}</td>
                     <td style="color:${t.type==='income'?'#22c55e':'#ef4444'}">${t.amount}</td>
+                    <td><i class="fa-solid fa-print" style="cursor:pointer; color:#888;" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}')"></i></td>
                 </tr>`;
         });
         
@@ -466,6 +464,23 @@ window.toggleHistory = async (id) => {
         console.error(e);
         panel.innerHTML = '<div style="color:#ef4444; font-size:0.8rem;">Error loading history.</div>';
     }
+};
+
+// 2. Helper to print old invoice
+window.printHistoryInvoice = (memberId, amount, date, mode, category) => {
+    const m = members.find(x => x.id === memberId);
+    if (!m) return alert("Member data missing.");
+
+    // Create a temporary object to mimic a current transaction for the invoice generator
+    const tempTransaction = {
+        amount: amount,
+        date: date,
+        mode: mode,
+        category: category
+    };
+
+    // Call the updated generator
+    window.generateInvoice(m, tempTransaction);
 };
 
 // --- STANDARD ACTIONS ---
@@ -493,7 +508,6 @@ window.saveTransaction = async () => {
     const amt = parseFloat(document.getElementById('tx-amount').value); 
     const date = document.getElementById('tx-date').value; 
     if(!cat || !amt) return alert("Fill details"); 
-    // Manual transactions usually don't have memberId
     const data = { type, category: cat, amount: amt, date, mode }; 
     if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; } 
     else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); } 
@@ -527,7 +541,7 @@ function renderMembersList() {
         const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
         let statusClass = 'status-paid'; let statusText = 'Paid';
         if (daysLeft < 0) { statusClass = 'status-due'; statusText = 'Expired'; }
-        else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due: ${daysLeft} days`; }
+        else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due in ${daysLeft} days`; }
 
         const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
         const photoUrl = m.photo || placeholder;
@@ -580,161 +594,106 @@ function renderFinanceList() {
 }
 
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
-// --- ADVANCED INVOICE GENERATION ---
-window.generateInvoice = async (m) => {
+
+// --- UPDATED INVOICE GENERATOR (Support for Reprint) ---
+window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // --- 1. SETUP & COLORS ---
-    const themeColor = [0, 150, 136]; // Teal color like the image
+    // --- SETUP ---
+    const themeColor = [0, 150, 136];
     const greyColor = [240, 240, 240];
-    let finalY = 0; // To track vertical position
+    let finalY = 0;
 
-    // --- 2. HEADER ---
-    // Gym Name Background
+    // --- DATA SELECTION (Current vs Historical) ---
+    // If specificTransaction is passed (from history), use its data. Otherwise use member's current data.
+    const amt = specificTransaction ? specificTransaction.amount : m.lastPaidAmount;
+    const date = specificTransaction ? specificTransaction.date : new Date().toISOString().split('T')[0];
+    const mode = specificTransaction ? specificTransaction.mode : 'Cash'; // Default if unknown
+    const category = specificTransaction ? specificTransaction.category : 'Membership Fees';
+
+    // --- HEADER ---
     doc.setFillColor(...themeColor);
     doc.rect(0, 0, 210, 25, 'F');
-    
-    // Title
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
     
-    // Invoice Title
     doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0); // Black
+    doc.setTextColor(0, 0, 0);
     doc.text("Payment Receipt", 14, 35);
-    doc.line(14, 37, 196, 37); // Underline
+    doc.line(14, 37, 196, 37);
 
-    // Receipt Meta Data
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
-    const today = new Date().toLocaleDateString();
     
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
-    doc.text(`Date: ${today}`, 150, 45);
+    doc.text(`Date: ${date}`, 150, 45);
 
-    // Gym Address (Static for now)
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.text("1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080", 14, 52);
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, 57);
 
-    // --- 3. MEMBER DETAILS GRID (Mimicking the Image Box Layout) ---
-    // We use autoTable to create the grid structure
-    
+    // --- MEMBER GRID ---
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(m.planDuration) : m.planDuration;
     
     doc.autoTable({
         startY: 65,
-        theme: 'grid', // This gives the box borders
-        head: [], // No headers for this section
+        theme: 'grid',
+        head: [],
         body: [
             ['Member ID', m.memberId || 'N/A', 'Name', m.name],
             ['Phone', m.phone, 'Duration', planText],
             ['Joining Date', m.joinDate, 'Expiry Date', m.expiryDate],
-            ['Status', new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired', 'Last Amount Paid', `Rs. ${m.lastPaidAmount}`]
+            ['Status', new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired', 'Payment Mode', mode]
         ],
-        styles: { 
-            fontSize: 10, 
-            cellPadding: 3, 
-            lineColor: [200, 200, 200], 
-            lineWidth: 0.1 
-        },
+        styles: { fontSize: 10, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
         columnStyles: {
-            0: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 }, // Labels Grey
+            0: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 },
             1: { width: 60 },
-            2: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 }, // Labels Grey
+            2: { fontStyle: 'bold', fillColor: [245, 245, 245], width: 35 },
             3: { width: 60 }
         }
     });
 
     finalY = doc.lastAutoTable.finalY + 10;
 
-    // --- 4. FETCH & DRAW PAYMENT HISTORY TABLE ---
-    // We need to fetch transactions for this user to show the "Receipt Summary" table
-    
+    // --- PAYMENT DETAILS ---
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    doc.text("Payment History / Receipt Summary", 14, finalY);
+    doc.text("Payment Details", 14, finalY);
     
-    // Fetch History Logic inside Invoice
-    let historyRows = [];
-    try {
-        // We reuse the firebase imports available in app.js context
-        const { collection, query, where, getDocs, orderBy } = await import("./firebase-init.js");
-        
-        // If member has an ID (saved in DB), fetch history. If it's a new unsaved member, show current payment only.
-        if (m.id || m.memberId) {
-            const memberIdToSearch = m.id || m.memberId; // Try both document ID or custom ID
-            // NOTE: This relies on the composite index you created earlier
-            const q = query(
-                collection(db, `gyms/${currentUser.uid}/transactions`),
-                where("memberId", "==", memberIdToSearch),
-                orderBy("date", "desc")
-            );
-            const snap = await getDocs(q);
-            
-            let srNo = 1;
-            snap.forEach(tDoc => {
-                const t = tDoc.data();
-                if(t.type === 'income') {
-                    historyRows.push([
-                        srNo++, 
-                        `Rs. ${t.amount}`, 
-                        t.date, 
-                        t.mode || 'Cash', 
-                        t.category
-                    ]);
-                }
-            });
-        }
-    } catch (e) {
-        console.log("Could not fetch history for invoice, showing current payment only", e);
-    }
-
-    // If no history found (or new member), add the current payment being made
-    if (historyRows.length === 0) {
-        historyRows.push([
-            1, 
-            `Rs. ${m.lastPaidAmount}`, 
-            new Date().toISOString().split('T')[0], 
-            'Current Payment', 
-            'New/Renew'
-        ]);
-    }
-
     doc.autoTable({
         startY: finalY + 5,
-        head: [['SR. No', 'Amount Paid', 'Date of Payment', 'Mode', 'Details']],
-        body: historyRows,
+        head: [['Description', 'Date', 'Mode', 'Amount']],
+        body: [
+            [category, date, mode, `Rs. ${amt}`]
+        ],
         theme: 'striped',
-        headStyles: { fillColor: themeColor }, // Teal Header
+        headStyles: { fillColor: themeColor },
         styles: { fontSize: 9, cellPadding: 3 }
     });
 
     finalY = doc.lastAutoTable.finalY + 20;
 
-    // --- 5. FOOTER & SIGNATURE ---
-    if (finalY > 260) { doc.addPage(); finalY = 20; } // Add page if too long
-
+    // --- FOOTER ---
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
     doc.text("Authorized Signature", 150, finalY);
-    
-    doc.line(14, finalY + 15, 60, finalY + 15); // Line for sign
-    doc.line(150, finalY + 15, 196, finalY + 15); // Line for sign
+    doc.line(14, finalY + 15, 60, finalY + 15);
+    doc.line(150, finalY + 15, 196, finalY + 15);
 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text("Note: Fees once paid are not refundable or transferable.", 14, finalY + 25);
+    doc.text("Note: Fees once paid are not refundable.", 14, finalY + 25);
     doc.text("Computer Generated Receipt.", 14, finalY + 30);
 
-    // Save
     doc.save(`${m.name}_Receipt.pdf`);
 };
+
 window.toggleMemberModal = () => { 
     const el = document.getElementById('modal-member'); 
     if(el.style.display !== 'flex') {
