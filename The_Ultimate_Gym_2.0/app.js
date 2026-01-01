@@ -4,6 +4,7 @@ import { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, colle
 let currentUser = null;
 let members = [];
 let transactions = [];
+let editingTxId = null;
 
 // --- AUTHENTICATION ---
 window.handleGoogleLogin = async () => {
@@ -30,7 +31,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- INITIALIZATION ---
 function initApp() {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById("today-date").innerText = new Date().toLocaleDateString('en-IN', options);
@@ -39,7 +39,7 @@ function initApp() {
 
 // --- DATABASE LISTENERS ---
 function setupRealtimeListeners() {
-    // 1. Members Listener
+    // 1. Members
     const membersRef = collection(db, `gyms/${currentUser.uid}/members`);
     const qMembers = query(membersRef, orderBy("joinDate", "desc"));
 
@@ -49,7 +49,7 @@ function setupRealtimeListeners() {
         renderMembersList();
     });
 
-    // 2. Transactions Listener
+    // 2. Transactions
     const txRef = collection(db, `gyms/${currentUser.uid}/transactions`);
     const qTx = query(txRef, orderBy("date", "desc"));
 
@@ -63,7 +63,6 @@ function setupRealtimeListeners() {
 window.switchTab = (tabName) => {
     document.querySelectorAll(".view-section").forEach(el => el.style.display = "none");
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
-    
     document.getElementById(`view-${tabName}`).style.display = "block";
     
     const navIndex = ['dashboard', 'members', 'finance'].indexOf(tabName);
@@ -76,13 +75,11 @@ function renderDashboard() {
     let activeCount = 0;
     let expiringCount = 0;
     let revenue = 0;
-
     const alertList = document.getElementById("alert-list");
     alertList.innerHTML = "";
 
     members.forEach(member => {
         const isExpired = member.expiryDate < today;
-        
         if (!isExpired) {
             activeCount++;
             const daysLeft = (new Date(member.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
@@ -93,8 +90,6 @@ function renderDashboard() {
         } else {
             createAlertItem(member, -1); 
         }
-
-        // Simple revenue calculation from Members fee (Optional: can use finance data instead)
         revenue += parseInt(member.lastPaidAmount || 0);
     });
 
@@ -172,11 +167,10 @@ function renderMembersList() {
     });
 }
 
-// --- VIEW: FINANCE ---
+// --- VIEW: FINANCE (With Edit) ---
 function renderFinanceList() {
     const list = document.getElementById("finance-list");
     list.innerHTML = "";
-
     let totalIncome = 0;
     let totalExpense = 0;
 
@@ -210,17 +204,19 @@ function renderFinanceList() {
                     </div>
                 </div>
                 <div style="text-align:right;">
-                    <div style="font-weight:bold; color:${color};">
+                    <div style="font-weight:bold; color:${color}; margin-bottom:5px;">
                         ${isIncome ? '+' : '-'} ₹${tx.amount}
                     </div>
-                    <i class="fa-solid fa-trash" style="color:#444; cursor:pointer; font-size:0.8rem; margin-top:5px;" onclick="deleteTx('${tx.id}')"></i>
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <i class="fa-solid fa-pen-to-square" style="color:#aaa; cursor:pointer; font-size:0.9rem;" onclick="editTx('${tx.id}')"></i>
+                        <i class="fa-solid fa-trash" style="color:#aaa; cursor:pointer; font-size:0.9rem;" onclick="deleteTx('${tx.id}')"></i>
+                    </div>
                 </div>
             `;
             list.appendChild(item);
         });
     }
 
-    // Update Finance Summary Cards
     document.getElementById("fin-income").innerText = "₹" + totalIncome;
     document.getElementById("fin-expense").innerText = "₹" + totalExpense;
     const profit = totalIncome - totalExpense;
@@ -230,7 +226,6 @@ function renderFinanceList() {
 }
 
 // --- ACTIONS: MEMBERS ---
-
 window.toggleMemberModal = () => {
     const modal = document.getElementById("modal-member");
     modal.style.display = modal.style.display === "flex" ? "none" : "flex";
@@ -243,7 +238,6 @@ window.toggleMemberModal = () => {
 window.calcExpiry = () => {
     const joinDateVal = document.getElementById("inp-join").value;
     const months = parseInt(document.getElementById("inp-plan").value);
-    
     if (joinDateVal) {
         const date = new Date(joinDateVal);
         date.setMonth(date.getMonth() + months);
@@ -259,38 +253,51 @@ window.saveMember = async () => {
     const amount = document.getElementById("inp-amount").value;
     const plan = document.getElementById("inp-plan").value; 
 
-    if (!name || !phone || !amount) {
-        alert("Please fill all fields!");
-        return;
-    }
+    if (!name || !phone || !amount) { alert("Please fill all fields!"); return; }
 
     try {
         await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
             name, phone, joinDate, expiryDate, lastPaidAmount: amount, planDuration: plan, createdAt: new Date()
         });
-
-        if(confirm("Member Saved! Download Receipt PDF?")) {
-            generateInvoice(name, amount, expiryDate);
-        }
+        if(confirm("Member Saved! Download Receipt PDF?")) generateInvoice(name, amount, expiryDate);
         window.toggleMemberModal();
         document.getElementById("inp-name").value = "";
         document.getElementById("inp-phone").value = "";
         document.getElementById("inp-amount").value = "";
-
     } catch (e) {
         console.error(e);
         alert("Error saving member: " + e.message);
     }
 };
 
-// --- ACTIONS: FINANCE ---
-
+// --- ACTIONS: FINANCE (Add/Edit/Delete) ---
 window.toggleTxModal = () => {
     const modal = document.getElementById("modal-transaction");
-    modal.style.display = modal.style.display === "flex" ? "none" : "flex";
-    if(modal.style.display === "flex") {
-        document.getElementById("tx-date").valueAsDate = new Date();
+    if (modal.style.display === "flex") {
+        modal.style.display = "none";
+        editingTxId = null; // Reset edit ID
+        document.querySelector("#modal-transaction h3").innerText = "Add Transaction";
+        document.getElementById("tx-category").value = "";
+        document.getElementById("tx-amount").value = "";
+    } else {
+        modal.style.display = "flex";
+        if (!editingTxId) {
+            document.getElementById("tx-date").valueAsDate = new Date();
+            document.querySelector("#modal-transaction h3").innerText = "Add Transaction";
+        }
     }
+};
+
+window.editTx = (id) => {
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) return;
+    editingTxId = id;
+    document.getElementById("tx-type").value = tx.type;
+    document.getElementById("tx-date").value = tx.date;
+    document.getElementById("tx-category").value = tx.category;
+    document.getElementById("tx-amount").value = tx.amount;
+    document.querySelector("#modal-transaction h3").innerText = "Edit Transaction";
+    document.getElementById("modal-transaction").style.display = "flex";
 };
 
 window.saveTransaction = async () => {
@@ -299,19 +306,16 @@ window.saveTransaction = async () => {
     const category = document.getElementById("tx-category").value;
     const amount = parseFloat(document.getElementById("tx-amount").value);
 
-    if (!category || !amount) {
-        alert("Please fill in Category and Amount");
-        return;
-    }
+    if (!category || !amount) { alert("Please fill in Category and Amount"); return; }
 
     try {
-        await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
-            type, date, category, amount, createdAt: new Date()
-        });
+        if (editingTxId) {
+            await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), { type, date, category, amount });
+            editingTxId = null;
+        } else {
+            await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), { type, date, category, amount, createdAt: new Date() });
+        }
         window.toggleTxModal();
-        
-        document.getElementById("tx-category").value = "";
-        document.getElementById("tx-amount").value = "";
     } catch (e) {
         console.error(e);
         alert("Error: " + e.message);
@@ -335,19 +339,15 @@ window.sendWhatsApp = (phone, name, expiry) => {
 window.generateInvoice = (name, amount, expiry) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-
     doc.setFillColor(239, 68, 68); 
     doc.rect(0, 0, 210, 40, 'F');
-    
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.text("THE ULTIMATE GYM 2.0", 105, 20, null, null, "center");
     doc.setFontSize(12);
     doc.text("Payment Receipt", 105, 30, null, null, "center");
-
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(14);
-    
     let y = 60;
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, y);
     y += 10;
@@ -356,23 +356,19 @@ window.generateInvoice = (name, amount, expiry) => {
     doc.text(`Amount Paid: Rs. ${amount}/-`, 20, y);
     y += 10;
     doc.text(`Valid Until: ${expiry}`, 20, y);
-
     y += 20;
     doc.setLineWidth(0.5);
     doc.line(20, y, 190, y);
-    
     y += 10;
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text("Thank you for training with us! No refunds.", 105, y, null, null, "center");
-
     doc.save(`${name}_Receipt.pdf`);
 };
 
 window.filterMembers = () => {
     const query = document.getElementById("member-search").value.toLowerCase();
     const cards = document.querySelectorAll("#members-list .member-card");
-    
     cards.forEach(card => {
         const text = card.innerText.toLowerCase();
         card.style.display = text.includes(query) ? "block" : "none";
