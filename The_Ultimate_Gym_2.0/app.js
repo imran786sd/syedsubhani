@@ -129,11 +129,10 @@ function renderDashboard() {
     updatePlanUI('gold', gold);
     updatePlanUI('silver', silver);
 
-
     // 4. FILTERED LIST
     renderFilteredDashboardList();
 
-    // 5. ACQUISITION CHART (BAR CHART)
+    // 5. ACQUISITION CHART (BAR CHART WITH LABELS)
     updateMemberChart();
 }
 
@@ -203,7 +202,7 @@ function updateFinanceChart(rev, exp) {
     });
 }
 
-// --- UPDATED: BAR CHART FOR MEMBERS ---
+// --- UPDATED: BAR CHART WITH COUNT LABELS ---
 function updateMemberChart() {
     const ctx = document.getElementById('memberChart').getContext('2d');
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -220,7 +219,6 @@ function updateMemberChart() {
         const monthName = months[d.getMonth()];
         labels.push(monthName);
 
-        // Count members joined in this specific month
         const count = members.filter(m => {
             const join = new Date(m.joinDate);
             return join.getMonth() === d.getMonth() && join.getFullYear() === d.getFullYear();
@@ -228,21 +226,19 @@ function updateMemberChart() {
         dataPoints.push(count);
     }
 
-    // If no real data yet, provide a tiny dummy visualization so chart isn't empty
-    const displayData = members.length > 0 ? dataPoints : [5, 8, 12, 7, 10, 15];
+    const displayData = members.length > 0 ? dataPoints : [5, 8, 12, 7, 10, 15]; // Fallback for demo
 
     if(memberChartInstance) memberChartInstance.destroy();
     
     memberChartInstance = new Chart(ctx, {
-        type: 'bar', // CHANGED TO BAR
+        type: 'bar', 
         data: {
             labels: labels,
             datasets: [{
-                label: 'New Members',
                 data: displayData,
                 backgroundColor: accentColor,
                 borderRadius: 4,
-                barThickness: 12, // Slim bars like reference image
+                barThickness: 12,
             }]
         },
         options: {
@@ -253,9 +249,30 @@ function updateMemberChart() {
                     grid: { display: false },
                     ticks: { color: '#888', font: { size: 10 } }
                 }, 
-                y: { display: false } // Hide Y axis for cleaner look
+                y: { display: false }
             }
-        }
+        },
+        // THIS PLUGIN DRAWS THE NUMBERS
+        plugins: [{
+            id: 'customLabels',
+            afterDatasetsDraw(chart, args, options) {
+                const { ctx } = chart;
+                ctx.save();
+                chart.data.datasets.forEach((dataset, i) => {
+                    chart.getDatasetMeta(i).data.forEach((datapoint, index) => {
+                        const { x, y } = datapoint;
+                        const value = dataset.data[index];
+                        if(value > 0) { // Only draw if > 0
+                            ctx.font = 'bold 11px Inter';
+                            ctx.fillStyle = '#ffffff'; 
+                            ctx.textAlign = 'center';
+                            ctx.fillText(value, x, y - 5); // Draw 5px above the bar
+                        }
+                    });
+                });
+                ctx.restore();
+            }
+        }]
     });
 }
 
