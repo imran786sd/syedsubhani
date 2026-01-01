@@ -1,5 +1,6 @@
 // --- FIREBASE CONFIGURATION ---
-const firebaseConfig = {
+// We use 'window.' to make these keys visible to the rest of the app
+window.firebaseConfig = {
     apiKey: "AIzaSyBg10pA9GtC56C3XR4Fg4fxSzfJbdE83_U",
     authDomain: "mahira-d7381.firebaseapp.com",
     projectId: "mahira-d7381",
