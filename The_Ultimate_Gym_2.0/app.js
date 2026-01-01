@@ -102,7 +102,7 @@ function renderDashboard() {
     // 2. FINANCE CHART
     updateFinanceChart(totalRev, txExpense);
 
-    // 3. MEMBERSHIPS COUNTS & DONUTS
+    // 3. MEMBERSHIPS COUNTS (Active & Inactive)
     const getStats = (minMo, maxMo) => {
         const planMembers = members.filter(m => {
             const mo = parseInt(m.planDuration);
@@ -110,8 +110,9 @@ function renderDashboard() {
         });
         const total = planMembers.length;
         const active = planMembers.filter(m => new Date(m.expiryDate).getTime() > now).length;
+        const inactive = total - active; // ✅ Calculate Inactive
         const pct = total === 0 ? 0 : (active / total) * 100;
-        return { active, total, pct };
+        return { active, inactive, total, pct };
     };
 
     const plat = getStats(12, 99);
@@ -119,7 +120,14 @@ function renderDashboard() {
     const silver = getStats(0, 6);
 
     const updatePlanUI = (id, stats) => {
-        document.getElementById(`detail-${id}`).innerText = `${stats.active} Active / ${stats.total} Total`;
+        // ✅ NEW SIDE-BY-SIDE HTML INJECTION
+        document.getElementById(`detail-${id}`).innerHTML = `
+            <div class="plan-stats-row">
+                <span class="stat-item stat-active"><i class="fa-solid fa-circle-check"></i> ${stats.active}</span>
+                <span class="stat-item stat-inactive"><i class="fa-solid fa-circle-xmark"></i> ${stats.inactive}</span>
+            </div>
+        `;
+        
         const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
         const border = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
         document.getElementById(`donut-${id}`).style.background = `conic-gradient(${accent} ${stats.pct*3.6}deg, ${border} 0deg)`;
@@ -132,7 +140,7 @@ function renderDashboard() {
     // 4. FILTERED LIST
     renderFilteredDashboardList();
 
-    // 5. ACQUISITION CHART (FIXED: Now shows numbers correctly)
+    // 5. ACQUISITION CHART
     updateMemberChart();
 }
 
@@ -197,17 +205,14 @@ function updateFinanceChart(rev, exp) {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: { x: { display: false }, y: { display:false, grid: { display:false } } },
-            layout: { padding: { top: 25 } } // Added padding here too
+            layout: { padding: { top: 25 } }
         }
     });
 }
 
-// --- FIXED MEMBER CHART (Padding added so numbers show) ---
 function updateMemberChart() {
     const ctx = document.getElementById('memberChart').getContext('2d');
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-    
-    // 1. Calculate Last 6 Months Data
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const today = new Date();
     const labels = [];
@@ -217,7 +222,6 @@ function updateMemberChart() {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const monthName = months[d.getMonth()];
         labels.push(monthName);
-
         const count = members.filter(m => {
             const join = new Date(m.joinDate);
             return join.getMonth() === d.getMonth() && join.getFullYear() === d.getFullYear();
@@ -243,19 +247,13 @@ function updateMemberChart() {
         options: {
             responsive: true, 
             maintainAspectRatio: false,
-            layout: {
-                padding: { top: 25 } // <--- THIS FIXES THE CUT OFF TEXT
-            },
+            layout: { padding: { top: 25 } },
             plugins: { legend: { display: false } },
             scales: { 
-                x: { 
-                    grid: { display: false },
-                    ticks: { color: '#888', font: { size: 10 } }
-                }, 
+                x: { grid: { display: false }, ticks: { color: '#888', font: { size: 10 } } }, 
                 y: { display: false }
             }
         },
-        // DRAW NUMBERS ON TOP
         plugins: [{
             id: 'customLabels',
             afterDatasetsDraw(chart, args, options) {
@@ -265,11 +263,12 @@ function updateMemberChart() {
                     chart.getDatasetMeta(i).data.forEach((datapoint, index) => {
                         const { x, y } = datapoint;
                         const value = dataset.data[index];
-                        // Always draw if value exists, even if 0
-                        ctx.font = 'bold 11px Inter';
-                        ctx.fillStyle = '#ffffff'; 
-                        ctx.textAlign = 'center';
-                        ctx.fillText(value, x, y - 5); 
+                        if(value > 0) {
+                            ctx.font = 'bold 11px Inter';
+                            ctx.fillStyle = '#ffffff'; 
+                            ctx.textAlign = 'center';
+                            ctx.fillText(value, x, y - 5); 
+                        }
                     });
                 });
                 ctx.restore();
@@ -278,7 +277,7 @@ function updateMemberChart() {
     });
 }
 
-// --- CRUD & LOGIC ---
+// --- CRUD ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
@@ -326,7 +325,6 @@ window.saveTransaction = async () => {
     await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), { type, category: cat, amount: amt, date, createdAt: new Date() });
     toggleTxModal();
 };
-
 function renderMembersList() {
     const list = document.getElementById('members-list'); list.innerHTML = "";
     members.forEach(m => {
@@ -342,7 +340,6 @@ function renderFinanceList() {
     });
     document.getElementById('total-profit').innerText = "₹" + profit;
 }
-
 window.generateInvoice = (name, amount, expiry) => {
     const { jsPDF } = window.jspdf; const doc = new jsPDF();
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb').trim();
