@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Ultimate Gym 2.0</title>
+    <title>The Ultimate Gym 2.0 Dashboard</title>
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#f97316">
+    <meta name="theme-color" content="#ef4444" id="meta-theme-color">
     <link rel="icon" type="image/png" href="icons/icon-192.png">
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="stylesheet" href="style.css">
@@ -24,7 +24,6 @@
         <div class="auth-card">
             <div class="gym-logo"><i class="fa-solid fa-dumbbell"></i></div>
             <h1>THE ULTIMATE<br><span class="accent">GYM 2.0</span></h1>
-            <p>Fitness Dashboard</p>
             <button class="btn-login" onclick="handleGoogleLogin()">
                 <i class="fa-brands fa-google"></i> Login to Dashboard
             </button>
@@ -35,111 +34,92 @@
         
         <main id="main-content">
             
-            <header class="top-bar">
-                <div class="header-left">
-                    <h2>Fitness Dashboard</h2>
-                    <span class="subtitle">Analysis Membership, Finance and Members Data</span>
+            <header class="top-bar-redesigned">
+                <div class="header-card brand-card">
+                    <i class="fa-solid fa-dumbbell accent"></i>
+                    <h2>The Ultimate Gym 2.0 Dashboard</h2>
                 </div>
-                <div class="header-right">
-                    <div class="time-display" id="clock-display">00:00 PM</div>
-                    <div class="nav-menu">
-                        <span onclick="switchTab('dashboard')" id="tab-dashboard" class="active">Home</span>
-                        <span onclick="switchTab('members')" id="tab-members">Members</span>
-                        <span onclick="switchTab('finance')" id="tab-finance">Finance</span>
-                        <span onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i></span>
-                    </div>
-                    <div class="mobile-menu-btn" onclick="toggleMobileMenu()">
-                        <i class="fa-solid fa-bars"></i>
-                    </div>
+                
+                <div class="time-display-center" id="clock-display">00:00 PM</div>
+
+                <div class="header-card nav-card">
+                    <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-link active"><i class="fa-solid fa-house"></i> Home</span>
+                    <span onclick="switchTab('members')" id="tab-members" class="nav-link"><i class="fa-solid fa-users"></i> Members</span>
+                    <span onclick="switchTab('finance')" id="tab-finance" class="nav-link"><i class="fa-solid fa-coins"></i> Finance</span>
+                    <div class="nav-divider"></div>
+                    <span onclick="handleLogout()" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</span>
                 </div>
+                <div class="mobile-menu-btn" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></div>
             </header>
             
             <div id="view-dashboard" class="view-section active">
                 <div class="dashboard-grid">
                     
                     <div class="grid-item hero-card">
-                        <img src="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=1000&auto=format&fit=crop" class="hero-bg" alt="Gym Hero">
+                        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1000&auto=format&fit=crop" class="hero-bg" alt="Gym Hero">
                         <div class="hero-overlay">
-                            <div class="theme-badge">Orange<br>Theme</div>
-                            
-                            <div class="hero-stats-container">
-                                <div class="hero-stat">
-                                    <small>Total Members</small>
-                                    <h3 id="hero-clients">0</h3>
-                                </div>
-                                <div class="hero-stat">
-                                    <small>Total Revenue</small>
-                                    <h3 id="hero-revenue" style="color:var(--accent)">0</h3>
-                                </div>
-                                <div class="hero-stat">
-                                    <small>Expenses</small>
-                                    <h3 id="hero-expense" style="color:#fbbf24">0</h3>
-                                </div>
+                            <div class="theme-selector-container">
+                                <span>Theme:</span>
+                                <div class="theme-btn theme-red active" onclick="setTheme('red')"></div>
+                                <div class="theme-btn theme-blue" onclick="setTheme('blue')"></div>
+                                <div class="theme-btn theme-green" onclick="setTheme('green')"></div>
                             </div>
-
-                            <div class="dev-tag">
-                                <i class="fa-solid fa-bolt" style="color:var(--accent)"></i> Generated by Gym 2.0
+                            
+                            <div class="hero-stats-blocks">
+                                <div class="hero-block">
+                                    <i class="fa-solid fa-users accent-icon"></i>
+                                    <div><h3 id="hero-clients">0</h3><small>Total Members</small></div>
+                                </div>
+                                <div class="hero-block">
+                                    <i class="fa-solid fa-arrow-trend-up accent-icon"></i>
+                                    <div><h3 id="hero-revenue">0</h3><small>Revenue</small></div>
+                                </div>
+                                <div class="hero-block">
+                                    <i class="fa-solid fa-arrow-trend-down" style="color:#ef4444"></i>
+                                    <div><h3 id="hero-expense">0</h3><small>Expenses</small></div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="grid-item finance-card">
-                        <div class="card-header">
+                        <div class="card-header compact">
                             <span>Finance Overview</span>
                             <div class="legend">
-                                <span class="dot orange"></span> Exp <span class="dot white"></span> Rev
+                                <span class="dot accent-bg"></span> Rev <span class="dot white"></span> Exp
                             </div>
                         </div>
-                        <div class="chart-wrapper">
+                        <div class="chart-wrapper compact">
                             <canvas id="financeChart"></canvas>
-                        </div>
-                        <div class="finance-summary-row">
-                            <div class="fs-item">
-                                <h4 id="fin-rev-num">0</h4><small>Revenue</small>
-                            </div>
-                            <div class="fs-item">
-                                <h4 id="fin-exp-num">0</h4><small>Expenses</small>
-                            </div>
-                            <div class="fs-item">
-                                <h4 id="fin-prof-num" style="color:var(--accent)">0</h4><small>Profit</small>
-                            </div>
                         </div>
                     </div>
 
                     <div class="grid-item plans-card">
-                        <div class="card-header">
+                        <div class="card-header compact">
                             <span>Overall Memberships</span>
-                            <div class="status-dots">
-                                <span class="dot white"></span> Active
-                            </div>
+                             <span style="font-size:0.7rem; color:#888">Active / Total</span>
                         </div>
                         
                         <div class="plan-list">
                             <div class="plan-row">
-                                <div class="ring" style="border-color: #e5e7eb;"></div>
+                                <div class="donut-container" id="donut-platinum"></div>
                                 <div class="plan-details">
-                                    <span class="plan-name">Platinum (1 Year)</span>
-                                </div>
-                                <div class="plan-count-box">
-                                    <span class="dot-small white"></span> <span id="count-platinum">0</span>
+                                    <span class="plan-name">Platinum (1 Yr)</span>
+                                    <small id="detail-platinum" class="plan-stat">0 Active / 0 Total</small>
                                 </div>
                             </div>
-                            <div class="plan-row">
-                                <div class="ring" style="border-color: #fbbf24;"></div>
+                             <div class="plan-row">
+                                <div class="donut-container" id="donut-gold"></div>
                                 <div class="plan-details">
-                                    <span class="plan-name">Gold (6 Months)</span>
-                                </div>
-                                <div class="plan-count-box">
-                                    <span class="dot-small white"></span> <span id="count-gold">0</span>
+                                    <span class="plan-name">Gold (6 Mo)</span>
+                                    <small id="detail-gold" class="plan-stat">0 Active / 0 Total</small>
                                 </div>
                             </div>
-                            <div class="plan-row">
-                                <div class="ring" style="border-color: #9ca3af;"></div>
+                             <div class="plan-row">
+                                <div class="donut-container" id="donut-silver"></div>
                                 <div class="plan-details">
-                                    <span class="plan-name">Silver (1-3 Mo)</span>
-                                </div>
-                                <div class="plan-count-box">
-                                    <span class="dot-small white"></span> <span id="count-silver">0</span>
+                                    <span class="plan-name">Silver (<6 Mo)</span>
+                                    <small id="detail-silver" class="plan-stat">0 Active / 0 Total</small>
                                 </div>
                             </div>
                         </div>
@@ -149,8 +129,8 @@
                         <div class="card-header">
                             <span>Membership Status</span>
                             <div class="toggle-pill">
-                                <span class="active">Active</span>
-                                <span>Expired</span>
+                                <button class="toggle-btn active" id="btn-filter-active" onclick="setMemberFilter('active')">Active</button>
+                                <button class="toggle-btn" id="btn-filter-expired" onclick="setMemberFilter('expired')">Expired</button>
                             </div>
                         </div>
                         <div class="table-header">
@@ -164,8 +144,7 @@
 
                     <div class="grid-item acquisition-card">
                         <div class="card-header">
-                            <span>Members Acquiring</span>
-                            <span class="badge">Monthly</span>
+                            <span>Monthly Acquisition</span>
                         </div>
                         <div class="chart-wrapper-sm">
                             <canvas id="memberChart"></canvas>
@@ -191,6 +170,9 @@
                 <div class="section-top">
                     <h2>Income & Expenses</h2>
                     <button class="btn-primary" onclick="toggleTxModal()">+ Add Entry</button>
+                </div>
+                <div class="finance-summary-bar">
+                    <div>Your Profit: <span id="total-profit" class="accent">₹0</span></div>
                 </div>
                 <div id="finance-list" class="list-container"></div>
             </div>
