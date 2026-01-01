@@ -6,8 +6,7 @@ let transactions = [];
 let editingTxId = null;
 let financeChartInstance = null;
 let memberChartInstance = null;
-// New State for Filter
-let memberFilterState = 'active'; // 'active' or 'expired'
+let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
 // --- AUTH & INIT ---
@@ -28,7 +27,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 function initApp() {
-    setTheme(currentTheme); // Apply saved theme
+    setTheme(currentTheme); 
     updateClock();
     setInterval(updateClock, 1000);
     setupListeners();
@@ -63,8 +62,7 @@ window.setTheme = (color) => {
             document.getElementById('meta-theme-color').content = '#22c55e';
             break;
     }
-    // Re-render charts to apply new theme color
-    if(transactions.length > 0) renderDashboard();
+    if(transactions.length > 0 || members.length > 0) renderDashboard();
 }
 
 // --- DB LISTENERS ---
@@ -90,22 +88,21 @@ function renderDashboard() {
 
     const now = new Date().getTime();
 
-    // 1. HERO STATS (Stylish blocks)
+    // 1. HERO STATS
     const txIncome = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
     const txExpense = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
     const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
     const totalRev = txIncome + memIncome;
 
     document.getElementById("hero-clients").innerText = members.length;
-    // Format to K or M
     const formatNum = (n) => n >= 1000000 ? (n/1000000).toFixed(1)+'M' : (n >= 1000 ? (n/1000).toFixed(1)+'k' : n);
     document.getElementById("hero-revenue").innerText = "₹" + formatNum(totalRev);
     document.getElementById("hero-expense").innerText = "₹" + formatNum(txExpense);
 
-    // 2. FINANCE CHART (Compact) & SUMMARY
+    // 2. FINANCE CHART
     updateFinanceChart(totalRev, txExpense);
 
-    // 3. MEMBERSHIPS COUNTS & DONUTS (Active vs Total)
+    // 3. MEMBERSHIPS COUNTS & DONUTS
     const getStats = (minMo, maxMo) => {
         const planMembers = members.filter(m => {
             const mo = parseInt(m.planDuration);
@@ -123,7 +120,6 @@ function renderDashboard() {
 
     const updatePlanUI = (id, stats) => {
         document.getElementById(`detail-${id}`).innerText = `${stats.active} Active / ${stats.total} Total`;
-        // Update CSS Conic Gradient Donut
         const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
         const border = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
         document.getElementById(`donut-${id}`).style.background = `conic-gradient(${accent} ${stats.pct*3.6}deg, ${border} 0deg)`;
@@ -134,14 +130,13 @@ function renderDashboard() {
     updatePlanUI('silver', silver);
 
 
-    // 4. MEMBER LIST (FILTERABLE & PERCENTAGE)
+    // 4. FILTERED LIST
     renderFilteredDashboardList();
 
-    // 5. ACQUISITION CHART
+    // 5. ACQUISITION CHART (BAR CHART)
     updateMemberChart();
 }
 
-// --- NEW FUNCTION FOR FILTERED DASHBOARD LIST ---
 window.setMemberFilter = (filter) => {
     memberFilterState = filter;
     document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
@@ -183,7 +178,6 @@ function renderFilteredDashboardList() {
     });
 }
 
-
 function updateFinanceChart(rev, exp) {
     const ctx = document.getElementById('financeChart').getContext('2d');
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -209,43 +203,63 @@ function updateFinanceChart(rev, exp) {
     });
 }
 
+// --- UPDATED: BAR CHART FOR MEMBERS ---
 function updateMemberChart() {
     const ctx = document.getElementById('memberChart').getContext('2d');
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-    // Simulating a trend line
-    const count = members.length;
-    const data = [Math.max(0, count-10), Math.max(0, count-8), Math.max(0, count-5), Math.max(0, count-2), count];
     
+    // 1. Calculate Last 6 Months Data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const today = new Date();
+    const labels = [];
+    const dataPoints = [];
+
+    // Loop backwards 6 times (0 to 5)
+    for(let i=5; i>=0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const monthName = months[d.getMonth()];
+        labels.push(monthName);
+
+        // Count members joined in this specific month
+        const count = members.filter(m => {
+            const join = new Date(m.joinDate);
+            return join.getMonth() === d.getMonth() && join.getFullYear() === d.getFullYear();
+        }).length;
+        dataPoints.push(count);
+    }
+
+    // If no real data yet, provide a tiny dummy visualization so chart isn't empty
+    const displayData = members.length > 0 ? dataPoints : [5, 8, 12, 7, 10, 15];
+
     if(memberChartInstance) memberChartInstance.destroy();
+    
     memberChartInstance = new Chart(ctx, {
-        type: 'line',
+        type: 'bar', // CHANGED TO BAR
         data: {
-            labels: ['1', '2', '3', '4', '5'],
+            labels: labels,
             datasets: [{
-                data: data,
-                borderColor: accentColor,
-                backgroundColor: (context) => {
-                    const ctx = context.chart.ctx;
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 150);
-                    gradient.addColorStop(0, accentColor.replace(')', ', 0.5)').replace('rgb', 'rgba'));
-                    gradient.addColorStop(1, 'rgba(0,0,0,0)');
-                    return gradient;
-                },
-                fill: true,
-                tension: 0.4,
-                pointRadius: 0,
-                borderWidth: 3
+                label: 'New Members',
+                data: displayData,
+                backgroundColor: accentColor,
+                borderRadius: 4,
+                barThickness: 12, // Slim bars like reference image
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { x: { display: false }, y: { display: false } }
+            scales: { 
+                x: { 
+                    grid: { display: false },
+                    ticks: { color: '#888', font: { size: 10 } }
+                }, 
+                y: { display: false } // Hide Y axis for cleaner look
+            }
         }
     });
 }
 
-// --- CRUD & LOGIC (Standard) ---
+// --- CRUD & LOGIC ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
@@ -294,7 +308,6 @@ window.saveTransaction = async () => {
     toggleTxModal();
 };
 
-// --- RENDER LISTS ---
 function renderMembersList() {
     const list = document.getElementById('members-list'); list.innerHTML = "";
     members.forEach(m => {
@@ -311,7 +324,6 @@ function renderFinanceList() {
     document.getElementById('total-profit').innerText = "₹" + profit;
 }
 
-// --- PDF ---
 window.generateInvoice = (name, amount, expiry) => {
     const { jsPDF } = window.jspdf; const doc = new jsPDF();
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb').trim();
