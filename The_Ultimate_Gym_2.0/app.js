@@ -1,5 +1,6 @@
 import { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, query, onSnapshot, orderBy, doc, deleteDoc, updateDoc } from "./firebase-init.js";
 
+// --- GLOBAL VARIABLES (Must be declared here) ---
 let currentUser = null;
 let members = [];
 let transactions = [];
@@ -9,6 +10,7 @@ let financeChartInstance = null;
 let memberChartInstance = null;
 let ageCategoryChartInstance = null;
 let ageStatusChartInstance = null;
+let memberFilterState = 'active'; // <--- THIS WAS CAUSING THE ERROR
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
 // --- AUTH ---
@@ -34,6 +36,7 @@ function initApp() {
     setInterval(updateClock, 1000);
     setupListeners();
 }
+
 function updateClock() {
     document.getElementById("clock-display").innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
@@ -67,12 +70,12 @@ function setupListeners() {
     });
 }
 
-// --- DASHBOARD ---
+// --- DASHBOARD RENDERER ---
 function renderDashboard() {
     if(!members.length && !transactions.length) return;
     const now = new Date().getTime();
 
-    // 1. HERO
+    // 1. HERO STATS
     const txIncome = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
     const txExpense = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
     const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
@@ -132,12 +135,16 @@ window.setMemberFilter = (filter) => {
 }
 
 function renderFilteredDashboardList() {
-    const list = document.getElementById("dash-member-list"); list.innerHTML = "";
+    const list = document.getElementById("dash-member-list"); 
+    if(!list) return; // Guard clause
+    list.innerHTML = "";
+    
     const now = new Date().getTime();
     const filtered = members.filter(m => {
         const isExpired = now > new Date(m.expiryDate).getTime();
         return memberFilterState === 'active' ? !isExpired : isExpired;
     });
+
     filtered.slice(0, 15).forEach(m => {
         const start = new Date(m.joinDate).getTime();
         const end = new Date(m.expiryDate).getTime();
@@ -184,7 +191,7 @@ function updateMemberChart() {
     });
 }
 
-// --- MEMBERS: AGE & STATUS CHARTS ---
+// --- CHARTS: AGE & STATUS ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
@@ -208,35 +215,37 @@ function renderAgeCharts() {
 
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     
-    // Chart 1
-    const ctx1 = document.getElementById('ageCategoryChart').getContext('2d');
-    if(ageCategoryChartInstance) ageCategoryChartInstance.destroy();
-    ageCategoryChartInstance = new Chart(ctx1, {
-        type: 'bar',
-        data: { labels: Object.keys(ageGroups), datasets: [{ label: 'Members', data: Object.values(ageGroups), backgroundColor: accent, borderRadius: 4, barThickness: 20 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } }
-    });
+    const ctx1 = document.getElementById('ageCategoryChart');
+    if(ctx1) {
+        if(ageCategoryChartInstance) ageCategoryChartInstance.destroy();
+        ageCategoryChartInstance = new Chart(ctx1.getContext('2d'), {
+            type: 'bar',
+            data: { labels: Object.keys(ageGroups), datasets: [{ label: 'Members', data: Object.values(ageGroups), backgroundColor: accent, borderRadius: 4, barThickness: 20 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } }
+        });
+    }
 
-    // Chart 2
-    const ctx2 = document.getElementById('ageStatusChart').getContext('2d');
-    if(ageStatusChartInstance) ageStatusChartInstance.destroy();
-    ageStatusChartInstance = new Chart(ctx2, {
-        type: 'bar',
-        data: {
-            labels: Object.keys(statusByAge),
-            datasets: [
-                { label: 'Active', data: Object.values(statusByAge).map(x=>x.active), backgroundColor: accent, borderRadius: 4, barThickness: 10 },
-                { label: 'Expired', data: Object.values(statusByAge).map(x=>x.inactive), backgroundColor: '#444', borderRadius: 4, barThickness: 10 }
-            ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } }
-    });
+    const ctx2 = document.getElementById('ageStatusChart');
+    if(ctx2) {
+        if(ageStatusChartInstance) ageStatusChartInstance.destroy();
+        ageStatusChartInstance = new Chart(ctx2.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(statusByAge),
+                datasets: [
+                    { label: 'Active', data: Object.values(statusByAge).map(x=>x.active), backgroundColor: accent, borderRadius: 4, barThickness: 10 },
+                    { label: 'Expired', data: Object.values(statusByAge).map(x=>x.inactive), backgroundColor: '#444', borderRadius: 4, barThickness: 10 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, scales: { x: { grid: {display:false}, ticks: {color:'#888'} }, y: { display:false } } }
+        });
+    }
 }
 
-// --- ID GENERATION ---
+// --- HELPERS ---
 window.generateMemberID = (name, phone) => {
     const n = name.replace(/\s/g, '').substring(0, 4).toUpperCase();
-    const p = phone.replace(/\D/g, '').slice(-4);
+    const p = phone.toString().replace(/\D/g, '').slice(-4);
     return `GYM${n}${p}`;
 }
 
@@ -248,7 +257,7 @@ window.previewImage = (input) => {
     }
 }
 
-// --- SAVE MEMBER (WITH ERROR HANDLING) ---
+// --- CRUD ---
 window.saveMember = async () => {
     const name = document.getElementById('inp-name').value;
     const phone = document.getElementById('inp-phone').value;
@@ -280,7 +289,7 @@ window.saveMember = async () => {
         toggleMemberModal();
     } catch (e) {
         console.error(e);
-        alert("Error saving member. Image might be too large.");
+        alert("Error saving member. Image might be too large. Try a smaller image.");
     }
 };
 
@@ -302,7 +311,30 @@ window.renewMember = (id) => {
     alert("Update the Join Date and Payment to Renew.");
 };
 
-// --- RENDER LIST ---
+window.saveTransaction = async () => {
+    const type = document.getElementById('tx-type').value; const cat = document.getElementById('tx-category').value; const amt = parseFloat(document.getElementById('tx-amount').value);
+    const date = document.getElementById('tx-date').value;
+    if(!cat || !amt) return alert("Fill details");
+    const data = { type, category: cat, amount: amt, date };
+    if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; }
+    else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); }
+    toggleTxModal();
+};
+
+window.editTransaction = (id) => {
+    const t = transactions.find(x => x.id === id); if(!t) return;
+    editingTxId = id;
+    document.getElementById('tx-type').value = t.type; document.getElementById('tx-category').value = t.category; document.getElementById('tx-amount').value = t.amount; document.getElementById('tx-date').value = t.date;
+    document.getElementById('modal-transaction').style.display = 'flex';
+};
+
+window.deleteTransaction = async (id) => { if(confirm("Delete transaction?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id)); };
+
+window.sendWhatsApp = (phone, name, expiry) => {
+    let p = phone.replace(/\D/g,''); if(p.length===10) p="91"+p;
+    window.open(`https://wa.me/${p}?text=Hello ${name}, your gym membership expires on ${expiry}.`, '_blank');
+}
+
 function renderMembersList() {
     const list = document.getElementById('members-list'); list.innerHTML = "";
     const today = new Date();
@@ -322,8 +354,8 @@ function renderMembersList() {
             <div class="profile-img-container"><img src="${photoUrl}" class="profile-circle" onclick="editMember('${m.id}')"></div>
             <div class="info-block">
                 <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
-                <div class="info-main">
-                    ${m.name} 
+                <div class="name-phone-row">
+                    <span class="info-main">${m.name}</span>
                     <span style="font-weight:400; font-size:0.8rem; color:#888; margin-left:8px;">${m.phone}</span>
                 </div>
             </div>
@@ -340,31 +372,50 @@ function renderMembersList() {
     });
 }
 
-// ... (Rest of app.js logic: invoice, tx handling, filters, same as before) ...
+function renderFinanceList() { 
+    const list = document.getElementById('finance-list'); list.innerHTML = ""; 
+    let profit = 0; 
+    transactions.forEach(t => { 
+        if(t.type=='income') profit+=t.amount; else profit-=t.amount; 
+        list.innerHTML += `
+        <div class="member-card" style="display:flex;justify-content:space-between; align-items:center;">
+            <div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date}</small></div>
+            <div style="display:flex; gap:15px; align-items:center;">
+                <span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span>
+                <div style="display:flex; gap:10px;">
+                    <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
+                    <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
+                </div>
+            </div>
+        </div>`; 
+    }); 
+    document.getElementById('total-profit').innerText = "₹" + profit; 
+}
+
+// --- STANDARD NAVIGATION ---
+window.switchTab = (tab) => {
+    document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
+    document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+    document.getElementById(`view-${tab}`).style.display = 'block';
+    document.getElementById(`tab-${tab}`).classList.add('active');
+};
+window.toggleMemberModal = () => { 
+    const el = document.getElementById('modal-member'); 
+    if(el.style.display !== 'flex') {
+        if(!editingMemberId) {
+            document.getElementById('inp-name').value = ""; document.getElementById('inp-phone').value = "";
+            document.getElementById('inp-amount').value = ""; document.getElementById('inp-dob').value = "";
+            document.getElementById('inp-join').valueAsDate = new Date();
+            document.getElementById('preview-img').src = "https://via.placeholder.com/100";
+            window.calcExpiry();
+        }
+    } else { editingMemberId = null; }
+    el.style.display = el.style.display === 'flex' ? 'none' : 'flex'; 
+};
+window.toggleTxModal = () => { const el = document.getElementById('modal-transaction'); el.style.display = el.style.display === 'flex' ? 'none' : 'flex'; if(el.style.display==='flex') document.getElementById('tx-date').valueAsDate = new Date(); };
+window.calcExpiry = () => { const j = document.getElementById('inp-join').value; const m = parseInt(document.getElementById('inp-plan').value); if(j) { const d = new Date(j); d.setMonth(d.getMonth() + m); document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; } };
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
 window.generateInvoice = (m) => {
     const { jsPDF } = window.jspdf; const doc = new jsPDF();
     doc.text(`INVOICE: ${m.name}`, 10, 10); doc.save('invoice.pdf');
 }
-window.toggleMemberModal = () => { 
-    const el = document.getElementById('modal-member'); 
-    if(el.style.display !== 'flex') {
-        if(!editingMemberId) {
-            // Reset logic
-            document.getElementById('inp-name').value = "";
-            document.getElementById('inp-phone').value = "";
-            document.getElementById('inp-amount').value = "";
-            document.getElementById('inp-dob').value = "";
-            document.getElementById('preview-img').src = "https://via.placeholder.com/100";
-            document.getElementById('inp-join').valueAsDate = new Date();
-            window.calcExpiry();
-        }
-    } else { editingMemberId = null; }
-    el.style.display = el.style.display==='flex'?'none':'flex'; 
-};
-window.calcExpiry = () => { const j = document.getElementById('inp-join').value; const m = parseInt(document.getElementById('inp-plan').value); if(j) { const d = new Date(j); d.setMonth(d.getMonth() + m); document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; } };
-window.toggleTxModal = () => { document.getElementById('modal-transaction').style.display = document.getElementById('modal-transaction').style.display==='flex'?'none':'flex'; };
-window.saveTransaction = async () => { const type = document.getElementById('tx-type').value; const cat = document.getElementById('tx-category').value; const amt = parseFloat(document.getElementById('tx-amount').value); const date = document.getElementById('tx-date').value; if(!cat || !amt) return alert("Fill details"); const data = { type, category: cat, amount: amt, date }; if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; } else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); } window.toggleTxModal(); };
-window.editTransaction = (id) => { const t = transactions.find(x => x.id === id); if(!t) return; editingTxId = id; document.getElementById('tx-type').value = t.type; document.getElementById('tx-category').value = t.category; document.getElementById('tx-amount').value = t.amount; document.getElementById('tx-date').value = t.date; document.getElementById('modal-transaction').style.display = 'flex'; };
-window.deleteTransaction = async (id) => { if(confirm("Delete transaction?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id)); };
-function renderFinanceList() { const l=document.getElementById('finance-list'); l.innerHTML=''; let p=0; transactions.forEach(t=>{ if(t.type=='income') p+=t.amount; else p-=t.amount; l.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between"><span>${t.category}</span><span style="color:${t.type=='income'?'#22c55e':'#ef4444'}">${t.type=='income'?'+':'-'} ${t.amount}</span></div>`; }); document.getElementById('total-profit').innerText="₹"+p; }
