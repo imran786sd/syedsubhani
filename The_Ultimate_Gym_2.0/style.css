@@ -43,9 +43,7 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 /* --- DASHBOARD GRID --- */
 .dashboard-grid { 
     display: grid; 
-    /* Middle column fixed 320px */
     grid-template-columns: 260px 320px 1fr; 
-    /* Reduced Height to 300px */
     grid-template-rows: 300px 280px; 
     gap: 20px; 
     height: 600px; 
@@ -75,41 +73,43 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg);
 .hero-block h3 { margin: 0; font-size: 1.4rem; font-weight: 800; line-height: 1; }
 .hero-block small { color: #ccc; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; }
 
-/* PLANS CARD (Center) */
+/* PLANS CARD (Center Top) */
 .plans-card { grid-column: 2; } 
-.plan-list { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 6px; } 
+.plan-list { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 5px; } 
 
-.plan-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-light); padding: 10px 15px; border-radius: 12px; border: 1px solid var(--border); }
+.plan-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-light); padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border); }
 .plan-left { display: flex; align-items: center; gap: 15px; }
 
-/* SVG DONUT */
+/* DONUT */
 .donut-svg-wrapper { width: 44px; height: 44px; position: relative; display: flex; align-items: center; justify-content: center; }
 .plan-name { font-weight: 700; font-size: 0.85rem; color: var(--text); line-height: 1.2; }
 
-/* PILLS STACK (No Dots, Centered) */
+/* PILLS STACK */
 .stat-stack { display: flex; flex-direction: column; gap: 5px; }
 .stat-pill { 
     background: #111; 
     border: 1px solid var(--border); 
     border-radius: 20px; 
     padding: 3px 0; 
-    width: 70px; /* Fixed width for alignment */
+    width: 70px; 
     display: flex; 
     align-items: center; 
-    justify-content: center; /* Center the number */
+    justify-content: center; 
     font-size: 0.75rem; 
     font-weight: 700; 
     color: white; 
 }
 
-/* FINANCE CARD (Right) */
-.finance-card { grid-column: 3; } 
+/* FINANCE CARD (Moved to Center Bottom) */
+/* ✅ CHANGED GRID COLUMN TO 2 */
+.finance-card { grid-column: 2; } 
 .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 4px 0 10px; }
 .dot.white { background: #fff; }
 .chart-wrapper.compact { flex: 1; position: relative; min-height: 0; max-height: 180px; }
 
-/* LIST CARD */
-.list-card { grid-column: 2; }
+/* LIST CARD (Moved to Right Top) */
+/* ✅ CHANGED GRID COLUMN TO 3 */
+.list-card { grid-column: 3; }
 .toggle-pill { background: var(--card-light); border-radius: 8px; padding: 3px; display: flex; border: 1px solid var(--border); }
 .toggle-btn { background: transparent; border: none; color: var(--text-muted); padding: 6px 12px; font-size: 0.7rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: 0.2s; flex: 1; }
 .toggle-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3); }
