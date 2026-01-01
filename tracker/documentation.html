@@ -5,125 +5,241 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget Tracker Pro - Documentation</title>
     <style>
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f9f9f9; }
-        .container { max-width: 960px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
-        h1 { color: #2dd4bf; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        h2 { color: #0f172a; margin-top: 40px; border-left: 5px solid #2dd4bf; padding-left: 15px; }
-        h3 { color: #444; margin-top: 25px; }
-        p, li { font-size: 16px; }
-        code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: #d63384; }
-        pre { background: #1e293b; color: #f1f5f9; padding: 15px; border-radius: 8px; overflow-x: auto; font-family: 'Courier New', Courier, monospace; }
-        .alert { background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; margin: 20px 0; }
-        .step { background: #e6fffa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b2f5ea; }
-        .footer { text-align: center; margin-top: 50px; font-size: 0.9rem; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
-        img { max-width: 100%; border-radius: 8px; border: 1px solid #eee; margin: 10px 0; }
+        :root {
+            --primary: #2dd4bf;
+            --bg: #0f172a;
+            --text: #e2e8f0;
+            --card-bg: #1e293b;
+            --border: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            display: flex;
+        }
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background: #0b1120;
+            padding: 20px;
+            position: fixed;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+        .sidebar h3 { color: var(--primary); margin-top: 0; }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar li { margin-bottom: 10px; }
+        .sidebar a { color: var(--text); text-decoration: none; display: block; padding: 8px; border-radius: 6px; transition: 0.2s; }
+        .sidebar a:hover { background: rgba(45, 212, 191, 0.1); color: var(--primary); }
+        
+        /* Main Content */
+        .content {
+            margin-left: 290px;
+            padding: 40px;
+            max-width: 800px;
+        }
+        h1, h2, h3 { color: white; }
+        h1 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 30px; }
+        h2 { margin-top: 40px; color: var(--primary); }
+        
+        /* Code Blocks */
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            color: #a5f3fc;
+        }
+        code { font-family: 'Consolas', monospace; }
+        
+        /* Alerts */
+        .alert {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .step {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        .step-num {
+            display: inline-block;
+            background: var(--primary);
+            color: black;
+            width: 25px;
+            height: 25px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin: 10px 0; }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .content { margin-left: 0; padding: 20px; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Budget Tracker Pro - Documentation</h1>
-        <p>Thank you for purchasing <strong>Budget Tracker Pro</strong>! This guide will help you set up your own Personal Finance PWA with Google Cloud Sync.</p>
+    <nav class="sidebar">
+        <h3>Budget Pro Docs</h3>
+        <ul>
+            <li><a href="#intro">Introduction</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#firebase">1. Firebase Setup</a></li>
+            <li><a href="#config">2. Configuration</a></li>
+            <li><a href="#install">3. Installation</a></li>
+            <li><a href="#domain">4. Domain Whitelist</a></li>
+            <li><a href="#pwa">5. PWA Setup</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+    </nav>
+
+    <div class="content">
+        <h1 id="intro">Budget Tracker Pro - Documentation</h1>
+        <p>Thank you for purchasing <strong>Budget Tracker Pro</strong>. This documentation will guide you through setting up your own Serverless Expense Manager in less than 5 minutes.</p>
         
         <div class="alert">
-            <strong>Requirements:</strong> You do not need a backend server (Node/PHP). You only need a standard web host (Netlify, Vercel, cPanel) and a free Google Firebase account.
+            <strong>Requirement:</strong> You do NOT need a server (PHP/Node.js). You only need a free Google account for Firebase.
         </div>
 
-        <h2>1. Project Structure</h2>
-        <p>Once you unzip the download package, you will see the following files:</p>
+        <h2 id="features">Features</h2>
         <ul>
-            <li><code>index.html</code> - The main structure of the app.</li>
-            <li><code>style.css</code> - All styling, themes (Dark/Light), and responsive design.</li>
-            <li><code>app.js</code> - The core logic (Charts, Calculations, UI Rendering).</li>
-            <li><code>firebase-init.js</code> - Handles the connection to Google services.</li>
-            <li><code>config.js</code> - <strong>IMPORTANT:</strong> This is where you put your API Keys.</li>
+            <li>✅ <strong>Serverless:</strong> Runs entirely on Google Firebase (Free Tier).</li>
+            <li>✅ <strong>PWA Ready:</strong> Installable on Android, iOS, and Desktop.</li>
+            <li>✅ <strong>Cloud Sync:</strong> Real-time data sync across devices.</li>
+            <li>✅ <strong>Smart Debt Manager:</strong> Track who owes you money.</li>
+            <li>✅ <strong>Indian Finance:</strong> Native support for ₹ (INR), Lakhs, and Crores.</li>
         </ul>
 
-        <h2>2. Getting Started (Firebase Setup)</h2>
-        <p>This app uses <strong>Google Firebase</strong> for authentication and database storage. It is free for small to medium apps.</p>
+        <hr>
+
+        <h2 id="firebase">Step 1: Firebase Setup</h2>
+        <p>This app uses Google Firebase for the database and authentication. It is free for small to medium apps.</p>
 
         <div class="step">
-            <h3>Step A: Create Project</h3>
-            <ol>
-                <li>Go to <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a> and click <strong>Add Project</strong>.</li>
-                <li>Give it a name (e.g., "MyBudgetApp") and disable Google Analytics (optional).</li>
-                <li>Click <strong>Create Project</strong>.</li>
-            </ol>
+            <span class="step-num">1</span> <strong>Create Project</strong>
+            <p>Go to the <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--primary)">Firebase Console</a> and click "Add Project". Give it any name (e.g., "MyBudget").</p>
         </div>
 
         <div class="step">
-            <h3>Step B: Enable Authentication</h3>
-            <ol>
-                <li>In the Firebase sidebar, click <strong>Build</strong> &gt; <strong>Authentication</strong>.</li>
-                <li>Click <strong>Get Started</strong>.</li>
-                <li>Select <strong>Google</strong> from the Sign-in providers list.</li>
-                <li>Click <strong>Enable</strong>, select your support email, and click <strong>Save</strong>.</li>
-            </ol>
+            <span class="step-num">2</span> <strong>Enable Authentication</strong>
+            <p>On the left sidebar, click <strong>Build -> Authentication</strong>.</p>
+            <ul>
+                <li>Click "Get Started".</li>
+                <li>Select <strong>Google</strong> as a Sign-in provider.</li>
+                <li>Enable it and save.</li>
+            </ul>
         </div>
 
         <div class="step">
-            <h3>Step C: Create Database</h3>
-            <ol>
-                <li>In the sidebar, click <strong>Build</strong> &gt; <strong>Firestore Database</strong>.</li>
-                <li>Click <strong>Create Database</strong>.</li>
-                <li>Choose a location close to you (e.g., nam5 or asia-south1).</li>
-                <li><strong>Crucial:</strong> Start in <strong>Production Mode</strong>.</li>
-            </ol>
+            <span class="step-num">3</span> <strong>Enable Database</strong>
+            <p>On the left sidebar, click <strong>Build -> Firestore Database</strong>.</p>
+            <ul>
+                <li>Click "Create Database".</li>
+                <li>Select "Start in <strong>Production Mode</strong>".</li>
+                <li>Choose a location nearest to you (e.g., <code>asia-south1</code> for India).</li>
+            </ul>
         </div>
-
+        
         <div class="step">
-            <h3>Step D: Copy API Keys</h3>
-            <ol>
-                <li>Click the <strong>Gear Icon (Settings)</strong> next to "Project Overview".</li>
-                <li>Scroll down to "Your apps" and click the <strong>&lt;/&gt; (Web)</strong> icon.</li>
-                <li>Register the app (e.g., "Budget Web").</li>
-                <li>You will see a code block with <code>const firebaseConfig = { ... }</code>.</li>
-                <li>Copy <strong>ONLY</strong> the keys inside the brackets.</li>
-                <li>Open your <code>config.js</code> file and paste them there.</li>
-            </ol>
-        </div>
-
-        <h2>3. Security Rules (Mandatory)</h2>
-        <p>To ensure user data is private, you must set up database rules.</p>
-        <ol>
-            <li>Go to <strong>Firestore Database</strong> &gt; <strong>Rules</strong> tab.</li>
-            <li>Delete everything there and paste the code below:</li>
-        </ol>
-        <pre>
+            <span class="step-num">4</span> <strong>Set Database Rules</strong>
+            <p>Go to the <strong>Rules</strong> tab in Firestore and paste this security rule to ensure users only see their own data:</p>
+<pre>
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to read/write ONLY their own data
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
-}</pre>
-        <p>Click <strong>Publish</strong>.</p>
+}
+</pre>
+        </div>
 
-        <h2>4. Customization</h2>
-        <h3>Changing Currency</h3>
-        <p>The app is pre-configured for <strong>INR (₹)</strong> with Indian numbering formats (Lakh/Crore).</p>
-        <p>To change the symbol, open <code>app.js</code> and find the <code>formatMoney</code> function:</p>
-        <pre>
-function formatMoney(amount) {
-    const sym = "$"; // Change this symbol
-    return sym + parseFloat(amount).toLocaleString('en-US'); // Change 'en-IN' to 'en-US'
-}</pre>
+        <h2 id="config">Step 2: Configuration</h2>
+        <p>Now connect your code to your new Firebase project.</p>
+        
+        <ol>
+            <li>In Firebase Console, click the <strong>Gear Icon ⚙️</strong> -> Project Settings.</li>
+            <li>Scroll down to "Your Apps" and click the <strong>Web (</>)</strong> icon.</li>
+            <li>Register the app (give it a nickname).</li>
+            <li>Copy the <code>firebaseConfig</code> object shown on screen.</li>
+            <li>Open <code>config.js</code> in your source folder and paste your keys there.</li>
+        </ol>
 
-        <h3>Changing App Name</h3>
-        <p>Open <code>index.html</code> and look for the <code>&lt;title&gt;</code> tag and the <code>.app-title</code> div to rename the application.</p>
+<pre>
+// Example config.js
+const firebaseConfig = {
+    apiKey: "AIzaSyD...",
+    authDomain: "mybudget.firebaseapp.com",
+    projectId: "mybudget-123",
+    storageBucket: "mybudget.appspot.com",
+    messagingSenderId: "12345...",
+    appId: "1:12345..."
+};
+</pre>
 
-        <h2>5. Credits & Libraries</h2>
+        <h2 id="install">Step 3: Installation / Upload</h2>
+        <p>Since this is a static HTML5 app, you can host it anywhere for free.</p>
         <ul>
-            <li><strong>D3.js:</strong> Used for Data Visualization (Charts).</li>
-            <li><strong>FontAwesome 6:</strong> Used for Icons.</li>
-            <li><strong>Google Fonts:</strong> "Inter" font family.</li>
+            <li><strong>GitHub Pages:</strong> (Recommended for Developers)</li>
+            <li><strong>Netlify / Vercel:</strong> Drag and drop the folder.</li>
+            <li><strong>cPanel / Shared Hosting:</strong> Upload files to `public_html`.</li>
         </ul>
 
-        <div class="footer">
-            &copy; 2025 Budget Tracker Pro. All Rights Reserved.
+        <h2 id="domain">Step 4: Domain Whitelist (Critical) ⚠️</h2>
+        <div class="alert">
+            If you skip this step, Google Login will fail with an error: <code>auth/unauthorized-domain</code>.
         </div>
+        <p>Google blocks sign-ins from unknown websites to prevent phishing. You must tell Firebase your website URL.</p>
+        <div class="step">
+            <ol>
+                <li>Go to <strong>Firebase Console -> Authentication -> Settings</strong>.</li>
+                <li>Click on <strong>Authorized Domains</strong>.</li>
+                <li>Click "Add Domain".</li>
+                <li>Enter your website domain (e.g., <code>syedsubhani.in</code> or <code>my-app.netlify.app</code>).</li>
+                <li>Click Add.</li>
+            </ol>
+            <p><em>Note: `localhost` is allowed by default for testing.</em></p>
+        </div>
+
+        <h2 id="pwa">Step 5: PWA Setup (Optional)</h2>
+        <p>To make the "Install App" prompt appear with your own logo:</p>
+        <ol>
+            <li>Replace the icons in the <code>icons/</code> folder with your own (must be 192x192 and 512x512).</li>
+            <li>Open <code>manifest.json</code> and update the "name" and "short_name" fields.</li>
+        </ol>
+
+        <h2 id="faq">FAQ</h2>
+        
+        <strong>Q: Can I change the currency to USD?</strong>
+        <p>A: Yes. Open <code>app.js</code> and search for <code>formatMoney</code>. Change <code>en-IN</code> to <code>en-US</code> and <code>₹</code> to <code>$</code>.</p>
+
+        <strong>Q: Where is the admin panel?</strong>
+        <p>A: There is no admin panel. You can view/manage all user data directly inside the Firebase Console (Firestore Database).</p>
+
+        <strong>Q: Is the data secure?</strong>
+        <p>A: Yes. All data is stored on Google's servers. Authentication is handled via Google OAuth.</p>
+
+        <br><br>
+        <hr>
+        <p style="text-align:center; color:gray; font-size:0.9rem;">
+            &copy; 2024 Budget Tracker Pro. All Rights Reserved.
+        </p>
     </div>
 
 </body>
