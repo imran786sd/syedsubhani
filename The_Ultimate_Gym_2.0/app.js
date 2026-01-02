@@ -13,7 +13,35 @@ let ageStatusChartInstance = null;
 let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
-// --- CUSTOM CHART PLUGIN (Updated for Horizontal Bars) ---
+// --- IMAGE COMPRESSION HELPER ---
+const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 300; // Resize to 300px width (Good for avatars)
+                const scaleSize = maxWidth / img.width;
+                canvas.width = maxWidth;
+                canvas.height = img.height * scaleSize;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Compress to JPEG with 0.7 quality
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                resolve(dataUrl);
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+};
+
+// --- CUSTOM CHART PLUGIN (Horizontal Labels) ---
 const dataLabelPlugin = {
     id: 'dataLabels',
     afterDatasetsDraw(chart) {
@@ -316,41 +344,28 @@ function updateMemberChart() {
     });
 }
 
-// --- UPDATED CHARTS (Horizontal Bars & Gender) ---
+// --- CHARTS (Horizontal) ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
     
-    // Structure for Stacked Chart (Gender)
     const ageBuckets = ['18-25', '25-40', '40-60', '60+'];
-    const genderData = {
-        'Male': [0, 0, 0, 0],
-        'Female': [0, 0, 0, 0],
-        'Other': [0, 0, 0, 0]
-    };
-    
-    // Structure for Status Chart (Active/Expired)
-    const statusData = {
-        'Active': [0, 0, 0, 0],
-        'Expired': [0, 0, 0, 0]
-    };
+    const genderData = { 'Male': [0, 0, 0, 0], 'Female': [0, 0, 0, 0], 'Other': [0, 0, 0, 0] };
+    const statusData = { 'Active': [0, 0, 0, 0], 'Expired': [0, 0, 0, 0] };
 
     members.forEach(m => {
         if(m.dob) {
             const birthDate = new Date(m.dob);
             let age = today.getFullYear() - birthDate.getFullYear();
             let bucketIndex = 3; 
-            
             if (age >= 18 && age <= 25) bucketIndex = 0;
             else if (age > 25 && age <= 40) bucketIndex = 1;
             else if (age > 40 && age <= 60) bucketIndex = 2;
 
-            // Fill Gender Data
             const g = m.gender || 'Male'; 
             if(genderData[g] !== undefined) genderData[g][bucketIndex]++;
             else genderData['Other'][bucketIndex]++;
 
-            // Fill Status Data
             const isActive = new Date(m.expiryDate) > today;
             if(isActive) statusData['Active'][bucketIndex]++; 
             else statusData['Expired'][bucketIndex]++;
@@ -359,7 +374,6 @@ function renderAgeCharts() {
 
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     
-    // 1. AGE x GENDER CHART (Horizontal Stacked)
     const ctx1 = document.getElementById('ageCategoryChart');
     if(ctx1) {
         if(ageCategoryChartInstance) ageCategoryChartInstance.destroy();
@@ -374,7 +388,7 @@ function renderAgeCharts() {
                 ] 
             },
             options: { 
-                indexAxis: 'y', // <--- MAKES IT HORIZONTAL
+                indexAxis: 'y', 
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, 
@@ -384,7 +398,6 @@ function renderAgeCharts() {
         });
     }
 
-    // 2. STATUS x AGE CHART (Horizontal Grouped)
     const ctx2 = document.getElementById('ageStatusChart');
     if(ctx2) {
         if(ageStatusChartInstance) ageStatusChartInstance.destroy();
@@ -398,7 +411,7 @@ function renderAgeCharts() {
                 ]
             },
             options: { 
-                indexAxis: 'y', // <--- MAKES IT HORIZONTAL
+                indexAxis: 'y',
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, 
@@ -409,7 +422,7 @@ function renderAgeCharts() {
     }
 }
 
-// --- CRUD OPERATIONS ---
+// --- CRUD OPERATIONS (UPDATED WITH COMPRESSION) ---
 window.saveMember = async () => {
     const name = document.getElementById('inp-name').value;
     const gender = document.getElementById('inp-gender').value;
@@ -420,19 +433,39 @@ window.saveMember = async () => {
     const payMode = document.getElementById('inp-paymode').value;
     const planDuration = document.getElementById('inp-plan').value;
     const expiryDate = document.getElementById('inp-expiry').value;
-    const imgEl = document.getElementById('preview-img');
-    const imgSrc = imgEl ? imgEl.src : "";
+    
+    // File Input
+    const fileInput = document.getElementById('inp-file');
+    const file = fileInput.files ? fileInput.files[0] : null;
     
     if(!name || !amount || !dob || !joinDate) return alert("Please fill Name, Fees, Join Date and DOB");
 
-    const finalPhoto = (imgSrc && imgSrc.includes('base64')) ? imgSrc : null;
+    // 1. Handle Photo Upload (With Compression)
+    let photoUrl = null;
+    
+    try {
+        if (file) {
+            // New File Selected: Compress It
+            photoUrl = await compressImage(file);
+        } else {
+            // No new file: Check if we are editing and keep existing photo
+            const imgPreview = document.getElementById('preview-img');
+            // If src is NOT the default placeholder, keep it
+            if (imgPreview.src && !imgPreview.src.includes('base64,PHN2')) {
+                photoUrl = imgPreview.src;
+            }
+        }
+    } catch (uploadError) {
+        console.error("Compression failed", uploadError);
+        alert("Image processing failed. Saving member without new image.");
+    }
 
     const data = {
         name, gender, phone, dob, joinDate,
         expiryDate: expiryDate,
         planDuration: planDuration,
         lastPaidAmount: amount,
-        photo: finalPhoto
+        photo: photoUrl // Save the compressed Base64 string
     };
 
     try {
@@ -447,6 +480,7 @@ window.saveMember = async () => {
             if(confirm("Generate Invoice?")) window.generateInvoice(data);
         }
         window.toggleMemberModal();
+        fileInput.value = ""; 
     } catch (e) {
         alert("Error saving member: " + e.message);
     }
@@ -574,7 +608,7 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
         category: category,
         snapshotPlan: plan,
         snapshotExpiry: expiry,
-        timeStr: timeStr // Pass time to invoice
+        timeStr: timeStr 
     };
 
     window.generateInvoice(m, tempTransaction);
@@ -619,14 +653,14 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
     
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
-    doc.text(`Date: ${date}  ${time}`, 150, 45); // ADDED TIME HERE
+    doc.text(`Date: ${date}  ${time}`, 150, 45); 
 
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.text("1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080", 14, 52);
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, 57);
 
-    // MEMBER GRID (With Gender & Expiry)
+    // MEMBER GRID
     doc.autoTable({
         startY: 65,
         theme: 'grid',
@@ -693,7 +727,12 @@ window.editMember = (id) => {
     document.getElementById('inp-expiry').value = m.expiryDate; 
     document.getElementById('inp-plan').value = m.planDuration || "1m";
     const preview = document.getElementById('preview-img');
-    if(preview) preview.src = m.photo || "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
+    // IF photo is URL, use it. If not, use placeholder.
+    if(m.photo) {
+        preview.src = m.photo;
+    } else {
+        preview.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
+    }
     document.getElementById('modal-member').style.display = 'flex';
 };
 
@@ -745,7 +784,6 @@ function renderMembersList() {
         const photoUrl = m.photo || placeholder;
         const planDisplay = window.formatPlanDisplay(m.planDuration);
         
-        // GENDER ICON
         let genderIcon = '';
         if(m.gender === 'Male') genderIcon = '<i class="fa-solid fa-mars" style="color:#60a5fa; margin-left:5px;"></i>';
         else if(m.gender === 'Female') genderIcon = '<i class="fa-solid fa-venus" style="color:#f472b6; margin-left:5px;"></i>';
