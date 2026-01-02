@@ -731,7 +731,7 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     
     try {
         const signImg = new Image();
-        signImg.src = 'Sign.jpeg'; 
+        signImg.src = 'Sign1.jpeg'; 
         // CHANGED: Moved Y position UP from `finalY + 2` to `finalY - 5` 
         // This pulls the image up closer to the text above it.
         doc.addImage(signImg, 'JPEG', 150, finalY - 5, 50, 25); 
