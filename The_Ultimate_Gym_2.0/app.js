@@ -632,16 +632,26 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     
     const rawPlan = (isHistory && specificTransaction.snapshotPlan) ? specificTransaction.snapshotPlan : m.planDuration;
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
-    
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // HEADER
+    // --- 1. HEADER & LOGO ---
     doc.setFillColor(...themeColor);
     doc.rect(0, 0, 210, 25, 'F');
+    
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
+
+    // ADD LOGO (Right Side Top)
+    // Assuming logo.png is in the root directory. Adjust format if needed (e.g. 'PNG' or 'JPEG')
+    try {
+        const logoImg = new Image();
+        logoImg.src = 'logo.png';
+        // Wait for image to load before drawing (basic implementation)
+        // For production, preloading is better, but this works if cached
+        doc.addImage(logoImg, 'PNG', 160, 5, 35, 15); 
+    } catch(e) { console.log("Logo error", e); }
     
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
@@ -655,15 +665,24 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
     doc.text(`Date: ${date}  ${time}`, 150, 45); 
 
+    // --- 2. ADDRESS & CONTACT (Fixed Overlap) ---
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    doc.text("1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080", 14, 52);
-    doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, 57);
-    doc.text("GST NO:36CYZPA903181Z1", 14, 57);
+    // Address (Multi-line handled by splitTextToSize or simple manual breaks)
+    const address = "1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080";
+    const splitAddress = doc.splitTextToSize(address, 180);
+    doc.text(splitAddress, 14, 52);
+    
+    // Move Y down based on address length
+    let currentY = 52 + (splitAddress.length * 4); 
+    
+    doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, currentY);
+    currentY += 5; // Move down for GST
+    doc.text("GST NO: 36CYZPA903181Z1", 14, currentY);
 
-    // MEMBER GRID
+    // --- 3. MEMBER GRID ---
     doc.autoTable({
-        startY: 65,
+        startY: currentY + 10,
         theme: 'grid',
         head: [],
         body: [
@@ -683,7 +702,7 @@ window.generateInvoice = async (m, specificTransaction = null) => {
 
     finalY = doc.lastAutoTable.finalY + 10;
 
-    // DETAILS TABLE
+    // --- 4. DETAILS TABLE ---
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text("Payment Details", 14, finalY);
@@ -701,16 +720,32 @@ window.generateInvoice = async (m, specificTransaction = null) => {
 
     finalY = doc.lastAutoTable.finalY + 20;
 
+    // --- 5. SIGNATURE & FOOTER ---
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
+    
+    // Authorized Signature Text
     doc.text("Authorized Signature", 150, finalY);
-    doc.line(14, finalY + 15, 60, finalY + 15);
-    doc.line(150, finalY + 15, 196, finalY + 15);
+    
+    // Add SIGN IMAGE (Below text)
+    try {
+        const signImg = new Image();
+        signImg.src = 'Sign.jpeg'; 
+        // Adjust width/height (30, 15) and position (150, finalY + 2) as needed
+        doc.addImage(signImg, 'JPEG', 150, finalY + 2, 30, 15); 
+    } catch(e) { console.log("Sign error", e); }
 
+    // Draw Lines
+    doc.line(14, finalY + 15, 60, finalY + 15);
+    // doc.line(150, finalY + 15, 196, finalY + 15); // Removed line since we have image
+
+    // Terms
+    // Move footer down to avoid hitting the sign image
+    finalY += 25; 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text("Note: Fees once paid are not refundable.", 14, finalY + 25);
-    doc.text("Computer Generated Receipt.", 14, finalY + 30);
+    doc.text("Note: Fees once paid are not refundable.", 14, finalY);
+    doc.text("Computer Generated Receipt.", 14, finalY + 5);
 
     doc.save(`${m.name}_Receipt.pdf`);
 };
