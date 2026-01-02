@@ -615,13 +615,12 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
 };
 
 // --- UPDATED INVOICE GENERATOR ---
-// --- UPDATED INVOICE GENERATOR (Black Header, Square Logo, Tighter Sign) ---
+// --- UPDATED INVOICE GENERATOR (Fixed Signature Overlap) ---
 window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // CHANGED: Header color to BLACK
-    const themeColor = [0, 0, 0]; 
+    const themeColor = [0, 0, 0]; // Black Header
     let finalY = 0;
 
     const isHistory = !!specificTransaction;
@@ -636,23 +635,22 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // --- 1. HEADER & SQUARE LOGO ---
+    // --- 1. HEADER & LOGO ---
     doc.setFillColor(...themeColor);
-    // Header bar height is 25mm
     doc.rect(0, 0, 210, 25, 'F');
     
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
+    // 'Latin Wide' is not supported by default, using Helvetica Bold for reliability
+    doc.setFont("helvetica", "bold"); 
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
 
-    // ADD SQUARE LOGO (Right Side Top)
+    // ADD LOGO (45px x 45px equivalent in mm is approx 12x12, but we'll make it 20x20 for visibility)
     try {
         const logoImg = new Image();
         logoImg.src = 'logo.png';
-        // CHANGED: Sized to be square (22x22) to fit nicely within the 25mm high black header.
-        // Positioned at x=175 to be on the far right.
-        doc.addImage(logoImg, 'PNG', 175, 1.5, 22, 22); 
+        // Positioned at top-right (x=175, y=2.5) with size 20x20mm
+        doc.addImage(logoImg, 'PNG', 175, 2.5, 20, 20); 
     } catch(e) { console.log("Logo error", e); }
     
     doc.setFontSize(14);
@@ -665,7 +663,6 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
     
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
-    // Adjusted date position slightly left so it doesn't crowd the logo area
     doc.text(`Date: ${date}  ${time}`, 140, 45); 
 
     // --- 2. ADDRESS & CONTACT ---
@@ -675,10 +672,11 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const splitAddress = doc.splitTextToSize(address, 180);
     doc.text(splitAddress, 14, 52);
     
+    // Dynamic Y position calculation
     let currentY = 52 + (splitAddress.length * 4); 
     
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, currentY);
-    currentY += 5; 
+    currentY += 5; // Move down line
     doc.text("GST NO: 36CYZPA903181Z1", 14, currentY);
 
     // --- 3. MEMBER GRID ---
@@ -715,33 +713,35 @@ window.generateInvoice = async (m, specificTransaction = null) => {
             [category, `${date} ${time}`, mode, `Rs. ${amt}`]
         ],
         theme: 'striped',
-        // Header will now be black based on themeColor
         headStyles: { fillColor: themeColor },
         styles: { fontSize: 9, cellPadding: 3 }
     });
 
-    finalY = doc.lastAutoTable.finalY + 20;
+    // Move down for signature section
+    finalY = doc.lastAutoTable.finalY + 40; 
 
-    // --- 5. SIGNATURE (Reduced Spacing) & FOOTER ---
+    // --- 5. SIGNATURE & FOOTER ---
+    
+    // Left Side: Receiver Sign
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
-    
-    // Text baseline is at finalY
+    doc.line(14, finalY - 5, 60, finalY - 5); // Line above text
+
+    // Right Side: Authorized Signature
     doc.text("Authorized Signature", 150, finalY);
+    doc.line(150, finalY - 5, 196, finalY - 5); // Line above text
     
+    // SIGNATURE IMAGE LOGIC
+    // We place the image ABOVE the line (at y = finalY - 25)
     try {
         const signImg = new Image();
-        signImg.src = 'Sign1.jpeg'; 
-        // CHANGED: Moved Y position UP from `finalY + 2` to `finalY - 5` 
-        // This pulls the image up closer to the text above it.
-        doc.addImage(signImg, 'JPEG', 150, finalY - 5, 50, 25); 
+        signImg.src = 'Sign.jpeg'; 
+        // x=150, y=finalY-30 (Above the line), width=40, height=20
+        doc.addImage(signImg, 'JPEG', 150, finalY - 28, 40, 20); 
     } catch(e) { console.log("Sign error", e); }
 
-    // Left side line
-    doc.line(14, finalY + 15, 60, finalY + 15);
-   
-    // Terms (Moved down to accommodate sign)
-    finalY += 30; 
+    // Terms
+    finalY += 10; 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text("Note: Fees once paid are not refundable.", 14, finalY);
