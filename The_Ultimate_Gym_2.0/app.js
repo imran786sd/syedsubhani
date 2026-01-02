@@ -23,7 +23,7 @@ const compressImage = (file) => {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const maxWidth = 300; // Resize to 300px width (Good for avatars)
+                const maxWidth = 300; 
                 const scaleSize = maxWidth / img.width;
                 canvas.width = maxWidth;
                 canvas.height = img.height * scaleSize;
@@ -31,7 +31,6 @@ const compressImage = (file) => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
-                // Compress to JPEG with 0.7 quality
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 resolve(dataUrl);
             };
@@ -46,14 +45,14 @@ const dataLabelPlugin = {
     id: 'dataLabels',
     afterDatasetsDraw(chart) {
         const ctx = chart.ctx;
-        const isHorizontal = chart.config.options.indexAxis === 'y'; // Check orientation
+        const isHorizontal = chart.config.options.indexAxis === 'y'; 
 
         chart.data.datasets.forEach((dataset, i) => {
             const meta = chart.getDatasetMeta(i);
             if (!meta.hidden) {
                 meta.data.forEach((element, index) => {
                     const data = dataset.data[index];
-                    if (data > 0) { // Only draw if number exists
+                    if (data > 0) { 
                         ctx.fillStyle = '#ffffff';
                         const fontSize = 10;
                         const fontStyle = 'bold';
@@ -63,22 +62,15 @@ const dataLabelPlugin = {
                         ctx.textBaseline = 'middle';
                         
                         const position = element.tooltipPosition();
-                        
-                        // Smart Positioning
                         let x = position.x;
                         let y = position.y;
 
                         if (isHorizontal) {
-                            // Horizontal: Place number slightly to the right of the bar end
-                            // If stacked, place inside. If not stacked, place outside.
                             x = position.x + (dataset.stack ? -10 : 15); 
-                            // Adjust color for contrast if inside bar
                             if(dataset.stack) ctx.fillStyle = '#fff'; 
                         } else {
-                            // Vertical: Place number on top
                             y = position.y + (dataset.stack ? 0 : -10);
                         }
-
                         ctx.fillText(data.toString(), x, y); 
                     }
                 });
@@ -126,17 +118,29 @@ function updateClock() {
     if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
 
+// --- THEME SETTING (UPDATED WITH ORANGE) ---
 window.setTheme = (color) => {
     currentTheme = color;
     localStorage.setItem('gymTheme', color);
     const root = document.documentElement;
+    
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.theme-${color}`);
     if(activeBtn) activeBtn.classList.add('active');
-    const colors = { red: ['#ef4444','239, 68, 68'], blue: ['#3b82f6','59, 130, 246'], green: ['#22c55e','34, 197, 94'] };
-    root.style.setProperty('--accent', colors[color][0]);
-    root.style.setProperty('--accent-rgb', colors[color][1]);
-    document.getElementById('meta-theme-color').content = colors[color][0];
+    
+    const colors = { 
+        red: ['#ef4444','239, 68, 68'], 
+        blue: ['#3b82f6','59, 130, 246'], 
+        green: ['#22c55e','34, 197, 94'],
+        orange: ['#f97316', '249, 115, 22'] // Orange Added
+    };
+    
+    if(colors[color]) {
+        root.style.setProperty('--accent', colors[color][0]);
+        root.style.setProperty('--accent-rgb', colors[color][1]);
+        document.getElementById('meta-theme-color').content = colors[color][0];
+    }
+    
     if(members.length > 0) renderDashboard();
 }
 
@@ -215,7 +219,6 @@ async function addFinanceEntry(category, amount, mode, date, memberId, plan, exp
             snapshotExpiry: expiry || null,
             createdAt: new Date() 
         });
-        console.log("Finance entry auto-added.");
     } catch(e) { console.error("Auto-finance failed", e); }
 }
 
@@ -422,7 +425,7 @@ function renderAgeCharts() {
     }
 }
 
-// --- CRUD OPERATIONS (UPDATED WITH COMPRESSION) ---
+// --- CRUD OPERATIONS ---
 window.saveMember = async () => {
     const name = document.getElementById('inp-name').value;
     const gender = document.getElementById('inp-gender').value;
@@ -434,30 +437,24 @@ window.saveMember = async () => {
     const planDuration = document.getElementById('inp-plan').value;
     const expiryDate = document.getElementById('inp-expiry').value;
     
-    // File Input
     const fileInput = document.getElementById('inp-file');
     const file = fileInput.files ? fileInput.files[0] : null;
     
     if(!name || !amount || !dob || !joinDate) return alert("Please fill Name, Fees, Join Date and DOB");
 
-    // 1. Handle Photo Upload (With Compression)
     let photoUrl = null;
-    
     try {
         if (file) {
-            // New File Selected: Compress It
             photoUrl = await compressImage(file);
         } else {
-            // No new file: Check if we are editing and keep existing photo
             const imgPreview = document.getElementById('preview-img');
-            // If src is NOT the default placeholder, keep it
             if (imgPreview.src && !imgPreview.src.includes('base64,PHN2')) {
                 photoUrl = imgPreview.src;
             }
         }
     } catch (uploadError) {
         console.error("Compression failed", uploadError);
-        alert("Image processing failed. Saving member without new image.");
+        alert("Image processing failed.");
     }
 
     const data = {
@@ -465,7 +462,7 @@ window.saveMember = async () => {
         expiryDate: expiryDate,
         planDuration: planDuration,
         lastPaidAmount: amount,
-        photo: photoUrl // Save the compressed Base64 string
+        photo: photoUrl 
     };
 
     try {
@@ -486,7 +483,6 @@ window.saveMember = async () => {
     }
 };
 
-// --- RENEWAL LOGIC ---
 window.renewMember = (id) => {
     const m = members.find(x => x.id === id);
     if(!m) return;
@@ -536,7 +532,7 @@ window.confirmRenewal = async () => {
     alert(`Membership Renewed! New Expiry: ${newExpiry}`);
 };
 
-// --- HISTORY TOGGLE & PRINT LOGIC ---
+// --- HISTORY TOGGLE ---
 window.toggleHistory = async (id) => {
     const panel = document.getElementById(`history-${id}`);
     if(panel.style.display === 'block') { panel.style.display = 'none'; return; }
@@ -557,7 +553,6 @@ window.toggleHistory = async (id) => {
             return;
         }
 
-        // ADDED "Time" COLUMN
         let html = `
             <table class="history-table">
                 <thead><tr><th>Date</th><th>Time</th><th>Category</th><th>Mode</th><th>Amount</th><th>Action</th></tr></thead>
@@ -569,7 +564,6 @@ window.toggleHistory = async (id) => {
             const safePlan = t.snapshotPlan || '';
             const safeExpiry = t.snapshotExpiry || '';
             
-            // CONVERT TIMESTAMP TO READABLE TIME
             let timeStr = "-";
             if(t.createdAt && t.createdAt.seconds) {
                 const dateObj = new Date(t.createdAt.seconds * 1000);
@@ -596,7 +590,7 @@ window.toggleHistory = async (id) => {
     }
 };
 
-// UPDATED: Receives Time
+// --- PRINT HISTORY INVOICE ---
 window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expiry, timeStr) => {
     const m = members.find(x => x.id === memberId);
     if (!m) return alert("Member data missing.");
@@ -614,42 +608,35 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
     window.generateInvoice(m, tempTransaction);
 };
 
-// --- UPDATED INVOICE GENERATOR ---
-// --- UPDATED INVOICE GENERATOR (Fixed Signature Overlap) ---
+// --- INVOICE GENERATOR ---
 window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    const themeColor = [0, 0, 0]; // Black Header
+    const themeColor = [0, 0, 0]; 
     let finalY = 0;
 
     const isHistory = !!specificTransaction;
-    
     const amt = isHistory ? specificTransaction.amount : m.lastPaidAmount;
     const date = isHistory ? specificTransaction.date : new Date().toISOString().split('T')[0];
     const time = isHistory ? (specificTransaction.timeStr || '') : new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
     const mode = isHistory ? specificTransaction.mode : 'Cash'; 
     const category = isHistory ? specificTransaction.category : 'Membership Fees';
-    
     const rawPlan = (isHistory && specificTransaction.snapshotPlan) ? specificTransaction.snapshotPlan : m.planDuration;
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // --- 1. HEADER & LOGO ---
+    // Header
     doc.setFillColor(...themeColor);
     doc.rect(0, 0, 210, 25, 'F');
-    
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
-    // 'Latin Wide' is not supported by default, using Helvetica Bold for reliability
-    doc.setFont("helvetica", "bold"); 
+    doc.setFont("helvetica", "bold");
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
 
-    // ADD LOGO (45px x 45px equivalent in mm is approx 12x12, but we'll make it 20x20 for visibility)
     try {
         const logoImg = new Image();
         logoImg.src = 'logo.png';
-        // Positioned at top-right (x=175, y=2.5) with size 20x20mm
         doc.addImage(logoImg, 'PNG', 175, 2.5, 20, 20); 
     } catch(e) { console.log("Logo error", e); }
     
@@ -661,25 +648,22 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
-    
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
     doc.text(`Date: ${date}  ${time}`, 140, 45); 
 
-    // --- 2. ADDRESS & CONTACT ---
+    // Address & Contact
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     const address = "1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080";
     const splitAddress = doc.splitTextToSize(address, 180);
     doc.text(splitAddress, 14, 52);
     
-    // Dynamic Y position calculation
     let currentY = 52 + (splitAddress.length * 4); 
-    
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, currentY);
-    currentY += 5; // Move down line
+    currentY += 5; 
     doc.text("GST NO: 36CYZPA903181Z1", 14, currentY);
 
-    // --- 3. MEMBER GRID ---
+    // Member Grid
     doc.autoTable({
         startY: currentY + 10,
         theme: 'grid',
@@ -701,7 +685,7 @@ window.generateInvoice = async (m, specificTransaction = null) => {
 
     finalY = doc.lastAutoTable.finalY + 10;
 
-    // --- 4. DETAILS TABLE ---
+    // Details Table
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text("Payment Details", 14, finalY);
@@ -709,39 +693,30 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.autoTable({
         startY: finalY + 5,
         head: [['Description', 'Date & Time', 'Mode', 'Amount']],
-        body: [
-            [category, `${date} ${time}`, mode, `Rs. ${amt}`]
-        ],
+        body: [[category, `${date} ${time}`, mode, `Rs. ${amt}`]],
         theme: 'striped',
         headStyles: { fillColor: themeColor },
         styles: { fontSize: 9, cellPadding: 3 }
     });
 
-    // Move down for signature section
-    finalY = doc.lastAutoTable.finalY + 40; 
+    finalY = doc.lastAutoTable.finalY + 20;
 
-    // --- 5. SIGNATURE & FOOTER ---
-    
-    // Left Side: Receiver Sign
+    // Signature
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
-    doc.line(14, finalY - 5, 60, finalY - 5); // Line above text
-
-    // Right Side: Authorized Signature
     doc.text("Authorized Signature", 150, finalY);
-    doc.line(150, finalY - 5, 196, finalY - 5); // Line above text
     
-    // SIGNATURE IMAGE LOGIC
-    // We place the image ABOVE the line (at y = finalY - 25)
     try {
         const signImg = new Image();
         signImg.src = 'Sign.jpeg'; 
-        // x=150, y=finalY-30 (Above the line), width=40, height=20
-        doc.addImage(signImg, 'JPEG', 150, finalY - 28, 40, 20); 
+        doc.addImage(signImg, 'JPEG', 150, finalY - 5, 50, 25); 
     } catch(e) { console.log("Sign error", e); }
 
+    doc.line(14, finalY + 15, 60, finalY + 15);
+    doc.line(150, finalY + 15, 196, finalY + 15);
+
     // Terms
-    finalY += 10; 
+    finalY += 30; 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text("Note: Fees once paid are not refundable.", 14, finalY);
@@ -763,7 +738,6 @@ window.editMember = (id) => {
     document.getElementById('inp-expiry').value = m.expiryDate; 
     document.getElementById('inp-plan').value = m.planDuration || "1m";
     const preview = document.getElementById('preview-img');
-    // IF photo is URL, use it. If not, use placeholder.
     if(m.photo) {
         preview.src = m.photo;
     } else {
