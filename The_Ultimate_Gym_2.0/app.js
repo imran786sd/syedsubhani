@@ -615,12 +615,13 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
 };
 
 // --- UPDATED INVOICE GENERATOR ---
-// --- UPDATED INVOICE GENERATOR (Bigger Logo & Sign) ---
+// --- UPDATED INVOICE GENERATOR (Black Header, Square Logo, Tighter Sign) ---
 window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    const themeColor = [0, 150, 136];
+    // CHANGED: Header color to BLACK
+    const themeColor = [0, 0, 0]; 
     let finalY = 0;
 
     const isHistory = !!specificTransaction;
@@ -635,9 +636,9 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // --- 1. HEADER & BIGGER LOGO ---
+    // --- 1. HEADER & SQUARE LOGO ---
     doc.setFillColor(...themeColor);
-    // Header bar height is 25
+    // Header bar height is 25mm
     doc.rect(0, 0, 210, 25, 'F');
     
     doc.setFontSize(20);
@@ -645,12 +646,13 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setFont("helvetica", "bold");
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
 
-    // ADD BIGGER LOGO (Right Side Top)
+    // ADD SQUARE LOGO (Right Side Top)
     try {
         const logoImg = new Image();
         logoImg.src = 'logo.png';
-        // Increased size: x=145, y=2 (almost top), width=60, height=21 (almost full header height)
-        doc.addImage(logoImg, 'PNG', 145, 2, 60, 21); 
+        // CHANGED: Sized to be square (22x22) to fit nicely within the 25mm high black header.
+        // Positioned at x=175 to be on the far right.
+        doc.addImage(logoImg, 'PNG', 175, 1.5, 22, 22); 
     } catch(e) { console.log("Logo error", e); }
     
     doc.setFontSize(14);
@@ -663,10 +665,10 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
     
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
-    // Moved date/time slightly left to accommodate bigger logo area if needed
-    doc.text(`Date: ${date}  ${time}`, 145, 45); 
+    // Adjusted date position slightly left so it doesn't crowd the logo area
+    doc.text(`Date: ${date}  ${time}`, 140, 45); 
 
-    // --- 2. ADDRESS & CONTACT (Fixed Overlap) ---
+    // --- 2. ADDRESS & CONTACT ---
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     const address = "1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080";
@@ -713,31 +715,33 @@ window.generateInvoice = async (m, specificTransaction = null) => {
             [category, `${date} ${time}`, mode, `Rs. ${amt}`]
         ],
         theme: 'striped',
+        // Header will now be black based on themeColor
         headStyles: { fillColor: themeColor },
         styles: { fontSize: 9, cellPadding: 3 }
     });
 
     finalY = doc.lastAutoTable.finalY + 20;
 
-    // --- 5. SIGNATURE & FOOTER ---
+    // --- 5. SIGNATURE (Reduced Spacing) & FOOTER ---
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
     
+    // Text baseline is at finalY
     doc.text("Authorized Signature", 150, finalY);
     
-    // BIGGER SIGN IMAGE
     try {
         const signImg = new Image();
         signImg.src = 'Sign.jpeg'; 
-        // Increased size: width=50 (was 30), height=25 (was 15)
-        doc.addImage(signImg, 'JPEG', 150, finalY + 2, 50, 25); 
+        // CHANGED: Moved Y position UP from `finalY + 2` to `finalY - 5` 
+        // This pulls the image up closer to the text above it.
+        doc.addImage(signImg, 'JPEG', 150, finalY - 5, 50, 25); 
     } catch(e) { console.log("Sign error", e); }
 
-    // Left side line line
+    // Left side line
     doc.line(14, finalY + 15, 60, finalY + 15);
    
-    // Terms (Moved down further to accommodate bigger sign)
-    finalY += 35; 
+    // Terms (Moved down to accommodate sign)
+    finalY += 30; 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text("Note: Fees once paid are not refundable.", 14, finalY);
