@@ -615,6 +615,7 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
 };
 
 // --- UPDATED INVOICE GENERATOR ---
+// --- UPDATED INVOICE GENERATOR (Bigger Logo & Sign) ---
 window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -634,8 +635,9 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // --- 1. HEADER & LOGO ---
+    // --- 1. HEADER & BIGGER LOGO ---
     doc.setFillColor(...themeColor);
+    // Header bar height is 25
     doc.rect(0, 0, 210, 25, 'F');
     
     doc.setFontSize(20);
@@ -643,14 +645,12 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setFont("helvetica", "bold");
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
 
-    // ADD LOGO (Right Side Top)
-    // Assuming logo.png is in the root directory. Adjust format if needed (e.g. 'PNG' or 'JPEG')
+    // ADD BIGGER LOGO (Right Side Top)
     try {
         const logoImg = new Image();
         logoImg.src = 'logo.png';
-        // Wait for image to load before drawing (basic implementation)
-        // For production, preloading is better, but this works if cached
-        doc.addImage(logoImg, 'PNG', 160, 5, 35, 15); 
+        // Increased size: x=145, y=2 (almost top), width=60, height=21 (almost full header height)
+        doc.addImage(logoImg, 'PNG', 145, 2, 60, 21); 
     } catch(e) { console.log("Logo error", e); }
     
     doc.setFontSize(14);
@@ -663,21 +663,20 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
     
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
-    doc.text(`Date: ${date}  ${time}`, 150, 45); 
+    // Moved date/time slightly left to accommodate bigger logo area if needed
+    doc.text(`Date: ${date}  ${time}`, 145, 45); 
 
     // --- 2. ADDRESS & CONTACT (Fixed Overlap) ---
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    // Address (Multi-line handled by splitTextToSize or simple manual breaks)
     const address = "1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080";
     const splitAddress = doc.splitTextToSize(address, 180);
     doc.text(splitAddress, 14, 52);
     
-    // Move Y down based on address length
     let currentY = 52 + (splitAddress.length * 4); 
     
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, currentY);
-    currentY += 5; // Move down for GST
+    currentY += 5; 
     doc.text("GST NO: 36CYZPA903181Z1", 14, currentY);
 
     // --- 3. MEMBER GRID ---
@@ -724,24 +723,21 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
     
-    // Authorized Signature Text
     doc.text("Authorized Signature", 150, finalY);
     
-    // Add SIGN IMAGE (Below text)
+    // BIGGER SIGN IMAGE
     try {
         const signImg = new Image();
         signImg.src = 'Sign.jpeg'; 
-        // Adjust width/height (30, 15) and position (150, finalY + 2) as needed
-        doc.addImage(signImg, 'JPEG', 150, finalY + 2, 30, 15); 
+        // Increased size: width=50 (was 30), height=25 (was 15)
+        doc.addImage(signImg, 'JPEG', 150, finalY + 2, 50, 25); 
     } catch(e) { console.log("Sign error", e); }
 
-    // Draw Lines
+    // Left side line line
     doc.line(14, finalY + 15, 60, finalY + 15);
-    // doc.line(150, finalY + 15, 196, finalY + 15); // Removed line since we have image
-
-    // Terms
-    // Move footer down to avoid hitting the sign image
-    finalY += 25; 
+   
+    // Terms (Moved down further to accommodate bigger sign)
+    finalY += 35; 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text("Note: Fees once paid are not refundable.", 14, finalY);
