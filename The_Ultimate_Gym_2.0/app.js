@@ -659,6 +659,7 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setTextColor(100, 100, 100);
     doc.text("1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080", 14, 52);
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, 57);
+    doc.text("GST NO:36CYZPA903181Z1", 14, 57);
 
     // MEMBER GRID
     doc.autoTable({
