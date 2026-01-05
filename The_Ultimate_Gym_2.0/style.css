@@ -433,3 +433,38 @@ body.light-mode .hero-overlay small,
 body.light-mode .hero-overlay i {
     color: #ffffff !important;
 }
+/* --- MORE LIGHT MODE FIXES --- */
+
+/* 1. Fix Top Menu Links (Home, Members, etc.) */
+body.light-mode .nav-item {
+    color: #555 !important; /* Dark Gray by default */
+}
+body.light-mode .nav-item:hover,
+body.light-mode .nav-item.active {
+    color: #000 !important; /* Black when active/hovered */
+}
+
+/* 2. Fix Card Headers & Legends (Overall Memberships, Finance Overview) */
+body.light-mode .card-header span {
+    color: #000 !important; /* Black Header Text */
+}
+
+body.light-mode .legend, 
+body.light-mode .legend span {
+    color: #444 !important; /* Darker Gray for legends */
+}
+
+/* 3. Fix "Active / Expired" text specifically */
+body.light-mode .legend span[style*="color:#fff"] {
+    color: #000 !important; /* Forces the "Active" label to black */
+}
+
+/* 4. Fix Finance Overview "Rev Exp" text */
+body.light-mode .legend span[style*="color:#666"] {
+    color: #555 !important; /* Darkens the gray text for better contrast */
+}
+
+/* 5. Fix Stats Container Text (if any remain white) */
+body.light-mode .stat-label {
+    color: #444 !important;
+}
