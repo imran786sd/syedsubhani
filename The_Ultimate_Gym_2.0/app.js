@@ -118,12 +118,10 @@ function updateClock() {
     if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
 
-// --- THEME SETTING (UPDATED WITH ORANGE) ---
 window.setTheme = (color) => {
     currentTheme = color;
     localStorage.setItem('gymTheme', color);
     const root = document.documentElement;
-    
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.theme-${color}`);
     if(activeBtn) activeBtn.classList.add('active');
@@ -132,7 +130,7 @@ window.setTheme = (color) => {
         red: ['#ef4444','239, 68, 68'], 
         blue: ['#3b82f6','59, 130, 246'], 
         green: ['#22c55e','34, 197, 94'],
-        orange: ['#f97316', '249, 115, 22'] // Orange Added
+        orange: ['#f97316', '249, 115, 22']
     };
     
     if(colors[color]) {
@@ -203,6 +201,139 @@ window.calcExpiry = () => {
         else d.setMonth(d.getMonth() + val);
         document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; 
     } 
+};
+
+// --- DATA IMPORT / EXPORT FUNCTIONS (NEW FEATURE) ---
+
+// 1. Export Data to CSV
+window.exportData = (type) => {
+    let dataToExport = [];
+    let filename = '';
+
+    if(type === 'members') {
+        if(members.length === 0) return alert("No members to export");
+        dataToExport = members.map(m => ({
+            MemberID: m.memberId,
+            Name: m.name,
+            Phone: m.phone,
+            Gender: m.gender,
+            Plan: m.planDuration,
+            JoinDate: m.joinDate,
+            ExpiryDate: m.expiryDate,
+            LastPaid: m.lastPaidAmount,
+            Status: new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired'
+        }));
+        filename = 'Gym_Members.csv';
+    } else if (type === 'finance') {
+        if(transactions.length === 0) return alert("No finance data to export");
+        dataToExport = transactions.map(t => ({
+            Date: t.date,
+            Type: t.type,
+            Category: t.category,
+            Amount: t.amount,
+            Mode: t.mode
+        }));
+        filename = 'Gym_Finance.csv';
+    }
+
+    const csvRows = [];
+    const headers = Object.keys(dataToExport[0]);
+    csvRows.push(headers.join(','));
+
+    for (const row of dataToExport) {
+        const values = headers.map(header => {
+            const escaped = ('' + row[header]).replace(/"/g, '\\"');
+            return `"${escaped}"`;
+        });
+        csvRows.push(values.join(','));
+    }
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', filename);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+// 2. Import Members from CSV
+window.importMembers = () => {
+    const input = document.getElementById('import-file');
+    const statusDiv = document.getElementById('import-status');
+    
+    if (!input.files || !input.files[0]) {
+        return alert("Please select a CSV file first.");
+    }
+
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async function(e) {
+        const text = e.target.result;
+        const rows = text.split('\n');
+        
+        if(rows.length < 2) return alert("CSV file appears empty.");
+
+        let successCount = 0;
+        statusDiv.innerText = "Processing...";
+        statusDiv.style.color = "orange";
+
+        // Start from Row 1 (Skipping Header)
+        // Format: Name, Phone, Gender, JoinDate(YYYY-MM-DD), Plan(1m/3m), Amount
+        for (let i = 1; i < rows.length; i++) {
+            const cols = rows[i].split(',');
+            if(cols.length < 5) continue; 
+
+            const clean = (val) => val ? val.replace(/"/g, '').trim() : "";
+            
+            const name = clean(cols[0]);
+            const phone = clean(cols[1]);
+            const gender = clean(cols[2]) || 'Male';
+            const joinDate = clean(cols[3]);
+            const plan = clean(cols[4]);
+            const amount = clean(cols[5]) || 0;
+
+            if(name && phone && joinDate) {
+                try {
+                    const d = new Date(joinDate);
+                    const val = parseInt(plan); 
+                    if(plan.includes('d')) d.setDate(d.getDate() + val);
+                    else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
+                    else d.setMonth(d.getMonth() + (val || 1)); 
+                    
+                    const expiryDate = d.toISOString().split('T')[0];
+                    const memberId = window.generateMemberID(name, phone);
+
+                    const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
+                        name, phone, gender, joinDate,
+                        planDuration: plan,
+                        expiryDate: expiryDate,
+                        lastPaidAmount: amount,
+                        memberId: memberId,
+                        createdAt: new Date(),
+                        photo: null 
+                    });
+
+                    if(amount > 0) {
+                        await addFinanceEntry(`Imported - ${name}`, amount, 'Cash', joinDate, docRef.id, plan, expiryDate);
+                    }
+
+                    successCount++;
+                } catch(err) {
+                    console.error("Error importing row " + i, err);
+                }
+            }
+        }
+
+        statusDiv.innerText = `Successfully imported ${successCount} members!`;
+        statusDiv.style.color = "#22c55e";
+        input.value = ""; 
+    };
+
+    reader.readAsText(file);
 };
 
 // --- AUTOMATED ACCOUNTING ---
@@ -590,7 +721,6 @@ window.toggleHistory = async (id) => {
     }
 };
 
-// --- PRINT HISTORY INVOICE ---
 window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expiry, timeStr) => {
     const m = members.find(x => x.id === memberId);
     if (!m) return alert("Member data missing.");
@@ -608,36 +738,44 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
     window.generateInvoice(m, tempTransaction);
 };
 
-// --- INVOICE GENERATOR ---
+// --- UPDATED INVOICE GENERATOR (Black Header, Square Logo, Tighter Sign) ---
 window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
+    // CHANGED: Header color to BLACK
     const themeColor = [0, 0, 0]; 
     let finalY = 0;
 
     const isHistory = !!specificTransaction;
+    
     const amt = isHistory ? specificTransaction.amount : m.lastPaidAmount;
     const date = isHistory ? specificTransaction.date : new Date().toISOString().split('T')[0];
     const time = isHistory ? (specificTransaction.timeStr || '') : new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
     const mode = isHistory ? specificTransaction.mode : 'Cash'; 
     const category = isHistory ? specificTransaction.category : 'Membership Fees';
+    
     const rawPlan = (isHistory && specificTransaction.snapshotPlan) ? specificTransaction.snapshotPlan : m.planDuration;
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // Header
+    // --- 1. HEADER & SQUARE LOGO ---
     doc.setFillColor(...themeColor);
+    // Header bar height is 25mm
     doc.rect(0, 0, 210, 25, 'F');
+    
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
 
+    // ADD SQUARE LOGO (Right Side Top)
     try {
         const logoImg = new Image();
         logoImg.src = 'logo.png';
-        doc.addImage(logoImg, 'PNG', 175, 2.5, 20, 20); 
+        // CHANGED: Sized to be square (22x22) to fit nicely within the 25mm high black header.
+        // Positioned at x=175 to be on the far right.
+        doc.addImage(logoImg, 'PNG', 175, 1.5, 22, 22); 
     } catch(e) { console.log("Logo error", e); }
     
     doc.setFontSize(14);
@@ -648,10 +786,12 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
+    
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
+    // Adjusted date position slightly left so it doesn't crowd the logo area
     doc.text(`Date: ${date}  ${time}`, 140, 45); 
 
-    // Address & Contact
+    // --- 2. ADDRESS & CONTACT ---
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     const address = "1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080";
@@ -659,11 +799,12 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.text(splitAddress, 14, 52);
     
     let currentY = 52 + (splitAddress.length * 4); 
+    
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, currentY);
     currentY += 5; 
     doc.text("GST NO: 36CYZPA903181Z1", 14, currentY);
 
-    // Member Grid
+    // --- 3. MEMBER GRID ---
     doc.autoTable({
         startY: currentY + 10,
         theme: 'grid',
@@ -685,7 +826,7 @@ window.generateInvoice = async (m, specificTransaction = null) => {
 
     finalY = doc.lastAutoTable.finalY + 10;
 
-    // Details Table
+    // --- 4. DETAILS TABLE ---
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text("Payment Details", 14, finalY);
@@ -693,29 +834,36 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.autoTable({
         startY: finalY + 5,
         head: [['Description', 'Date & Time', 'Mode', 'Amount']],
-        body: [[category, `${date} ${time}`, mode, `Rs. ${amt}`]],
+        body: [
+            [category, `${date} ${time}`, mode, `Rs. ${amt}`]
+        ],
         theme: 'striped',
+        // Header will now be black based on themeColor
         headStyles: { fillColor: themeColor },
         styles: { fontSize: 9, cellPadding: 3 }
     });
 
     finalY = doc.lastAutoTable.finalY + 20;
 
-    // Signature
+    // --- 5. SIGNATURE (Reduced Spacing) & FOOTER ---
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
+    
+    // Text baseline is at finalY
     doc.text("Authorized Signature", 150, finalY);
     
     try {
         const signImg = new Image();
         signImg.src = 'Sign.jpeg'; 
+        // CHANGED: Moved Y position UP from `finalY + 2` to `finalY - 5` 
+        // This pulls the image up closer to the text above it.
         doc.addImage(signImg, 'JPEG', 150, finalY - 5, 50, 25); 
     } catch(e) { console.log("Sign error", e); }
 
+    // Left side line
     doc.line(14, finalY + 15, 60, finalY + 15);
-    doc.line(150, finalY + 15, 196, finalY + 15);
-
-    // Terms
+   
+    // Terms (Moved down to accommodate sign)
     finalY += 30; 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
@@ -725,129 +873,6 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.save(`${m.name}_Receipt.pdf`);
 };
 
-// --- STANDARD ACTIONS ---
-window.editMember = (id) => {
-    const m = members.find(x => x.id === id); if(!m) return;
-    editingMemberId = id;
-    document.getElementById('inp-name').value = m.name; 
-    document.getElementById('inp-gender').value = m.gender || 'Male'; 
-    document.getElementById('inp-phone').value = m.phone; 
-    document.getElementById('inp-amount').value = m.lastPaidAmount; 
-    document.getElementById('inp-dob').value = m.dob;
-    document.getElementById('inp-join').value = m.joinDate; 
-    document.getElementById('inp-expiry').value = m.expiryDate; 
-    document.getElementById('inp-plan').value = m.planDuration || "1m";
-    const preview = document.getElementById('preview-img');
-    if(m.photo) {
-        preview.src = m.photo;
-    } else {
-        preview.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
-    }
-    document.getElementById('modal-member').style.display = 'flex';
-};
-
-window.deleteMember = async (id) => { if(confirm("Delete member?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/members`, id)); };
-
-window.saveTransaction = async () => {
-    const type = document.getElementById('tx-type').value; 
-    const cat = document.getElementById('tx-category').value; 
-    const mode = document.getElementById('tx-paymode').value;
-    const amt = parseFloat(document.getElementById('tx-amount').value); 
-    const date = document.getElementById('tx-date').value; 
-    if(!cat || !amt) return alert("Fill details"); 
-    const data = { type, category: cat, amount: amt, date, mode }; 
-    if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; } 
-    else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); } 
-    window.toggleTxModal(); 
-};
-
-window.editTransaction = (id) => {
-    const t = transactions.find(x => x.id === id); if(!t) return;
-    editingTxId = id;
-    document.getElementById('tx-type').value = t.type; document.getElementById('tx-category').value = t.category; document.getElementById('tx-amount').value = t.amount; document.getElementById('tx-date').value = t.date;
-    document.getElementById('modal-transaction').style.display = 'flex';
-};
-
-window.deleteTransaction = async (id) => { if(confirm("Delete transaction?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id)); };
-
-window.sendWhatsApp = (phone, name, expiry) => {
-    let p = phone ? phone.replace(/\D/g,'') : ''; 
-    if(p.length===10) p="91"+p;
-    if(p) window.open(`https://wa.me/${p}?text=Hello ${name}, your gym membership expires on ${expiry}.`, '_blank');
-    else alert("Invalid phone number");
-}
-
-function renderMembersList() {
-    const list = document.getElementById('members-list'); 
-    if(!list) return;
-    list.innerHTML = "";
-    const today = new Date();
-
-    members.forEach(m => {
-        const expDate = new Date(m.expiryDate);
-        const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-        let statusClass = 'status-paid'; let statusText = 'Paid';
-        if (daysLeft < 0) { statusClass = 'status-due'; statusText = 'Expired'; }
-        else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due: ${daysLeft} days`; }
-
-        const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
-        const photoUrl = m.photo || placeholder;
-        const planDisplay = window.formatPlanDisplay(m.planDuration);
-        
-        let genderIcon = '';
-        if(m.gender === 'Male') genderIcon = '<i class="fa-solid fa-mars" style="color:#60a5fa; margin-left:5px;"></i>';
-        else if(m.gender === 'Female') genderIcon = '<i class="fa-solid fa-venus" style="color:#f472b6; margin-left:5px;"></i>';
-
-        list.innerHTML += `
-        <div class="member-row">
-            <i class="fa-solid fa-ellipsis-vertical mobile-kebab-btn" onclick="toggleRowAction('${m.id}')"></i>
-            <div class="profile-img-container"><img src="${photoUrl}" class="profile-circle" onclick="editMember('${m.id}')"></div>
-            <div class="info-block">
-                <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
-                <div class="name-phone-row">
-                    <span class="info-main">${m.name}</span>${genderIcon}
-                    <span style="font-weight:400; font-size:0.8rem; color:#888; margin-left:8px;">${m.phone}</span>
-                </div>
-            </div>
-            <div class="info-block">
-                <div class="info-main" style="color:${daysLeft<0?'#ef4444':'inherit'}">Exp: ${m.expiryDate}</div>
-                <div class="info-sub">${planDisplay} Plan</div>
-            </div>
-            <div><span class="status-badge ${statusClass}">${statusText}</span></div>
-            <div class="row-actions" id="actions-${m.id}">
-                <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
-                <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
-                <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${m.expiryDate}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
-                <div class="icon-btn bill" onclick='generateInvoice(${JSON.stringify(m)})' title="Bill"><i class="fa-solid fa-file-invoice"></i></div>
-                <div class="icon-btn delete" onclick="deleteMember('${m.id}')" title="Delete"><i class="fa-solid fa-trash"></i></div>
-            </div>
-            <div id="history-${m.id}" class="history-panel"></div>
-        </div>`;
-    });
-}
-
-function renderFinanceList() { 
-    const list = document.getElementById('finance-list'); list.innerHTML = ""; 
-    let p=0; 
-    transactions.forEach(t=>{ 
-        if(t.type=='income') p+=t.amount; else p-=t.amount; 
-        const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 5px; border-radius:4px; margin-right:5px;">${t.mode}</span>` : '';
-        list.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between; align-items:center;">
-            <div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date} ${modeBadge}</small></div>
-            <div style="display:flex; gap:15px; align-items:center;">
-                <span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span>
-                <div style="display:flex; gap:10px;">
-                    <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
-                    <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
-                </div>
-            </div>
-        </div>`; 
-    }); 
-    document.getElementById('total-profit').innerText="₹"+p; 
-}
-
-window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
 window.toggleMemberModal = () => { 
     const el = document.getElementById('modal-member'); 
     if(el.style.display !== 'flex') {
