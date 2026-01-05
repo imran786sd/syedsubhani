@@ -10,7 +10,7 @@ let financeChartInstance = null;
 let memberChartInstance = null;
 let ageCategoryChartInstance = null;
 let ageStatusChartInstance = null;
-let memberFilterState = 'active';
+let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
 // --- IMAGE COMPRESSION HELPER ---
@@ -118,7 +118,6 @@ function updateClock() {
     if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
 
-// --- THEME SETTING (Updated with Orange) ---
 window.setTheme = (color) => {
     currentTheme = color;
     localStorage.setItem('gymTheme', color);
@@ -132,7 +131,7 @@ window.setTheme = (color) => {
         red: ['#ef4444','239, 68, 68'], 
         blue: ['#3b82f6','59, 130, 246'], 
         green: ['#22c55e','34, 197, 94'],
-        orange: ['#f97316', '249, 115, 22'] // Added Orange
+        orange: ['#f97316', '249, 115, 22']
     };
     
     if(colors[color]) {
@@ -149,6 +148,7 @@ function setupListeners() {
     onSnapshot(query(memRef, orderBy("joinDate", "desc")), (snap) => {
         members = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
+        renderOverview(); // <--- NEW OVERVIEW CALL
         renderMembersList(); 
         renderAgeCharts();
     });
@@ -156,6 +156,7 @@ function setupListeners() {
     onSnapshot(query(txRef, orderBy("date", "desc")), (snap) => {
         transactions = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
+        renderOverview(); // <--- NEW OVERVIEW CALL
         renderFinanceList();
     });
 }
@@ -205,7 +206,7 @@ window.calcExpiry = () => {
     } 
 };
 
-// --- DATA IMPORT / EXPORT FUNCTIONS (ADDED) ---
+// --- DATA IMPORT / EXPORT FUNCTIONS ---
 window.exportData = (type) => {
     let dataToExport = [];
     let filename = '';
@@ -351,60 +352,63 @@ async function addFinanceEntry(category, amount, mode, date, memberId, plan, exp
     } catch(e) { console.error("Auto-finance failed", e); }
 }
 
-// --- DASHBOARD RENDERER ---
+// --- OVERVIEW RENDERER (NEW) ---
+function renderOverview() {
+    const gridContainer = document.getElementById("stats-grid-container");
+    if(!gridContainer) return;
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const formatNum = (n) => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+
+    const totalMembers = members.length;
+    const activeMembers = members.filter(m => new Date(m.expiryDate) >= now).length;
+    const inactiveMembers = totalMembers - activeMembers;
+
+    const newMembers = members.filter(m => {
+        const j = new Date(m.joinDate);
+        return j.getMonth() === currentMonth && j.getFullYear() === currentYear;
+    }).length;
+
+    const pendingMembers = members.filter(m => {
+        const d = new Date(m.expiryDate);
+        const diffDays = (d - now) / (1000 * 60 * 60 * 24);
+        return diffDays >= 0 && diffDays <= 7; 
+    }).length;
+
+    const overdueMembers = members.filter(m => {
+        const d = new Date(m.expiryDate);
+        const diffDays = (now - d) / (1000 * 60 * 60 * 24);
+        return diffDays > 0 && diffDays <= 30;
+    }).length;
+
+    const totalRev = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0) + 
+                     members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
+    const totalExp = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
+    const netIncome = totalRev - totalExp;
+
+    gridContainer.innerHTML = `
+        <div class="stat-card"><div class="stat-icon-circle icon-blue"><i class="fa-solid fa-users"></i></div><div class="stat-number">${totalMembers}</div><div class="stat-label">Total Members</div></div>
+        <div class="stat-card"><div class="stat-icon-circle icon-green"><i class="fa-solid fa-user-check"></i></div><div class="stat-number">${activeMembers}</div><div class="stat-label">Active Members</div></div>
+        <div class="stat-card"><div class="stat-icon-circle icon-red"><i class="fa-solid fa-user-slash"></i></div><div class="stat-number">${inactiveMembers}</div><div class="stat-label">Inactive Members</div></div>
+        <div class="stat-card"><div class="stat-icon-circle icon-purple"><i class="fa-solid fa-user-plus"></i></div><div class="stat-number">${newMembers}</div><div class="stat-label">New This Month</div></div>
+        <div class="stat-card"><div class="stat-icon-circle icon-orange"><i class="fa-solid fa-hourglass-half"></i></div><div class="stat-number">${pendingMembers}</div><div class="stat-label">Pending / Follow-up</div></div>
+        <div class="stat-card"><div class="stat-icon-circle icon-red"><i class="fa-solid fa-bell"></i></div><div class="stat-number">${overdueMembers}</div><div class="stat-label">Recently Overdue</div></div>
+        <div class="stat-card"><div class="stat-icon-circle icon-green"><i class="fa-solid fa-indian-rupee-sign"></i></div><div class="stat-number">₹${formatNum(totalRev)}</div><div class="stat-label">Total Revenue</div></div>
+        <div class="stat-card"><div class="stat-icon-circle icon-teal"><i class="fa-solid fa-scale-balanced"></i></div><div class="stat-number">₹${formatNum(netIncome)}</div><div class="stat-label">Net Income</div></div>
+    `;
+}
+
+// --- DASHBOARD RENDERER (Cleaned for Home Tab) ---
 function renderDashboard() {
     if(!members.length && !transactions.length) return;
+    
     const now = new Date().getTime();
     const txIncome = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
     const txExpense = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
     const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
     const totalRev = txIncome + memIncome;
-    const formatNum = (n) => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
-    
-    document.getElementById("hero-clients").innerText = members.length;
-    document.getElementById("hero-revenue").innerText = "₹" + formatNum(totalRev);
-    document.getElementById("hero-expense").innerText = "₹" + formatNum(txExpense);
-
-    const getStats = (minMo, maxMo) => {
-        const planMembers = members.filter(m => {
-            let dur = m.planDuration || "1m";
-            let months = 0;
-            if(dur.includes('d')) months = 0.5; 
-            else if(dur.includes('y')) months = parseInt(dur) * 12;
-            else months = parseInt(dur);
-            return months >= minMo && months < maxMo;
-        });
-        const total = planMembers.length;
-        const active = planMembers.filter(m => new Date(m.expiryDate).getTime() > now).length;
-        const pct = total === 0 ? 0 : (active / total) * 100;
-        return { active, inactive: total - active, pct };
-    };
-    
-    const updatePlanUI = (id, label, stats) => {
-        const container = document.getElementById(`row-${id}`);
-        const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-        const strokeDash = (stats.pct / 100) * 100; 
-        if(container) {
-            container.innerHTML = `
-                <div class="plan-left">
-                    <div class="donut-svg-wrapper">
-                        <svg width="44" height="44" viewBox="0 0 40 40">
-                            <circle cx="20" cy="20" r="16" fill="none" stroke="#333" stroke-width="4" />
-                            <circle cx="20" cy="20" r="16" fill="none" stroke="${accent}" stroke-width="4" stroke-dasharray="${strokeDash} 100" transform="rotate(-90 20 20)" style="transition: stroke-dasharray 0.5s ease;" />
-                        </svg>
-                    </div>
-                    <div class="plan-name">${label}</div>
-                </div>
-                <div class="stat-stack">
-                    <div class="stat-pill"><span style="color:#fff">${stats.active}</span></div>
-                    <div class="stat-pill"><span style="color:#666">${stats.inactive}</span></div>
-                </div>`;
-        }
-    };
-    
-    updatePlanUI('platinum', 'Platinum<br>Membership', getStats(12, 99));
-    updatePlanUI('gold', 'Gold<br>Membership', getStats(6, 12));
-    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); 
 
     updateFinanceChart(totalRev, txExpense);
     renderFilteredDashboardList();
@@ -415,7 +419,7 @@ function renderDashboard() {
 window.setMemberFilter = (filter) => {
     memberFilterState = filter;
     document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`btn-filter-${filter}`).classList.add('active');
+    // Dashboard list logic removed toggle buttons, simplified to expiring list
     renderFilteredDashboardList();
 }
 
@@ -424,24 +428,34 @@ function renderFilteredDashboardList() {
     if(!list) return;
     list.innerHTML = "";
     
-    const now = new Date().getTime();
-    const filtered = members.filter(m => {
-        const isExpired = now > new Date(m.expiryDate).getTime();
-        return memberFilterState === 'active' ? !isExpired : isExpired;
+    const now = new Date();
+    
+    // Sort members: Expiring soonest first
+    const sortedMembers = [...members].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+
+    // Filter to show only active members expiring in next 30 days
+    const upcoming = sortedMembers.filter(m => {
+        const diff = new Date(m.expiryDate) - now;
+        const days = diff / (1000 * 60 * 60 * 24);
+        return days >= 0 && days <= 30;
     });
 
-    filtered.slice(0, 15).forEach(m => {
-        const start = new Date(m.joinDate).getTime();
-        const end = new Date(m.expiryDate).getTime();
-        let pct = ((now - start) / (end - start)) * 100;
-        pct = Math.min(Math.max(pct, 0), 100);
-        const isExpired = now > end;
-        const color = isExpired ? '#ef4444' : getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    if(upcoming.length === 0) {
+        list.innerHTML = '<div style="padding:10px; color:#888; text-align:center;">No upcoming expiries.</div>';
+        return;
+    }
+
+    upcoming.slice(0, 10).forEach(m => {
+        const end = new Date(m.expiryDate);
+        const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+        
         list.innerHTML += `
             <div class="dash-row">
                 <span>${m.name}</span>
-                <span style="color:${isExpired?'#ef4444':'#22c55e'}">${isExpired?'Expired':'Active'}</span>
-                <div class="progress-container"><div class="progress-track"><div class="progress-bar" style="width:${pct}%; background:${color}"></div></div><span class="progress-pct">${Math.floor(pct)}%</span></div>
+                <span style="color:var(--text-main); font-weight:500;">${m.expiryDate}</span>
+                <div style="background:#ffedd5; color:#c2410c; padding:2px 8px; border-radius:10px; font-size:0.75rem;">
+                    ${daysLeft} Days left
+                </div>
             </div>`;
     });
 }
@@ -661,7 +675,6 @@ window.confirmRenewal = async () => {
     alert(`Membership Renewed! New Expiry: ${newExpiry}`);
 };
 
-// --- HISTORY TOGGLE & PRINT LOGIC ---
 window.toggleHistory = async (id) => {
     const panel = document.getElementById(`history-${id}`);
     if(panel.style.display === 'block') { panel.style.display = 'none'; return; }
@@ -693,7 +706,6 @@ window.toggleHistory = async (id) => {
             const safePlan = t.snapshotPlan || '';
             const safeExpiry = t.snapshotExpiry || '';
             
-            // CONVERT TIMESTAMP TO READABLE TIME
             let timeStr = "-";
             if(t.createdAt && t.createdAt.seconds) {
                 const dateObj = new Date(t.createdAt.seconds * 1000);
@@ -720,7 +732,6 @@ window.toggleHistory = async (id) => {
     }
 };
 
-// UPDATED: Receives Time
 window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expiry, timeStr) => {
     const m = members.find(x => x.id === memberId);
     if (!m) return alert("Member data missing.");
@@ -738,30 +749,24 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
     window.generateInvoice(m, tempTransaction);
 };
 
-// --- UPDATED INVOICE GENERATOR (Black Header, Square Logo, Tighter Sign) ---
 window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // CHANGED: Header color to BLACK
     const themeColor = [0, 0, 0]; 
     let finalY = 0;
 
     const isHistory = !!specificTransaction;
-    
     const amt = isHistory ? specificTransaction.amount : m.lastPaidAmount;
     const date = isHistory ? specificTransaction.date : new Date().toISOString().split('T')[0];
     const time = isHistory ? (specificTransaction.timeStr || '') : new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
     const mode = isHistory ? specificTransaction.mode : 'Cash'; 
     const category = isHistory ? specificTransaction.category : 'Membership Fees';
-    
     const rawPlan = (isHistory && specificTransaction.snapshotPlan) ? specificTransaction.snapshotPlan : m.planDuration;
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // --- 1. HEADER & SQUARE LOGO ---
     doc.setFillColor(...themeColor);
-    // Header bar height is 25mm
     doc.rect(0, 0, 210, 25, 'F');
     
     doc.setFontSize(20);
@@ -769,11 +774,9 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setFont("helvetica", "bold");
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
 
-    // ADD SQUARE LOGO (Right Side Top)
     try {
         const logoImg = new Image();
         logoImg.src = 'logo.png';
-        // Positioned at top-right (x=175) with size 22x22mm
         doc.addImage(logoImg, 'PNG', 175, 1.5, 22, 22); 
     } catch(e) { console.log("Logo error", e); }
     
@@ -785,11 +788,9 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
-    
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
     doc.text(`Date: ${date}  ${time}`, 140, 45); 
 
-    // --- 2. ADDRESS & CONTACT ---
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     const address = "1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080";
@@ -802,7 +803,6 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     currentY += 5; 
     doc.text("GST NO: 36CYZPA903181Z1", 14, currentY);
 
-    // --- 3. MEMBER GRID ---
     doc.autoTable({
         startY: currentY + 10,
         theme: 'grid',
@@ -824,7 +824,6 @@ window.generateInvoice = async (m, specificTransaction = null) => {
 
     finalY = doc.lastAutoTable.finalY + 10;
 
-    // --- 4. DETAILS TABLE ---
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text("Payment Details", 14, finalY);
@@ -832,21 +831,16 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.autoTable({
         startY: finalY + 5,
         head: [['Description', 'Date & Time', 'Mode', 'Amount']],
-        body: [
-            [category, `${date} ${time}`, mode, `Rs. ${amt}`]
-        ],
+        body: [[category, `${date} ${time}`, mode, `Rs. ${amt}`]],
         theme: 'striped',
-        // Header will now be black based on themeColor
         headStyles: { fillColor: themeColor },
         styles: { fontSize: 9, cellPadding: 3 }
     });
 
     finalY = doc.lastAutoTable.finalY + 20;
 
-    // --- 5. SIGNATURE & FOOTER ---
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
-    
     doc.text("Authorized Signature", 150, finalY);
     
     try {
@@ -855,7 +849,6 @@ window.generateInvoice = async (m, specificTransaction = null) => {
         doc.addImage(signImg, 'JPEG', 150, finalY - 5, 50, 25); 
     } catch(e) { console.log("Sign error", e); }
 
-    // Left side line
     doc.line(14, finalY + 15, 60, finalY + 15);
     doc.line(150, finalY + 15, 196, finalY + 15);
    
@@ -868,7 +861,6 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.save(`${m.name}_Receipt.pdf`);
 };
 
-// --- STANDARD ACTIONS ---
 window.editMember = (id) => {
     const m = members.find(x => x.id === id); if(!m) return;
     editingMemberId = id;
