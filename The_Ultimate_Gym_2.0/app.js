@@ -10,10 +10,11 @@ let financeChartInstance = null;
 let memberChartInstance = null;
 let ageCategoryChartInstance = null;
 let ageStatusChartInstance = null;
-let memberFilterState = 'active'; 
+let memberFilterState = 'active';
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
+let selectedFitnessMember = null; // New for fitness modal
 
-// --- IMAGE COMPRESSION HELPER ---
+// --- HELPER FUNCTIONS ---
 const compressImage = (file) => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -23,7 +24,7 @@ const compressImage = (file) => {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const maxWidth = 300; 
+                const maxWidth = 300;
                 const scaleSize = maxWidth / img.width;
                 canvas.width = maxWidth;
                 canvas.height = img.height * scaleSize;
@@ -43,14 +44,16 @@ const dataLabelPlugin = {
     id: 'dataLabels',
     afterDatasetsDraw(chart) {
         const ctx = chart.ctx;
-        const isHorizontal = chart.config.options.indexAxis === 'y'; 
+        const isHorizontal = chart.config.options.indexAxis === 'y';
         chart.data.datasets.forEach((dataset, i) => {
             const meta = chart.getDatasetMeta(i);
             if (!meta.hidden) {
                 meta.data.forEach((element, index) => {
                     const data = dataset.data[index];
-                    if (data > 0) { 
-                        ctx.fillStyle = '#ffffff';
+                    if (data > 0) {
+                        const isLight = document.body.classList.contains('light-mode');
+                        const textColor = isLight ? '#000' : '#fff';
+                        ctx.fillStyle = textColor;
                         const fontSize = 10;
                         const fontStyle = 'bold';
                         const fontFamily = 'Inter';
@@ -61,12 +64,12 @@ const dataLabelPlugin = {
                         let x = position.x;
                         let y = position.y;
                         if (isHorizontal) {
-                            x = position.x + (dataset.stack ? -10 : 15); 
-                            if(dataset.stack) ctx.fillStyle = '#fff'; 
+                            x = position.x + (dataset.stack ? -10 : 15);
+                            if(dataset.stack) ctx.fillStyle = isLight ? '#000' : '#fff';
                         } else {
                             y = position.y + (dataset.stack ? 0 : -10);
                         }
-                        ctx.fillText(data.toString(), x, y); 
+                        ctx.fillText(data.toString(), x, y);
                     }
                 });
             }
@@ -79,7 +82,15 @@ window.switchTab = (tab) => {
     document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     document.getElementById(`view-${tab}`).style.display = 'block';
-    document.getElementById(`tab-${tab}`).classList.add('active');
+    
+    // Desktop Nav
+    const dTab = document.getElementById(`tab-${tab}`);
+    if(dTab) dTab.classList.add('active');
+
+    // Mobile Nav
+    document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
+    const mTab = document.getElementById(`mob-${tab}`);
+    if(mTab) mTab.classList.add('active');
 };
 
 window.toggleMobileMenu = () => { console.log("Mobile menu toggled"); };
@@ -102,7 +113,13 @@ onAuthStateChanged(auth, (user) => {
 });
 
 function initApp() {
-    setTheme(currentTheme); 
+    const savedMode = localStorage.getItem('gymLightMode');
+    if (savedMode === 'enabled') {
+        document.body.classList.add('light-mode');
+        const toggle = document.getElementById('mode-toggle');
+        if(toggle) toggle.checked = true;
+    }
+    setTheme(currentTheme);
     updateClock();
     setInterval(updateClock, 1000);
     setupListeners();
@@ -112,24 +129,14 @@ function updateClock() {
     const el = document.getElementById("clock-display");
     if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
-// --- LIGHT/DARK MODE TOGGLE ---
+
 window.toggleLightMode = () => {
     const body = document.body;
     const isLight = body.classList.toggle('light-mode');
     localStorage.setItem('gymLightMode', isLight ? 'enabled' : 'disabled');
-    
-    // Force ALL charts to re-render with new colors
-    renderDashboard();   // Updates Home Charts
-    renderAgeCharts();   // Updates Member/Age Charts (FIXED)
+    renderDashboard();
+    renderAgeCharts();
 };
-
-// Check saved preference on load
-const savedMode = localStorage.getItem('gymLightMode');
-if (savedMode === 'enabled') {
-    document.body.classList.add('light-mode');
-    const toggle = document.getElementById('mode-toggle');
-    if(toggle) toggle.checked = true;
-}
 
 window.setTheme = (color) => {
     currentTheme = color;
@@ -139,19 +146,17 @@ window.setTheme = (color) => {
     const activeBtn = document.querySelector(`.theme-${color}`);
     if(activeBtn) activeBtn.classList.add('active');
     
-    const colors = { 
-        red: ['#ef4444','239, 68, 68'], 
-        blue: ['#3b82f6','59, 130, 246'], 
+    const colors = {
+        red: ['#ef4444','239, 68, 68'],
+        blue: ['#3b82f6','59, 130, 246'],
         green: ['#22c55e','34, 197, 94'],
         orange: ['#f97316', '249, 115, 22']
     };
-    
     if(colors[color]) {
         root.style.setProperty('--accent', colors[color][0]);
         root.style.setProperty('--accent-rgb', colors[color][1]);
         document.getElementById('meta-theme-color').content = colors[color][0];
     }
-    
     if(members.length > 0) renderDashboard();
 }
 
@@ -160,20 +165,165 @@ function setupListeners() {
     onSnapshot(query(memRef, orderBy("joinDate", "desc")), (snap) => {
         members = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
-        renderOverview(); // Admin Stats
-        renderMembersList(); 
+        renderOverview(); 
+        renderMembersList();
         renderAgeCharts();
+        renderFitnessList(); // <-- NEW FUNCTION CALL
     });
     const txRef = collection(db, `gyms/${currentUser.uid}/transactions`);
     onSnapshot(query(txRef, orderBy("date", "desc")), (snap) => {
         transactions = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
-        renderOverview(); // Admin Stats
+        renderOverview();
         renderFinanceList();
     });
 }
 
-// --- HELPER FUNCTIONS ---
+// --- FITNESS / BMI LOGIC (NEW) ---
+
+// 1. Quick Calculator (Standalone)
+window.calculateQuickBMI = () => {
+    const w = parseFloat(document.getElementById('calc-weight').value);
+    const h = parseFloat(document.getElementById('calc-height').value);
+    if(!w || !h) return alert("Please enter weight (kg) and height (cm)");
+    
+    const bmi = (w / ((h/100) * (h/100))).toFixed(1);
+    document.getElementById('quick-bmi-result').innerText = `Result: ${bmi}`;
+    
+    // Optional: Color code result
+    const el = document.getElementById('quick-bmi-result');
+    if(bmi < 18.5) el.style.color = "#facc15"; // Yellow (Under)
+    else if(bmi < 25) el.style.color = "#22c55e"; // Green (Normal)
+    else el.style.color = "#ef4444"; // Red (Over)
+}
+
+// 2. Render Grid of Members for Fitness Tab
+function renderFitnessList() {
+    const list = document.getElementById('fitness-list-grid');
+    if(!list) return;
+    list.innerHTML = "";
+
+    members.forEach(m => {
+        const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
+        const photoUrl = m.photo || placeholder;
+        
+        // Calculate current BMI if data exists
+        let bmiDisplay = "No Data";
+        if(m.fitnessStats && m.fitnessStats.currentWeight && m.fitnessStats.currentHeight) {
+            const w = m.fitnessStats.currentWeight;
+            const h = m.fitnessStats.currentHeight / 100;
+            bmiDisplay = "BMI: " + (w / (h*h)).toFixed(1);
+        }
+
+        list.innerHTML += `
+            <div class="stat-card" style="cursor:pointer;" onclick="openFitnessModal('${m.id}')">
+                <img src="${photoUrl}" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid var(--border); margin-bottom:10px;">
+                <div class="stat-number" style="font-size:1.1rem;">${m.name}</div>
+                <div class="stat-label" style="margin-bottom:5px;">${m.memberId}</div>
+                <div class="stat-label" style="color:var(--accent); font-weight:bold;">${bmiDisplay}</div>
+            </div>
+        `;
+    });
+}
+
+// 3. Open Modal & Load Data
+window.openFitnessModal = (id) => {
+    const m = members.find(x => x.id === id);
+    if(!m) return;
+    selectedFitnessMember = m;
+
+    document.getElementById('fit-id').value = id;
+    document.getElementById('fit-name').innerText = m.name;
+    document.getElementById('fit-plan').innerText = window.formatPlanDisplay(m.planDuration);
+    
+    const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
+    document.getElementById('fit-img').src = m.photo || placeholder;
+
+    // Load Existing Stats if any
+    const stats = m.fitnessStats || {};
+    document.getElementById('fit-start-w').value = stats.startWeight || "";
+    document.getElementById('fit-start-h').value = stats.startHeight || "";
+    document.getElementById('fit-curr-w').value = stats.currentWeight || "";
+    document.getElementById('fit-curr-h').value = stats.currentHeight || "";
+
+    // Calculate & Show Comparison
+    calculateFitnessDiff();
+
+    document.getElementById('modal-fitness').style.display = 'flex';
+};
+
+window.closeFitnessModal = () => {
+    document.getElementById('modal-fitness').style.display = 'none';
+};
+
+window.saveFitnessData = async () => {
+    if(!selectedFitnessMember) return;
+    
+    const sw = parseFloat(document.getElementById('fit-start-w').value);
+    const sh = parseFloat(document.getElementById('fit-start-h').value);
+    const cw = parseFloat(document.getElementById('fit-curr-w').value);
+    const ch = parseFloat(document.getElementById('fit-curr-h').value);
+
+    const newStats = {
+        startWeight: sw || null,
+        startHeight: sh || null,
+        currentWeight: cw || null,
+        currentHeight: ch || null,
+        lastUpdated: new Date()
+    };
+
+    try {
+        await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, selectedFitnessMember.id), {
+            fitnessStats: newStats
+        });
+        alert("Fitness profile updated!");
+        window.closeFitnessModal();
+    } catch(e) {
+        console.error("Error saving fitness", e);
+        alert("Save failed");
+    }
+};
+
+// Helper to calc BMI and Diff on the fly inside modal
+window.calculateFitnessDiff = () => {
+    // We attach this to input 'change' events or call it on load
+    const sw = parseFloat(document.getElementById('fit-start-w').value);
+    const sh = parseFloat(document.getElementById('fit-start-h').value);
+    const cw = parseFloat(document.getElementById('fit-curr-w').value);
+    const ch = parseFloat(document.getElementById('fit-curr-h').value);
+
+    // Calc Start BMI
+    let startBMI = "--";
+    if(sw && sh) startBMI = (sw / ((sh/100)**2)).toFixed(1);
+    document.getElementById('fit-start-bmi').innerText = `BMI: ${startBMI}`;
+
+    // Calc Current BMI
+    let currBMI = "--";
+    if(cw && ch) currBMI = (cw / ((ch/100)**2)).toFixed(1);
+    document.getElementById('fit-curr-bmi').innerText = `BMI: ${currBMI}`;
+
+    // Compare
+    const resDiv = document.getElementById('fit-diff');
+    if(sw && cw) {
+        const diff = (cw - sw).toFixed(1);
+        const sign = diff > 0 ? "+" : "";
+        const color = diff > 0 ? "#ef4444" : "#22c55e"; // Red if gained, Green if lost (assuming weight loss goal)
+        resDiv.innerHTML = `Weight Change: <span style="color:${color}">${sign}${diff} kg</span>`;
+    } else {
+        resDiv.innerHTML = "";
+    }
+};
+
+window.filterFitnessGrid = () => {
+    const q = document.getElementById('fitness-search').value.toLowerCase();
+    const cards = document.getElementById('fitness-list-grid').children;
+    for(let card of cards) {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(q) ? 'flex' : 'none';
+    }
+};
+
+// --- EXISTING HELPER FUNCTIONS ---
 window.formatPlanDisplay = (plan) => {
     if(!plan) return '';
     if(plan.includes('d')) return plan.replace('d', ' Days');
@@ -205,20 +355,19 @@ window.toggleRowAction = (id) => {
     }
 };
 
-window.calcExpiry = () => { 
-    const j = document.getElementById('inp-join').value; 
-    const plan = document.getElementById('inp-plan').value; 
-    if(j && plan) { 
+window.calcExpiry = () => {
+    const j = document.getElementById('inp-join').value;
+    const plan = document.getElementById('inp-plan').value;
+    if(j && plan) {
         const d = new Date(j);
         const val = parseInt(plan);
         if(plan.includes('d')) d.setDate(d.getDate() + val);
         else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
         else d.setMonth(d.getMonth() + val);
-        document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; 
-    } 
+        document.getElementById('inp-expiry').value = d.toISOString().split('T')[0];
+    }
 };
 
-// --- DATA IMPORT / EXPORT ---
 window.exportData = (type) => {
     let dataToExport = [];
     let filename = '';
@@ -230,6 +379,7 @@ window.exportData = (type) => {
             Name: m.name,
             Phone: m.phone,
             Gender: m.gender,
+            DOB: m.dob || '',
             Plan: m.planDuration,
             JoinDate: m.joinDate,
             ExpiryDate: m.expiryDate,
@@ -272,7 +422,6 @@ window.exportData = (type) => {
     document.body.removeChild(a);
 };
 
-// --- UPDATED IMPORT FUNCTION (Fixes DOB & Date Formats) ---
 window.importMembers = () => {
     const input = document.getElementById('import-file');
     const statusDiv = document.getElementById('import-status');
@@ -294,72 +443,47 @@ window.importMembers = () => {
         statusDiv.innerText = "Processing...";
         statusDiv.style.color = "orange";
 
-        // --- SMART DATE FIXER HELPER ---
-        // Converts "25/12/1990" or "25-12-1990" -> "1990-12-25"
         const fixDate = (dStr) => {
-            if (!dStr) return "";
+            if(!dStr) return "";
             dStr = dStr.trim();
-
-            // 1. If already correct (YYYY-MM-DD), return it
-            if (dStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dStr;
-
-            // 2. Handle DD/MM/YYYY or DD-MM-YYYY
-            // Split by either / or -
-            const parts = dStr.split(/[\/\-]/); 
-            
-            if (parts.length === 3) {
-                const day = parts[0].padStart(2, '0');
-                const month = parts[1].padStart(2, '0');
-                const year = parts[2];
-
-                // Check if year is last (e.g., 25/12/1990)
-                if (year.length === 4) {
-                    return `${year}-${month}-${day}`;
-                }
+            if(dStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dStr;
+            const parts = dStr.split(/[-/]/); 
+            if(parts.length === 3) {
+                return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
             }
-            return ""; // Return empty if format is unrecognized
+            return dStr; 
         };
 
         for (let i = 1; i < rows.length; i++) {
             const cols = rows[i].split(',');
-            if (cols.length < 5) continue; // Skip invalid rows
+            if(cols.length < 5) continue;
 
             const clean = (val) => val ? val.replace(/"/g, '').trim() : "";
             
-            // MAP COLUMNS (Exact Order Matches Your Table)
             const name = clean(cols[0]);
             const phone = clean(cols[1]);
             const gender = clean(cols[2]) || 'Male';
-            
-            // FIX: Apply the date fixer to DOB and JoinDate
-            const rawDOB = clean(cols[3]);
-            const dob = fixDate(rawDOB); 
+            const dob = fixDate(clean(cols[3]));       
+            const joinDate = fixDate(clean(cols[4]));  
+            const plan = clean(cols[5]);               
+            const amount = clean(cols[6]) || 0;        
+            const payMode = clean(cols[7]) || 'Cash';  
 
-            const rawJoin = clean(cols[4]);
-            const joinDate = fixDate(rawJoin);
-
-            const plan = clean(cols[5]);
-            const amount = clean(cols[6]) || 0;
-            const payMode = clean(cols[7]) || 'Cash';
-
-            // Only proceed if we have valid Name, Phone, and Join Date
-            if (name && phone && joinDate) {
+            if(name && phone && joinDate) {
                 try {
-                    // Calculate Expiry
                     const d = new Date(joinDate);
                     const val = parseInt(plan);
-                    if (plan.includes('d')) d.setDate(d.getDate() + val);
-                    else if (plan.includes('y')) d.setFullYear(d.getFullYear() + val);
+                    if(plan.includes('d')) d.setDate(d.getDate() + val);
+                    else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
                     else d.setMonth(d.getMonth() + (val || 1));
                     
                     const expiryDate = d.toISOString().split('T')[0];
                     const memberId = window.generateMemberID(name, phone);
 
-                    // SAVE TO FIREBASE
                     const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
                         name, phone, gender, 
-                        dob: dob,           // Saved Correctly
-                        joinDate: joinDate, // Saved Correctly
+                        dob: dob,           
+                        joinDate: joinDate, 
                         planDuration: plan,
                         expiryDate: expiryDate,
                         lastPaidAmount: amount,
@@ -368,17 +492,14 @@ window.importMembers = () => {
                         photo: null
                     });
 
-                    // SAVE TRANSACTION
-                    if (amount > 0) {
+                    if(amount > 0) {
                         await addFinanceEntry(`Imported - ${name}`, amount, payMode, joinDate, docRef.id, plan, expiryDate);
                     }
 
                     successCount++;
-                } catch (err) {
+                } catch(err) {
                     console.error("Error importing row " + i, err);
                 }
-            } else {
-                console.warn(`Skipping Row ${i}: Missing Name, Phone, or Invalid Join Date (${rawJoin})`);
             }
         }
 
@@ -390,7 +511,6 @@ window.importMembers = () => {
     reader.readAsText(file);
 };
 
-// --- AUTOMATED ACCOUNTING ---
 async function addFinanceEntry(category, amount, mode, date, memberId, plan, expiry) {
     try {
         await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
@@ -402,36 +522,32 @@ async function addFinanceEntry(category, amount, mode, date, memberId, plan, exp
             memberId: memberId || null,
             snapshotPlan: plan || null,
             snapshotExpiry: expiry || null,
-            createdAt: new Date() 
+            createdAt: new Date()
         });
     } catch(e) { console.error("Auto-finance failed", e); }
 }
 
-// --- DASHBOARD RENDERER (Restored Functionality) ---
 function renderDashboard() {
     if(!members.length && !transactions.length) return;
     const now = new Date().getTime();
     
-    // 1. Calculate Stats
     const txIncome = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
     const txExpense = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
     const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
     const totalRev = txIncome + memIncome;
     const formatNum = (n) => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
     
-    // 2. Update Hero Cards
     if(document.getElementById("hero-clients")) {
         document.getElementById("hero-clients").innerText = members.length;
         document.getElementById("hero-revenue").innerText = "₹" + formatNum(totalRev);
         document.getElementById("hero-expense").innerText = "₹" + formatNum(txExpense);
     }
 
-    // 3. Update Membership Plans (Donuts) - RESTORED LOGIC
     const getStats = (minMo, maxMo) => {
         const planMembers = members.filter(m => {
             let dur = m.planDuration || "1m";
             let months = 0;
-            if(dur.includes('d')) months = 0.5; 
+            if(dur.includes('d')) months = 0.5;
             else if(dur.includes('y')) months = parseInt(dur) * 12;
             else months = parseInt(dur);
             return months >= minMo && months < maxMo;
@@ -445,7 +561,7 @@ function renderDashboard() {
     const updatePlanUI = (id, label, stats) => {
         const container = document.getElementById(`row-${id}`);
         const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-        const strokeDash = (stats.pct / 100) * 100; 
+        const strokeDash = (stats.pct / 100) * 100;
         if(container) {
             container.innerHTML = `
                 <div class="plan-left">
@@ -466,14 +582,13 @@ function renderDashboard() {
     
     updatePlanUI('platinum', 'Platinum<br>Membership', getStats(12, 99));
     updatePlanUI('gold', 'Gold<br>Membership', getStats(6, 12));
-    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); 
+    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6));
 
     updateFinanceChart(totalRev, txExpense);
     renderFilteredDashboardList();
     updateMemberChart();
 }
 
-// --- ADMIN OVERVIEW RENDERER (New Tab) ---
 function renderOverview() {
     const gridContainer = document.getElementById("stats-grid-container");
     if(!gridContainer) return;
@@ -495,7 +610,7 @@ function renderOverview() {
     const pendingMembers = members.filter(m => {
         const d = new Date(m.expiryDate);
         const diffDays = (d - now) / (1000 * 60 * 60 * 24);
-        return diffDays >= 0 && diffDays <= 7; 
+        return diffDays >= 0 && diffDays <= 7;
     }).length;
 
     const overdueMembers = members.filter(m => {
@@ -521,7 +636,6 @@ function renderOverview() {
     `;
 }
 
-// --- FILTER & CHARTS ---
 window.setMemberFilter = (filter) => {
     memberFilterState = filter;
     document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
@@ -532,16 +646,14 @@ window.setMemberFilter = (filter) => {
 }
 
 function renderFilteredDashboardList() {
-    const list = document.getElementById("dash-member-list"); 
+    const list = document.getElementById("dash-member-list");
     if(!list) return;
     list.innerHTML = "";
     
     const now = new Date().getTime();
     
-    // Sort members: Expiring soonest first
     const sortedMembers = [...members].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
 
-    // Filter Logic based on the Toggle Buttons on Home
     const filtered = sortedMembers.filter(m => {
         const isExpired = now > new Date(m.expiryDate).getTime();
         return memberFilterState === 'active' ? !isExpired : isExpired;
@@ -573,7 +685,6 @@ function updateFinanceChart(rev, exp) {
     const ctx = document.getElementById('financeChart').getContext('2d');
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     
-    // CHECK MODE: If light mode, use Dark Gray (#333), else use White (#fff)
     const isLight = document.body.classList.contains('light-mode');
     const expColor = isLight ? '#333' : '#fff';
 
@@ -585,7 +696,7 @@ function updateFinanceChart(rev, exp) {
             labels: ['Rev', 'Exp'], 
             datasets: [{ 
                 data: [rev, exp], 
-                backgroundColor: [accent, expColor], // Uses the dynamic color
+                backgroundColor: [accent, expColor], 
                 borderRadius: 6, 
                 barThickness: 30 
             }] 
@@ -619,16 +730,13 @@ function updateMemberChart() {
     });
 }
 
-// --- CHARTS (Horizontal) ---
-// --- CHARTS (Horizontal) - UPDATED FOR LIGHT MODE ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
     
-    // CHECK MODE for Text Colors
     const isLight = document.body.classList.contains('light-mode');
-    const textColor = isLight ? '#000' : '#fff';  // Black for Light Mode, White for Dark
-    
+    const textColor = isLight ? '#000' : '#fff';
+
     const ageBuckets = ['18-25', '25-40', '40-60', '60+'];
     const genderData = { 'Male': [0, 0, 0, 0], 'Female': [0, 0, 0, 0], 'Other': [0, 0, 0, 0] };
     const statusData = { 'Active': [0, 0, 0, 0], 'Expired': [0, 0, 0, 0] };
@@ -654,7 +762,6 @@ function renderAgeCharts() {
 
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     
-    // CHART 1: MEMBERS BY AGE
     const ctx1 = document.getElementById('ageCategoryChart');
     if(ctx1) {
         if(ageCategoryChartInstance) ageCategoryChartInstance.destroy();
@@ -675,14 +782,13 @@ function renderAgeCharts() {
                 plugins: { legend: {display:true, labels:{color: textColor, boxWidth:10}} }, 
                 scales: { 
                     x: { display: false, grid: {display:false} }, 
-                    y: { grid: {display:false}, ticks: {color: textColor} } // <--- DYNAMIC COLOR
+                    y: { grid: {display:false}, ticks: {color: textColor} } 
                 } 
             },
             plugins: [dataLabelPlugin] 
         });
     }
 
-    // CHART 2: STATUS BY AGE
     const ctx2 = document.getElementById('ageStatusChart');
     if(ctx2) {
         if(ageStatusChartInstance) ageStatusChartInstance.destroy();
@@ -702,7 +808,7 @@ function renderAgeCharts() {
                 plugins: { legend: {display:true, labels:{color: textColor, boxWidth:10}} }, 
                 scales: { 
                     x: { display: false, grid: {display:false} }, 
-                    y: { grid: {display:false}, ticks: {color: textColor} } // <--- DYNAMIC COLOR
+                    y: { grid: {display:false}, ticks: {color: textColor} }
                 } 
             },
             plugins: [dataLabelPlugin]
@@ -710,7 +816,6 @@ function renderAgeCharts() {
     }
 }
 
-// --- CRUD OPERATIONS ---
 window.saveMember = async () => {
     const name = document.getElementById('inp-name').value;
     const gender = document.getElementById('inp-gender').value;
