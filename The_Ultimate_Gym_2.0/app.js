@@ -272,6 +272,7 @@ window.exportData = (type) => {
     document.body.removeChild(a);
 };
 
+// --- UPDATED IMPORT FUNCTION (Smart Date Parsing) ---
 window.importMembers = () => {
     const input = document.getElementById('import-file');
     const statusDiv = document.getElementById('import-status');
@@ -293,42 +294,67 @@ window.importMembers = () => {
         statusDiv.innerText = "Processing...";
         statusDiv.style.color = "orange";
 
+        // Helper to fix date format from DD-MM-YYYY to YYYY-MM-DD
+        const fixDate = (dStr) => {
+            if(!dStr) return "";
+            dStr = dStr.trim();
+            // If already YYYY-MM-DD, return it
+            if(dStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dStr;
+            
+            // Try parsing DD-MM-YYYY or DD/MM/YYYY
+            const parts = dStr.split(/[-/]/); 
+            if(parts.length === 3) {
+                // Assume DD-MM-YYYY
+                return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+            }
+            return dStr; // Fallback
+        };
+
         for (let i = 1; i < rows.length; i++) {
             const cols = rows[i].split(',');
-            if(cols.length < 5) continue; 
+            // Need at least 5 columns to be valid
+            if(cols.length < 5) continue;
 
             const clean = (val) => val ? val.replace(/"/g, '').trim() : "";
             
+            // MAP COLUMNS (0-7)
             const name = clean(cols[0]);
             const phone = clean(cols[1]);
             const gender = clean(cols[2]) || 'Male';
-            const joinDate = clean(cols[3]);
-            const plan = clean(cols[4]);
-            const amount = clean(cols[5]) || 0;
+            const dob = fixDate(clean(cols[3]));       // Col 3 = DOB
+            const joinDate = fixDate(clean(cols[4]));  // Col 4 = Join Date
+            const plan = clean(cols[5]);               // Col 5 = Plan
+            const amount = clean(cols[6]) || 0;        // Col 6 = Amount
+            const payMode = clean(cols[7]) || 'Cash';  // Col 7 = Mode
 
             if(name && phone && joinDate) {
                 try {
                     const d = new Date(joinDate);
-                    const val = parseInt(plan); 
+                    const val = parseInt(plan);
+                    // Calculate Expiry
                     if(plan.includes('d')) d.setDate(d.getDate() + val);
                     else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
-                    else d.setMonth(d.getMonth() + (val || 1)); 
+                    else d.setMonth(d.getMonth() + (val || 1));
                     
                     const expiryDate = d.toISOString().split('T')[0];
                     const memberId = window.generateMemberID(name, phone);
 
+                    // SAVE MEMBER (Explicitly saving DOB and JoinDate)
                     const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
-                        name, phone, gender, joinDate,
+                        name, phone, gender, 
+                        dob: dob,           // Saved here
+                        joinDate: joinDate, // Saved here
                         planDuration: plan,
                         expiryDate: expiryDate,
                         lastPaidAmount: amount,
                         memberId: memberId,
                         createdAt: new Date(),
-                        photo: null 
+                        photo: null
                     });
 
+                    // SAVE TRANSACTION (Explicitly saving Payment Mode)
                     if(amount > 0) {
-                        await addFinanceEntry(`Imported - ${name}`, amount, 'Cash', joinDate, docRef.id, plan, expiryDate);
+                        await addFinanceEntry(`Imported - ${name}`, amount, payMode, joinDate, docRef.id, plan, expiryDate);
                     }
 
                     successCount++;
@@ -340,7 +366,7 @@ window.importMembers = () => {
 
         statusDiv.innerText = `Successfully imported ${successCount} members!`;
         statusDiv.style.color = "#22c55e";
-        input.value = ""; 
+        input.value = "";
     };
 
     reader.readAsText(file);
