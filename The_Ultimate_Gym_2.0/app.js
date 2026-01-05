@@ -272,7 +272,7 @@ window.exportData = (type) => {
     document.body.removeChild(a);
 };
 
-// --- UPDATED IMPORT FUNCTION (Smart Date Parsing) ---
+// --- UPDATED IMPORT FUNCTION (Fixes DOB & Date Formats) ---
 window.importMembers = () => {
     const input = document.getElementById('import-file');
     const statusDiv = document.getElementById('import-status');
@@ -294,56 +294,72 @@ window.importMembers = () => {
         statusDiv.innerText = "Processing...";
         statusDiv.style.color = "orange";
 
-        // Helper to fix date format from DD-MM-YYYY to YYYY-MM-DD
+        // --- SMART DATE FIXER HELPER ---
+        // Converts "25/12/1990" or "25-12-1990" -> "1990-12-25"
         const fixDate = (dStr) => {
-            if(!dStr) return "";
+            if (!dStr) return "";
             dStr = dStr.trim();
-            // If already YYYY-MM-DD, return it
-            if(dStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dStr;
+
+            // 1. If already correct (YYYY-MM-DD), return it
+            if (dStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dStr;
+
+            // 2. Handle DD/MM/YYYY or DD-MM-YYYY
+            // Split by either / or -
+            const parts = dStr.split(/[\/\-]/); 
             
-            // Try parsing DD-MM-YYYY or DD/MM/YYYY
-            const parts = dStr.split(/[-/]/); 
-            if(parts.length === 3) {
-                // Assume DD-MM-YYYY
-                return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+            if (parts.length === 3) {
+                const day = parts[0].padStart(2, '0');
+                const month = parts[1].padStart(2, '0');
+                const year = parts[2];
+
+                // Check if year is last (e.g., 25/12/1990)
+                if (year.length === 4) {
+                    return `${year}-${month}-${day}`;
+                }
             }
-            return dStr; // Fallback
+            return ""; // Return empty if format is unrecognized
         };
 
         for (let i = 1; i < rows.length; i++) {
             const cols = rows[i].split(',');
-            // Need at least 5 columns to be valid
-            if(cols.length < 5) continue;
+            if (cols.length < 5) continue; // Skip invalid rows
 
             const clean = (val) => val ? val.replace(/"/g, '').trim() : "";
             
-            // MAP COLUMNS (0-7)
+            // MAP COLUMNS (Exact Order Matches Your Table)
             const name = clean(cols[0]);
             const phone = clean(cols[1]);
             const gender = clean(cols[2]) || 'Male';
-            const dob = fixDate(clean(cols[3]));       // Col 3 = DOB
-            const joinDate = fixDate(clean(cols[4]));  // Col 4 = Join Date
-            const plan = clean(cols[5]);               // Col 5 = Plan
-            const amount = clean(cols[6]) || 0;        // Col 6 = Amount
-            const payMode = clean(cols[7]) || 'Cash';  // Col 7 = Mode
+            
+            // FIX: Apply the date fixer to DOB and JoinDate
+            const rawDOB = clean(cols[3]);
+            const dob = fixDate(rawDOB); 
 
-            if(name && phone && joinDate) {
+            const rawJoin = clean(cols[4]);
+            const joinDate = fixDate(rawJoin);
+
+            const plan = clean(cols[5]);
+            const amount = clean(cols[6]) || 0;
+            const payMode = clean(cols[7]) || 'Cash';
+
+            // Only proceed if we have valid Name, Phone, and Join Date
+            if (name && phone && joinDate) {
                 try {
+                    // Calculate Expiry
                     const d = new Date(joinDate);
                     const val = parseInt(plan);
-                    // Calculate Expiry
-                    if(plan.includes('d')) d.setDate(d.getDate() + val);
-                    else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
+                    if (plan.includes('d')) d.setDate(d.getDate() + val);
+                    else if (plan.includes('y')) d.setFullYear(d.getFullYear() + val);
                     else d.setMonth(d.getMonth() + (val || 1));
                     
                     const expiryDate = d.toISOString().split('T')[0];
                     const memberId = window.generateMemberID(name, phone);
 
-                    // SAVE MEMBER (Explicitly saving DOB and JoinDate)
+                    // SAVE TO FIREBASE
                     const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
                         name, phone, gender, 
-                        dob: dob,           // Saved here
-                        joinDate: joinDate, // Saved here
+                        dob: dob,           // Saved Correctly
+                        joinDate: joinDate, // Saved Correctly
                         planDuration: plan,
                         expiryDate: expiryDate,
                         lastPaidAmount: amount,
@@ -352,15 +368,17 @@ window.importMembers = () => {
                         photo: null
                     });
 
-                    // SAVE TRANSACTION (Explicitly saving Payment Mode)
-                    if(amount > 0) {
+                    // SAVE TRANSACTION
+                    if (amount > 0) {
                         await addFinanceEntry(`Imported - ${name}`, amount, payMode, joinDate, docRef.id, plan, expiryDate);
                     }
 
                     successCount++;
-                } catch(err) {
+                } catch (err) {
                     console.error("Error importing row " + i, err);
                 }
+            } else {
+                console.warn(`Skipping Row ${i}: Missing Name, Phone, or Invalid Join Date (${rawJoin})`);
             }
         }
 
