@@ -10,7 +10,7 @@ let financeChartInstance = null;
 let memberChartInstance = null;
 let ageCategoryChartInstance = null;
 let ageStatusChartInstance = null;
-let memberFilterState = 'active';
+let memberFilterState = 'active'; 
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
 // --- IMAGE COMPRESSION HELPER ---
@@ -118,10 +118,12 @@ function updateClock() {
     if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
 
+// --- THEME SETTING (UPDATED WITH ORANGE) ---
 window.setTheme = (color) => {
     currentTheme = color;
     localStorage.setItem('gymTheme', color);
     const root = document.documentElement;
+    
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.theme-${color}`);
     if(activeBtn) activeBtn.classList.add('active');
@@ -130,7 +132,7 @@ window.setTheme = (color) => {
         red: ['#ef4444','239, 68, 68'], 
         blue: ['#3b82f6','59, 130, 246'], 
         green: ['#22c55e','34, 197, 94'],
-        orange: ['#f97316', '249, 115, 22']
+        orange: ['#f97316', '249, 115, 22'] // Orange Added
     };
     
     if(colors[color]) {
@@ -201,134 +203,6 @@ window.calcExpiry = () => {
         else d.setMonth(d.getMonth() + val);
         document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; 
     } 
-};
-
-// --- DATA IMPORT / EXPORT FUNCTIONS (Included) ---
-window.exportData = (type) => {
-    let dataToExport = [];
-    let filename = '';
-
-    if(type === 'members') {
-        if(members.length === 0) return alert("No members to export");
-        dataToExport = members.map(m => ({
-            MemberID: m.memberId,
-            Name: m.name,
-            Phone: m.phone,
-            Gender: m.gender,
-            Plan: m.planDuration,
-            JoinDate: m.joinDate,
-            ExpiryDate: m.expiryDate,
-            LastPaid: m.lastPaidAmount,
-            Status: new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired'
-        }));
-        filename = 'Gym_Members.csv';
-    } else if (type === 'finance') {
-        if(transactions.length === 0) return alert("No finance data to export");
-        dataToExport = transactions.map(t => ({
-            Date: t.date,
-            Type: t.type,
-            Category: t.category,
-            Amount: t.amount,
-            Mode: t.mode
-        }));
-        filename = 'Gym_Finance.csv';
-    }
-
-    const csvRows = [];
-    const headers = Object.keys(dataToExport[0]);
-    csvRows.push(headers.join(','));
-
-    for (const row of dataToExport) {
-        const values = headers.map(header => {
-            const escaped = ('' + row[header]).replace(/"/g, '\\"');
-            return `"${escaped}"`;
-        });
-        csvRows.push(values.join(','));
-    }
-
-    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('hidden', '');
-    a.setAttribute('href', url);
-    a.setAttribute('download', filename);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-};
-
-window.importMembers = () => {
-    const input = document.getElementById('import-file');
-    const statusDiv = document.getElementById('import-status');
-    
-    if (!input.files || !input.files[0]) {
-        return alert("Please select a CSV file first.");
-    }
-
-    const file = input.files[0];
-    const reader = new FileReader();
-
-    reader.onload = async function(e) {
-        const text = e.target.result;
-        const rows = text.split('\n');
-        
-        if(rows.length < 2) return alert("CSV file appears empty.");
-
-        let successCount = 0;
-        statusDiv.innerText = "Processing...";
-        statusDiv.style.color = "orange";
-
-        for (let i = 1; i < rows.length; i++) {
-            const cols = rows[i].split(',');
-            if(cols.length < 5) continue; 
-
-            const clean = (val) => val ? val.replace(/"/g, '').trim() : "";
-            
-            const name = clean(cols[0]);
-            const phone = clean(cols[1]);
-            const gender = clean(cols[2]) || 'Male';
-            const joinDate = clean(cols[3]);
-            const plan = clean(cols[4]);
-            const amount = clean(cols[5]) || 0;
-
-            if(name && phone && joinDate) {
-                try {
-                    const d = new Date(joinDate);
-                    const val = parseInt(plan); 
-                    if(plan.includes('d')) d.setDate(d.getDate() + val);
-                    else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
-                    else d.setMonth(d.getMonth() + (val || 1)); 
-                    
-                    const expiryDate = d.toISOString().split('T')[0];
-                    const memberId = window.generateMemberID(name, phone);
-
-                    const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
-                        name, phone, gender, joinDate,
-                        planDuration: plan,
-                        expiryDate: expiryDate,
-                        lastPaidAmount: amount,
-                        memberId: memberId,
-                        createdAt: new Date(),
-                        photo: null 
-                    });
-
-                    if(amount > 0) {
-                        await addFinanceEntry(`Imported - ${name}`, amount, 'Cash', joinDate, docRef.id, plan, expiryDate);
-                    }
-
-                    successCount++;
-                } catch(err) {
-                    console.error("Error importing row " + i, err);
-                }
-            }
-        }
-
-        statusDiv.innerText = `Successfully imported ${successCount} members!`;
-        statusDiv.style.color = "#22c55e";
-        input.value = ""; 
-    };
-
-    reader.readAsText(file);
 };
 
 // --- AUTOMATED ACCOUNTING ---
@@ -941,4 +815,52 @@ function renderMembersList() {
             </div>
             <div><span class="status-badge ${statusClass}">${statusText}</span></div>
             <div class="row-actions" id="actions-${m.id}">
-                <div class
+                <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
+                <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
+                <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${m.expiryDate}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
+                <div class="icon-btn bill" onclick='generateInvoice(${JSON.stringify(m)})' title="Bill"><i class="fa-solid fa-file-invoice"></i></div>
+                <div class="icon-btn delete" onclick="deleteMember('${m.id}')" title="Delete"><i class="fa-solid fa-trash"></i></div>
+            </div>
+            <div id="history-${m.id}" class="history-panel"></div>
+        </div>`;
+    });
+}
+
+function renderFinanceList() { 
+    const list = document.getElementById('finance-list'); list.innerHTML = ""; 
+    let p=0; 
+    transactions.forEach(t=>{ 
+        if(t.type=='income') p+=t.amount; else p-=t.amount; 
+        const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 5px; border-radius:4px; margin-right:5px;">${t.mode}</span>` : '';
+        list.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between; align-items:center;">
+            <div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date} ${modeBadge}</small></div>
+            <div style="display:flex; gap:15px; align-items:center;">
+                <span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span>
+                <div style="display:flex; gap:10px;">
+                    <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
+                    <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
+                </div>
+            </div>
+        </div>`; 
+    }); 
+    document.getElementById('total-profit').innerText="₹"+p; 
+}
+
+window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
+window.toggleMemberModal = () => { 
+    const el = document.getElementById('modal-member'); 
+    if(el.style.display !== 'flex') {
+        if(!editingMemberId) {
+            document.getElementById('inp-name').value = ""; document.getElementById('inp-phone').value = "";
+            document.getElementById('inp-amount').value = ""; document.getElementById('inp-dob').value = "";
+            document.getElementById('inp-join').valueAsDate = new Date();
+            const img = document.getElementById('preview-img');
+            if(img) img.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
+            window.calcExpiry();
+        }
+    } else { editingMemberId = null; }
+    el.style.display = el.style.display==='flex'?'none':'flex'; 
+};
+window.calcExpiry = () => { const j = document.getElementById('inp-join').value; const plan = document.getElementById('inp-plan').value; if(j && plan) { const d = new Date(j); const val = parseInt(plan); if(plan.includes('d')) d.setDate(d.getDate() + val); else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val); else d.setMonth(d.getMonth() + val); document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; } };
+window.toggleTxModal = () => { document.getElementById('modal-transaction').style.display = document.getElementById('modal-transaction').style.display==='flex'?'none':'flex'; };
