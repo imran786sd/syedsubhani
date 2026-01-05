@@ -45,31 +45,20 @@
                 </div>
 
                 <div class="header-card menu-card">
-    <div style="display: flex; align-items: center; gap: 20px;">
-        <div class="time-section">
-            <div id="clock-display" class="clock-text">00:00 PM</div>
-            <small>Krishna Mohan Kokkula</small>
-        </div>
-        
-        <label class="theme-switch">
-            <input type="checkbox" id="mode-toggle" onchange="toggleLightMode()">
-            <span class="slider round">
-                <i class="fa-solid fa-sun icon-sun"></i>
-                <i class="fa-solid fa-moon icon-moon"></i>
-            </span>
-        </label>
-    </div>
-    
-    <div class="nav-links">
-        <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
-        <span onclick="switchTab('members')" id="tab-members" class="nav-item">Members</span>
-        <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
-        <span onclick="switchTab('data')" id="tab-data" class="nav-item">Data IO</span>
-        
-        <div class="nav-icon" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></div>
-        <span onclick="handleLogout()" class="nav-icon" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></span>
-    </div>
-</div>
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <div class="time-section">
+                            <div id="clock-display" class="clock-text">00:00 PM</div>
+                            <small>Last Dashboard Refresh</small>
+                        </div>
+                        
+                        <label class="theme-switch">
+                            <input type="checkbox" id="mode-toggle" onchange="toggleLightMode()">
+                            <span class="slider round">
+                                <i class="fa-solid fa-sun icon-sun"></i>
+                                <i class="fa-solid fa-moon icon-moon"></i>
+                            </span>
+                        </label>
+                    </div>
                     
                     <div class="nav-links">
                         <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
@@ -174,7 +163,7 @@
                     <button class="btn-sm" onclick="toggleMemberModal()">+ New Member</button>
                 </div>
                 
-                <div class="dashboard-grid" id="stats-grid-container" style="margin-bottom: 25px;"></div>
+                <div class="dashboard-grid" id="stats-grid-container"></div>
 
                 <div class="member-charts-container">
                     <div class="chart-card">
@@ -411,24 +400,25 @@
             </div>
         </div>
     </div>
+
     <div class="bottom-nav">
-    <div class="nav-btn active" id="mob-dashboard" onclick="switchTab('dashboard')">
-        <i class="fa-solid fa-house"></i>
-        <span>Home</span>
+        <div class="nav-btn active" id="mob-dashboard" onclick="switchTab('dashboard')">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-btn" id="mob-members" onclick="switchTab('members')">
+            <i class="fa-solid fa-users"></i>
+            <span>Members</span>
+        </div>
+        <div class="nav-btn" id="mob-finance" onclick="switchTab('finance')">
+            <i class="fa-solid fa-coins"></i>
+            <span>Finance</span>
+        </div>
+        <div class="nav-btn" id="mob-data" onclick="switchTab('data')">
+            <i class="fa-solid fa-database"></i>
+            <span>Data IO</span>
+        </div>
     </div>
-    <div class="nav-btn" id="mob-members" onclick="switchTab('members')">
-        <i class="fa-solid fa-users"></i>
-        <span>Members</span>
-    </div>
-    <div class="nav-btn" id="mob-finance" onclick="switchTab('finance')">
-        <i class="fa-solid fa-coins"></i>
-        <span>Finance</span>
-    </div>
-    <div class="nav-btn" id="mob-data" onclick="switchTab('data')">
-        <i class="fa-solid fa-database"></i>
-        <span>Data IO</span>
-    </div>
-</div>
 
     <script src="config.js"></script>
     <script type="module" src="app.js"></script>
