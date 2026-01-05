@@ -117,6 +117,9 @@ window.toggleLightMode = () => {
     const body = document.body;
     const isLight = body.classList.toggle('light-mode');
     localStorage.setItem('gymLightMode', isLight ? 'enabled' : 'disabled');
+    
+    // Force chart re-render to update colors
+    renderDashboard();
 };
 
 // Check saved preference on load
@@ -524,11 +527,31 @@ function renderFilteredDashboardList() {
 function updateFinanceChart(rev, exp) {
     const ctx = document.getElementById('financeChart').getContext('2d');
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    
+    // CHECK MODE: If light mode, use Dark Gray (#333), else use White (#fff)
+    const isLight = document.body.classList.contains('light-mode');
+    const expColor = isLight ? '#333' : '#fff';
+
     if(financeChartInstance) financeChartInstance.destroy();
+    
     financeChartInstance = new Chart(ctx, {
         type: 'bar',
-        data: { labels: ['Rev', 'Exp'], datasets: [{ data: [rev, exp], backgroundColor: [accent, '#fff'], borderRadius: 6, barThickness: 30 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } }, layout: { padding: { top: 20 } } }
+        data: { 
+            labels: ['Rev', 'Exp'], 
+            datasets: [{ 
+                data: [rev, exp], 
+                backgroundColor: [accent, expColor], // Uses the dynamic color
+                borderRadius: 6, 
+                barThickness: 30 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: { display: false } }, 
+            scales: { x: { display: false }, y: { display: false } }, 
+            layout: { padding: { top: 20 } } 
+        }
     });
 }
 
