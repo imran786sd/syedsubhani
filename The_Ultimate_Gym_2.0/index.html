@@ -48,7 +48,7 @@
                     <div style="display: flex; align-items: center; gap: 20px;">
                         <div class="time-section">
                             <div id="clock-display" class="clock-text">00:00 PM</div>
-                            <small>Last Dashboard Refresh</small>
+                            <small>Last Refresh</small>
                         </div>
                         
                         <label class="theme-switch">
@@ -63,7 +63,7 @@
                     <div class="nav-links">
                         <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
                         <span onclick="switchTab('members')" id="tab-members" class="nav-item">Members</span>
-                        <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
+                        <span onclick="switchTab('fitness')" id="tab-fitness" class="nav-item">Fitness / BMI</span> <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
                         <span onclick="switchTab('data')" id="tab-data" class="nav-item">Data IO</span>
                         
                         <div class="nav-icon" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></div>
@@ -163,7 +163,7 @@
                     <button class="btn-sm" onclick="toggleMemberModal()">+ New Member</button>
                 </div>
                 
-                <div class="dashboard-grid" id="stats-grid-container"></div>
+                <div class="dashboard-grid" id="stats-grid-container" style="margin-bottom: 25px;"></div>
 
                 <div class="member-charts-container">
                     <div class="chart-card">
@@ -190,6 +190,33 @@
                 </div>
                 
                 <div id="members-list" class="detailed-list"></div>
+            </div>
+
+            <div id="view-fitness" class="view-section" style="display:none;">
+                <div class="section-top">
+                    <h2>Fitness Tracker</h2>
+                </div>
+
+                <div class="grid-item" style="height:auto; min-height:auto; margin-bottom:25px; border-left: 4px solid var(--accent);">
+                    <h3 style="margin-bottom:15px;"><i class="fa-solid fa-calculator accent-icon"></i> Quick BMI Calculator</h3>
+                    <div class="split-inputs" style="margin-bottom:10px;">
+                        <input type="number" id="calc-weight" placeholder="Weight (kg)">
+                        <input type="number" id="calc-height" placeholder="Height (cm)">
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <button class="btn-sm" onclick="calculateQuickBMI()">Calculate</button>
+                        <div id="quick-bmi-result" style="font-weight:bold; font-size:1.1rem; color:var(--text);">Result: --</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom:15px; color:var(--text-muted);">Member Fitness Profiles</h3>
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="fitness-search" placeholder="Search member to view BMI..." onkeyup="filterFitnessGrid()">
+                </div>
+                
+                <div id="fitness-list-grid" class="dashboard-grid">
+                    </div>
             </div>
 
             <div id="view-finance" class="view-section" style="display:none;">
@@ -227,51 +254,49 @@
                     </div>
 
                     <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
-    <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-        <i class="fa-solid fa-file-import accent-icon"></i> Import Members
-    </h3>
-    <p style="color:#888; font-size:0.9rem; margin-bottom:10px;">
-        Upload a <b>.CSV</b> file with these exactly 8 columns:
-    </p>
+                        <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                            <i class="fa-solid fa-file-import accent-icon"></i> Import Members
+                        </h3>
+                        <p style="color:#888; font-size:0.9rem; margin-bottom:10px;">
+                            Upload a <b>.CSV</b> file to bulk add members.
+                        </p>
 
-    <div style="background:var(--bg-body); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border); overflow-x:auto;">
-        <div style="font-size:0.8rem; font-weight:bold; margin-bottom:8px; color:var(--text-main);">Required CSV Columns (Order Matters):</div>
-        <table style="width:100%; border-collapse:collapse; font-size:0.75rem; color:#aaa; min-width: 500px;">
-            <tr style="border-bottom:1px solid var(--border); text-align:left;">
-                <th style="padding:4px;">Name</th>
-                <th style="padding:4px;">Phone</th>
-                <th style="padding:4px;">Gender</th>
-                <th style="padding:4px; color:var(--accent);">DOB</th>
-                <th style="padding:4px; color:var(--accent);">JoinDate</th>
-                <th style="padding:4px;">Plan</th>
-                <th style="padding:4px;">Amount</th>
-                <th style="padding:4px;">Mode</th>
-            </tr>
-            <tr>
-                <td style="padding:4px;">John Doe</td>
-                <td style="padding:4px;">9988776655</td>
-                <td style="padding:4px;">Male</td>
-                <td style="padding:4px;">1995-08-15</td>
-                <td style="padding:4px;">2024-01-01</td>
-                <td style="padding:4px;">1y</td>
-                <td style="padding:4px;">12000</td>
-                <td style="padding:4px;">UPI</td>
-            </tr>
-        </table>
-        <div style="margin-top:10px; font-size:0.7rem; color:#666;">
-            <b>Format:</b> YYYY-MM-DD (e.g. 2024-01-25) <br>
-            <b>Payment Modes:</b> Cash, UPI, Card
-        </div>
-    </div>
-    
-    <div style="display:flex; gap:10px; align-items:center;">
-        <input type="file" id="import-file" accept=".csv" style="font-size:0.9rem; color:#888;">
-        <button class="btn-sm" onclick="importMembers()">
-            <i class="fa-solid fa-upload"></i> Upload CSV
-        </button>
-    </div>
-    <div id="import-status" style="margin-top:10px; font-size:0.85rem;"></div>
-</div>
+                        <div style="background:var(--bg-body); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border); overflow-x:auto;">
+                            <div style="font-size:0.8rem; font-weight:bold; margin-bottom:8px; color:var(--text-main);">Required CSV Format:</div>
+                            <table style="width:100%; border-collapse:collapse; font-size:0.75rem; color:#aaa; min-width:500px;">
+                                <tr style="border-bottom:1px solid var(--border); text-align:left;">
+                                    <th style="padding:4px;">Name</th>
+                                    <th style="padding:4px;">Phone</th>
+                                    <th style="padding:4px;">Gender</th>
+                                    <th style="padding:4px; color:var(--accent);">DOB</th>
+                                    <th style="padding:4px; color:var(--accent);">JoinDate</th>
+                                    <th style="padding:4px;">Plan</th>
+                                    <th style="padding:4px;">Amount</th>
+                                    <th style="padding:4px;">Mode</th>
+                                </tr>
+                                <tr>
+                                    <td style="padding:4px;">John Doe</td>
+                                    <td style="padding:4px;">9988776655</td>
+                                    <td style="padding:4px;">Male</td>
+                                    <td style="padding:4px;">1995-08-15</td>
+                                    <td style="padding:4px;">2024-01-01</td>
+                                    <td style="padding:4px;">1y</td>
+                                    <td style="padding:4px;">12000</td>
+                                    <td style="padding:4px;">UPI</td>
+                                </tr>
+                            </table>
+                            <div style="margin-top:10px; font-size:0.7rem; color:#666;">
+                                <b>Dates:</b> YYYY-MM-DD | <b>Mode:</b> Cash, UPI, Card
+                            </div>
+                        </div>
+                        
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="file" id="import-file" accept=".csv" style="font-size:0.9rem; color:#888;">
+                            <button class="btn-sm" onclick="importMembers()">
+                                <i class="fa-solid fa-upload"></i> Upload CSV
+                            </button>
+                        </div>
+                        <div id="import-status" style="margin-top:10px; font-size:0.85rem;"></div>
                     </div>
                 </div>
             </div>
@@ -407,6 +432,42 @@
         </div>
     </div>
 
+    <div id="modal-fitness" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-head"><h3>Fitness Profile</h3><i class="fa-solid fa-xmark close" onclick="closeFitnessModal()"></i></div>
+            <div class="modal-content">
+                <input type="hidden" id="fit-id">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <img id="fit-img" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--accent); margin-bottom:10px;">
+                    <h3 id="fit-name" style="margin:0;">Member Name</h3>
+                    <small id="fit-plan" style="color:var(--text-muted);">Plan Duration</small>
+                </div>
+
+                <div style="background:var(--card-light); padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:15px;">
+                    <div style="font-size:0.8rem; font-weight:bold; color:var(--text-muted); margin-bottom:5px;">STARTING (JOIN DAY)</div>
+                    <div class="split-inputs" style="margin-bottom:0;">
+                        <div><label>Weight (kg)</label><input type="number" id="fit-start-w"></div>
+                        <div><label>Height (cm)</label><input type="number" id="fit-start-h"></div>
+                    </div>
+                    <div id="fit-start-bmi" style="font-size:0.8rem; text-align:right; font-weight:bold; color:var(--text-muted);">BMI: --</div>
+                </div>
+
+                <div style="background:var(--card-light); padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:15px; border-left: 3px solid var(--accent);">
+                    <div style="font-size:0.8rem; font-weight:bold; color:var(--accent); margin-bottom:5px;">CURRENT STATUS (TODAY)</div>
+                    <div class="split-inputs" style="margin-bottom:0;">
+                        <div><label>Weight (kg)</label><input type="number" id="fit-curr-w"></div>
+                        <div><label>Height (cm)</label><input type="number" id="fit-curr-h"></div>
+                    </div>
+                    <div id="fit-curr-bmi" style="font-size:0.9rem; text-align:right; font-weight:bold; color:var(--accent);">BMI: --</div>
+                </div>
+
+                <div id="fit-diff" style="text-align:center; padding:10px; font-weight:bold; margin-bottom:15px;"></div>
+
+                <button class="btn-save" onclick="saveFitnessData()">Update Progress</button>
+            </div>
+        </div>
+    </div>
+
     <div class="bottom-nav">
         <div class="nav-btn active" id="mob-dashboard" onclick="switchTab('dashboard')">
             <i class="fa-solid fa-house"></i>
@@ -416,13 +477,13 @@
             <i class="fa-solid fa-users"></i>
             <span>Members</span>
         </div>
+        <div class="nav-btn" id="mob-fitness" onclick="switchTab('fitness')">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <span>Fitness</span>
+        </div>
         <div class="nav-btn" id="mob-finance" onclick="switchTab('finance')">
             <i class="fa-solid fa-coins"></i>
             <span>Finance</span>
-        </div>
-        <div class="nav-btn" id="mob-data" onclick="switchTab('data')">
-            <i class="fa-solid fa-database"></i>
-            <span>Data IO</span>
         </div>
     </div>
 
