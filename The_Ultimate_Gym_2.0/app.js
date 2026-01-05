@@ -118,8 +118,9 @@ window.toggleLightMode = () => {
     const isLight = body.classList.toggle('light-mode');
     localStorage.setItem('gymLightMode', isLight ? 'enabled' : 'disabled');
     
-    // Force chart re-render to update colors
-    renderDashboard();
+    // Force ALL charts to re-render with new colors
+    renderDashboard();   // Updates Home Charts
+    renderAgeCharts();   // Updates Member/Age Charts (FIXED)
 };
 
 // Check saved preference on load
@@ -575,9 +576,14 @@ function updateMemberChart() {
 }
 
 // --- CHARTS (Horizontal) ---
+// --- CHARTS (Horizontal) - UPDATED FOR LIGHT MODE ---
 function renderAgeCharts() {
     if(members.length === 0) return;
     const today = new Date();
+    
+    // CHECK MODE for Text Colors
+    const isLight = document.body.classList.contains('light-mode');
+    const textColor = isLight ? '#000' : '#fff';  // Black for Light Mode, White for Dark
     
     const ageBuckets = ['18-25', '25-40', '40-60', '60+'];
     const genderData = { 'Male': [0, 0, 0, 0], 'Female': [0, 0, 0, 0], 'Other': [0, 0, 0, 0] };
@@ -604,6 +610,7 @@ function renderAgeCharts() {
 
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     
+    // CHART 1: MEMBERS BY AGE
     const ctx1 = document.getElementById('ageCategoryChart');
     if(ctx1) {
         if(ageCategoryChartInstance) ageCategoryChartInstance.destroy();
@@ -621,13 +628,17 @@ function renderAgeCharts() {
                 indexAxis: 'y', 
                 responsive: true, 
                 maintainAspectRatio: false, 
-                plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, 
-                scales: { x: { display: false, grid: {display:false} }, y: { grid: {display:false}, ticks: {color:'#fff'} } } 
+                plugins: { legend: {display:true, labels:{color: textColor, boxWidth:10}} }, 
+                scales: { 
+                    x: { display: false, grid: {display:false} }, 
+                    y: { grid: {display:false}, ticks: {color: textColor} } // <--- DYNAMIC COLOR
+                } 
             },
             plugins: [dataLabelPlugin] 
         });
     }
 
+    // CHART 2: STATUS BY AGE
     const ctx2 = document.getElementById('ageStatusChart');
     if(ctx2) {
         if(ageStatusChartInstance) ageStatusChartInstance.destroy();
@@ -644,8 +655,11 @@ function renderAgeCharts() {
                 indexAxis: 'y',
                 responsive: true, 
                 maintainAspectRatio: false, 
-                plugins: { legend: {display:true, labels:{color:'#888', boxWidth:10}} }, 
-                scales: { x: { display: false, grid: {display:false} }, y: { grid: {display:false}, ticks: {color:'#fff'} } } 
+                plugins: { legend: {display:true, labels:{color: textColor, boxWidth:10}} }, 
+                scales: { 
+                    x: { display: false, grid: {display:false} }, 
+                    y: { grid: {display:false}, ticks: {color: textColor} } // <--- DYNAMIC COLOR
+                } 
             },
             plugins: [dataLabelPlugin]
         });
