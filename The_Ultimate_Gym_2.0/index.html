@@ -47,13 +47,15 @@
                 <div class="header-card menu-card">
                     <div class="time-section">
                         <div id="clock-display" class="clock-text">00:00 PM</div>
-                        <small>Kokkula Krishna Mohan</small>
+                        <small>Last Dashboard Refresh</small>
                     </div>
                     
                     <div class="nav-links">
                         <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
                         <span onclick="switchTab('members')" id="tab-members" class="nav-item">Members</span>
                         <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
+                        <span onclick="switchTab('data')" id="tab-data" class="nav-item">Data IO</span>
+                        
                         <div class="nav-icon" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></div>
                         <span onclick="handleLogout()" class="nav-icon" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></span>
                     </div>
@@ -187,6 +189,49 @@
                     <div>Your Profit: <span id="total-profit" class="accent">₹0</span></div>
                 </div>
                 <div id="finance-list" class="list-container"></div>
+            </div>
+
+            <div id="view-data" class="view-section" style="display:none;">
+                <div class="section-top">
+                    <h2>Data Management</h2>
+                </div>
+
+                <div class="layout-grid body-row">
+                    <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
+                        <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                            <i class="fa-solid fa-file-export accent-icon"></i> Export Data
+                        </h3>
+                        <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
+                            Download your data for backup or offline analysis.
+                        </p>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <button class="btn-sm" onclick="exportData('members')" style="background:#333;">
+                                <i class="fa-solid fa-users"></i> Export Members
+                            </button>
+                            <button class="btn-sm" onclick="exportData('finance')" style="background:#333;">
+                                <i class="fa-solid fa-coins"></i> Export Finance
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
+                        <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                            <i class="fa-solid fa-file-import accent-icon"></i> Import Members
+                        </h3>
+                        <p style="color:#888; font-size:0.9rem; margin-bottom:15px;">
+                            Upload a CSV file to bulk add members. <br>
+                            <small>Format: Name, Phone, Gender, JoinDate(YYYY-MM-DD), Plan(1m/3m), Amount</small>
+                        </p>
+                        
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="file" id="import-file" accept=".csv" style="font-size:0.9rem; color:#888;">
+                            <button class="btn-sm" onclick="importMembers()">
+                                <i class="fa-solid fa-upload"></i> Upload CSV
+                            </button>
+                        </div>
+                        <div id="import-status" style="margin-top:10px; font-size:0.85rem;"></div>
+                    </div>
+                </div>
             </div>
 
         </main>
