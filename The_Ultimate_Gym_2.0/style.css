@@ -408,3 +408,28 @@ body.light-mode .header-card,
 body.light-mode .stat-card {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
+/* --- LIGHT MODE FIXES --- */
+body.light-mode .plan-name,
+body.light-mode .stat-number,
+body.light-mode .clock-text,
+body.light-mode .info-main,
+body.light-mode h2, 
+body.light-mode h3, 
+body.light-mode h4 {
+    color: #000000 !important;
+}
+
+/* Ensure inputs are visible in light mode */
+body.light-mode input, 
+body.light-mode select {
+    color: #000000 !important;
+    background: #ffffff !important;
+    border-color: #ccc !important;
+}
+
+/* Keep the Hero Text White (because image is dark) */
+body.light-mode .hero-overlay h3,
+body.light-mode .hero-overlay small,
+body.light-mode .hero-overlay i {
+    color: #ffffff !important;
+}
