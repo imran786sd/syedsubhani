@@ -45,10 +45,31 @@
                 </div>
 
                 <div class="header-card menu-card">
-                    <div class="time-section">
-                        <div id="clock-display" class="clock-text">00:00 PM</div>
-                        <small>Last Dashboard Refresh</small>
-                    </div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <div class="time-section">
+            <div id="clock-display" class="clock-text">00:00 PM</div>
+            <small>Krishna Mohan Kokkula</small>
+        </div>
+        
+        <label class="theme-switch">
+            <input type="checkbox" id="mode-toggle" onchange="toggleLightMode()">
+            <span class="slider round">
+                <i class="fa-solid fa-sun icon-sun"></i>
+                <i class="fa-solid fa-moon icon-moon"></i>
+            </span>
+        </label>
+    </div>
+    
+    <div class="nav-links">
+        <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
+        <span onclick="switchTab('members')" id="tab-members" class="nav-item">Members</span>
+        <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
+        <span onclick="switchTab('data')" id="tab-data" class="nav-item">Data IO</span>
+        
+        <div class="nav-icon" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></div>
+        <span onclick="handleLogout()" class="nav-icon" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></span>
+    </div>
+</div>
                     
                     <div class="nav-links">
                         <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
