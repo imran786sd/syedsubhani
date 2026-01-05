@@ -468,3 +468,7 @@ body.light-mode .legend span[style*="color:#666"] {
 body.light-mode .stat-label {
     color: #444 !important;
 }
+/* FIX: Make the "Exp" dot dark in Light Mode */
+body.light-mode .dot.white {
+    background: #333 !important;
+}
