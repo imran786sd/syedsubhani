@@ -112,6 +112,20 @@ function updateClock() {
     const el = document.getElementById("clock-display");
     if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
+// --- LIGHT/DARK MODE TOGGLE ---
+window.toggleLightMode = () => {
+    const body = document.body;
+    const isLight = body.classList.toggle('light-mode');
+    localStorage.setItem('gymLightMode', isLight ? 'enabled' : 'disabled');
+};
+
+// Check saved preference on load
+const savedMode = localStorage.getItem('gymLightMode');
+if (savedMode === 'enabled') {
+    document.body.classList.add('light-mode');
+    const toggle = document.getElementById('mode-toggle');
+    if(toggle) toggle.checked = true;
+}
 
 window.setTheme = (color) => {
     currentTheme = color;
