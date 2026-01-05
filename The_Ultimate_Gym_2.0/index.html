@@ -218,11 +218,37 @@
                         <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
                             <i class="fa-solid fa-file-import accent-icon"></i> Import Members
                         </h3>
-                        <p style="color:#888; font-size:0.9rem; margin-bottom:15px;">
-                            Upload a CSV file to bulk add members. <br>
-                            <small>Format: Name, Phone, Gender, JoinDate(YYYY-MM-DD), Plan(1m/3m), Amount</small>
+                        <p style="color:#888; font-size:0.9rem; margin-bottom:10px;">
+                            Upload a <b>.CSV</b> file to bulk add members.
                         </p>
-                        
+
+                        <div style="background:var(--bg-body); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border);">
+                            <div style="font-size:0.8rem; font-weight:bold; margin-bottom:8px; color:var(--text-main);">Required CSV Format (Example):</div>
+                            
+                            <table style="width:100%; border-collapse:collapse; font-size:0.75rem; color:#aaa;">
+                                <tr style="border-bottom:1px solid var(--border); text-align:left;">
+                                    <th style="padding:4px;">Name</th>
+                                    <th style="padding:4px;">Phone</th>
+                                    <th style="padding:4px;">Gender</th>
+                                    <th style="padding:4px;">JoinDate</th>
+                                    <th style="padding:4px;">Plan</th>
+                                    <th style="padding:4px;">Amount</th>
+                                </tr>
+                                <tr>
+                                    <td style="padding:4px;">John Doe</td>
+                                    <td style="padding:4px;">9988776655</td>
+                                    <td style="padding:4px;">Male</td>
+                                    <td style="padding:4px; color:var(--accent);">2024-01-01</td>
+                                    <td style="padding:4px;">1y</td>
+                                    <td style="padding:4px;">12000</td>
+                                </tr>
+                            </table>
+                            
+                            <div style="margin-top:10px; font-size:0.7rem; color:#666; line-height:1.4;">
+                                <i class="fa-solid fa-circle-info"></i> <b>Date Format:</b> YYYY-MM-DD <br>
+                                <i class="fa-solid fa-circle-info"></i> <b>Plan Codes:</b> 1d, 7d, 15d, 1m, 3m, 6m, 1y
+                            </div>
+                        </div>
                         <div style="display:flex; gap:10px; align-items:center;">
                             <input type="file" id="import-file" accept=".csv" style="font-size:0.9rem; color:#888;">
                             <button class="btn-sm" onclick="importMembers()">
