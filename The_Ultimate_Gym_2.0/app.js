@@ -10,7 +10,7 @@ let financeChartInstance = null;
 let memberChartInstance = null;
 let ageCategoryChartInstance = null;
 let ageStatusChartInstance = null;
-let memberFilterState = 'active'; 
+let memberFilterState = 'active';
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 
 // --- IMAGE COMPRESSION HELPER ---
@@ -118,7 +118,7 @@ function updateClock() {
     if(el) el.innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 }
 
-// --- THEME SETTING (UPDATED WITH ORANGE) ---
+// --- THEME SETTING (Updated with Orange) ---
 window.setTheme = (color) => {
     currentTheme = color;
     localStorage.setItem('gymTheme', color);
@@ -132,7 +132,7 @@ window.setTheme = (color) => {
         red: ['#ef4444','239, 68, 68'], 
         blue: ['#3b82f6','59, 130, 246'], 
         green: ['#22c55e','34, 197, 94'],
-        orange: ['#f97316', '249, 115, 22'] // Orange Added
+        orange: ['#f97316', '249, 115, 22'] // Added Orange
     };
     
     if(colors[color]) {
@@ -205,6 +205,134 @@ window.calcExpiry = () => {
     } 
 };
 
+// --- DATA IMPORT / EXPORT FUNCTIONS (ADDED) ---
+window.exportData = (type) => {
+    let dataToExport = [];
+    let filename = '';
+
+    if(type === 'members') {
+        if(members.length === 0) return alert("No members to export");
+        dataToExport = members.map(m => ({
+            MemberID: m.memberId,
+            Name: m.name,
+            Phone: m.phone,
+            Gender: m.gender,
+            Plan: m.planDuration,
+            JoinDate: m.joinDate,
+            ExpiryDate: m.expiryDate,
+            LastPaid: m.lastPaidAmount,
+            Status: new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired'
+        }));
+        filename = 'Gym_Members.csv';
+    } else if (type === 'finance') {
+        if(transactions.length === 0) return alert("No finance data to export");
+        dataToExport = transactions.map(t => ({
+            Date: t.date,
+            Type: t.type,
+            Category: t.category,
+            Amount: t.amount,
+            Mode: t.mode
+        }));
+        filename = 'Gym_Finance.csv';
+    }
+
+    const csvRows = [];
+    const headers = Object.keys(dataToExport[0]);
+    csvRows.push(headers.join(','));
+
+    for (const row of dataToExport) {
+        const values = headers.map(header => {
+            const escaped = ('' + row[header]).replace(/"/g, '\\"');
+            return `"${escaped}"`;
+        });
+        csvRows.push(values.join(','));
+    }
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', filename);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+window.importMembers = () => {
+    const input = document.getElementById('import-file');
+    const statusDiv = document.getElementById('import-status');
+    
+    if (!input.files || !input.files[0]) {
+        return alert("Please select a CSV file first.");
+    }
+
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async function(e) {
+        const text = e.target.result;
+        const rows = text.split('\n');
+        
+        if(rows.length < 2) return alert("CSV file appears empty.");
+
+        let successCount = 0;
+        statusDiv.innerText = "Processing...";
+        statusDiv.style.color = "orange";
+
+        for (let i = 1; i < rows.length; i++) {
+            const cols = rows[i].split(',');
+            if(cols.length < 5) continue; 
+
+            const clean = (val) => val ? val.replace(/"/g, '').trim() : "";
+            
+            const name = clean(cols[0]);
+            const phone = clean(cols[1]);
+            const gender = clean(cols[2]) || 'Male';
+            const joinDate = clean(cols[3]);
+            const plan = clean(cols[4]);
+            const amount = clean(cols[5]) || 0;
+
+            if(name && phone && joinDate) {
+                try {
+                    const d = new Date(joinDate);
+                    const val = parseInt(plan); 
+                    if(plan.includes('d')) d.setDate(d.getDate() + val);
+                    else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
+                    else d.setMonth(d.getMonth() + (val || 1)); 
+                    
+                    const expiryDate = d.toISOString().split('T')[0];
+                    const memberId = window.generateMemberID(name, phone);
+
+                    const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
+                        name, phone, gender, joinDate,
+                        planDuration: plan,
+                        expiryDate: expiryDate,
+                        lastPaidAmount: amount,
+                        memberId: memberId,
+                        createdAt: new Date(),
+                        photo: null 
+                    });
+
+                    if(amount > 0) {
+                        await addFinanceEntry(`Imported - ${name}`, amount, 'Cash', joinDate, docRef.id, plan, expiryDate);
+                    }
+
+                    successCount++;
+                } catch(err) {
+                    console.error("Error importing row " + i, err);
+                }
+            }
+        }
+
+        statusDiv.innerText = `Successfully imported ${successCount} members!`;
+        statusDiv.style.color = "#22c55e";
+        input.value = ""; 
+    };
+
+    reader.readAsText(file);
+};
+
 // --- AUTOMATED ACCOUNTING ---
 async function addFinanceEntry(category, amount, mode, date, memberId, plan, expiry) {
     try {
@@ -219,6 +347,7 @@ async function addFinanceEntry(category, amount, mode, date, memberId, plan, exp
             snapshotExpiry: expiry || null,
             createdAt: new Date() 
         });
+        console.log("Finance entry auto-added.");
     } catch(e) { console.error("Auto-finance failed", e); }
 }
 
@@ -532,7 +661,7 @@ window.confirmRenewal = async () => {
     alert(`Membership Renewed! New Expiry: ${newExpiry}`);
 };
 
-// --- HISTORY TOGGLE ---
+// --- HISTORY TOGGLE & PRINT LOGIC ---
 window.toggleHistory = async (id) => {
     const panel = document.getElementById(`history-${id}`);
     if(panel.style.display === 'block') { panel.style.display = 'none'; return; }
@@ -564,6 +693,7 @@ window.toggleHistory = async (id) => {
             const safePlan = t.snapshotPlan || '';
             const safeExpiry = t.snapshotExpiry || '';
             
+            // CONVERT TIMESTAMP TO READABLE TIME
             let timeStr = "-";
             if(t.createdAt && t.createdAt.seconds) {
                 const dateObj = new Date(t.createdAt.seconds * 1000);
@@ -590,7 +720,7 @@ window.toggleHistory = async (id) => {
     }
 };
 
-// --- PRINT HISTORY INVOICE ---
+// UPDATED: Receives Time
 window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expiry, timeStr) => {
     const m = members.find(x => x.id === memberId);
     if (!m) return alert("Member data missing.");
@@ -608,36 +738,43 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
     window.generateInvoice(m, tempTransaction);
 };
 
-// --- INVOICE GENERATOR ---
+// --- UPDATED INVOICE GENERATOR (Black Header, Square Logo, Tighter Sign) ---
 window.generateInvoice = async (m, specificTransaction = null) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
+    // CHANGED: Header color to BLACK
     const themeColor = [0, 0, 0]; 
     let finalY = 0;
 
     const isHistory = !!specificTransaction;
+    
     const amt = isHistory ? specificTransaction.amount : m.lastPaidAmount;
     const date = isHistory ? specificTransaction.date : new Date().toISOString().split('T')[0];
     const time = isHistory ? (specificTransaction.timeStr || '') : new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
     const mode = isHistory ? specificTransaction.mode : 'Cash'; 
     const category = isHistory ? specificTransaction.category : 'Membership Fees';
+    
     const rawPlan = (isHistory && specificTransaction.snapshotPlan) ? specificTransaction.snapshotPlan : m.planDuration;
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    // Header
+    // --- 1. HEADER & SQUARE LOGO ---
     doc.setFillColor(...themeColor);
+    // Header bar height is 25mm
     doc.rect(0, 0, 210, 25, 'F');
+    
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.text("THE ULTIMATE GYM 2.0", 14, 16);
 
+    // ADD SQUARE LOGO (Right Side Top)
     try {
         const logoImg = new Image();
         logoImg.src = 'logo.png';
-        doc.addImage(logoImg, 'PNG', 175, 2.5, 20, 20); 
+        // Positioned at top-right (x=175) with size 22x22mm
+        doc.addImage(logoImg, 'PNG', 175, 1.5, 22, 22); 
     } catch(e) { console.log("Logo error", e); }
     
     doc.setFontSize(14);
@@ -648,10 +785,11 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
+    
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
     doc.text(`Date: ${date}  ${time}`, 140, 45); 
 
-    // Address & Contact
+    // --- 2. ADDRESS & CONTACT ---
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     const address = "1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080";
@@ -659,11 +797,12 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.text(splitAddress, 14, 52);
     
     let currentY = 52 + (splitAddress.length * 4); 
+    
     doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, currentY);
     currentY += 5; 
     doc.text("GST NO: 36CYZPA903181Z1", 14, currentY);
 
-    // Member Grid
+    // --- 3. MEMBER GRID ---
     doc.autoTable({
         startY: currentY + 10,
         theme: 'grid',
@@ -685,7 +824,7 @@ window.generateInvoice = async (m, specificTransaction = null) => {
 
     finalY = doc.lastAutoTable.finalY + 10;
 
-    // Details Table
+    // --- 4. DETAILS TABLE ---
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text("Payment Details", 14, finalY);
@@ -693,17 +832,21 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     doc.autoTable({
         startY: finalY + 5,
         head: [['Description', 'Date & Time', 'Mode', 'Amount']],
-        body: [[category, `${date} ${time}`, mode, `Rs. ${amt}`]],
+        body: [
+            [category, `${date} ${time}`, mode, `Rs. ${amt}`]
+        ],
         theme: 'striped',
+        // Header will now be black based on themeColor
         headStyles: { fillColor: themeColor },
         styles: { fontSize: 9, cellPadding: 3 }
     });
 
     finalY = doc.lastAutoTable.finalY + 20;
 
-    // Signature
+    // --- 5. SIGNATURE & FOOTER ---
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
+    
     doc.text("Authorized Signature", 150, finalY);
     
     try {
@@ -712,10 +855,10 @@ window.generateInvoice = async (m, specificTransaction = null) => {
         doc.addImage(signImg, 'JPEG', 150, finalY - 5, 50, 25); 
     } catch(e) { console.log("Sign error", e); }
 
+    // Left side line
     doc.line(14, finalY + 15, 60, finalY + 15);
     doc.line(150, finalY + 15, 196, finalY + 15);
-
-    // Terms
+   
     finalY += 30; 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
