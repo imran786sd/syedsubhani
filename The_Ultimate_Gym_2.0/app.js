@@ -27,10 +27,8 @@ const compressImage = (file) => {
                 const scaleSize = maxWidth / img.width;
                 canvas.width = maxWidth;
                 canvas.height = img.height * scaleSize;
-                
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 resolve(dataUrl);
             };
@@ -40,13 +38,12 @@ const compressImage = (file) => {
     });
 };
 
-// --- CUSTOM CHART PLUGIN (Horizontal Labels) ---
+// --- CHART PLUGIN ---
 const dataLabelPlugin = {
     id: 'dataLabels',
     afterDatasetsDraw(chart) {
         const ctx = chart.ctx;
         const isHorizontal = chart.config.options.indexAxis === 'y'; 
-
         chart.data.datasets.forEach((dataset, i) => {
             const meta = chart.getDatasetMeta(i);
             if (!meta.hidden) {
@@ -60,11 +57,9 @@ const dataLabelPlugin = {
                         ctx.font = Chart.helpers.fontString(fontSize, fontStyle, fontFamily);
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
-                        
                         const position = element.tooltipPosition();
                         let x = position.x;
                         let y = position.y;
-
                         if (isHorizontal) {
                             x = position.x + (dataset.stack ? -10 : 15); 
                             if(dataset.stack) ctx.fillStyle = '#fff'; 
@@ -122,7 +117,6 @@ window.setTheme = (color) => {
     currentTheme = color;
     localStorage.setItem('gymTheme', color);
     const root = document.documentElement;
-    
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.theme-${color}`);
     if(activeBtn) activeBtn.classList.add('active');
@@ -148,7 +142,7 @@ function setupListeners() {
     onSnapshot(query(memRef, orderBy("joinDate", "desc")), (snap) => {
         members = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
-        renderOverview(); // <--- NEW OVERVIEW CALL
+        renderOverview(); // Admin Stats
         renderMembersList(); 
         renderAgeCharts();
     });
@@ -156,7 +150,7 @@ function setupListeners() {
     onSnapshot(query(txRef, orderBy("date", "desc")), (snap) => {
         transactions = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderDashboard();
-        renderOverview(); // <--- NEW OVERVIEW CALL
+        renderOverview(); // Admin Stats
         renderFinanceList();
     });
 }
@@ -206,7 +200,7 @@ window.calcExpiry = () => {
     } 
 };
 
-// --- DATA IMPORT / EXPORT FUNCTIONS ---
+// --- DATA IMPORT / EXPORT ---
 window.exportData = (type) => {
     let dataToExport = [];
     let filename = '';
@@ -348,11 +342,76 @@ async function addFinanceEntry(category, amount, mode, date, memberId, plan, exp
             snapshotExpiry: expiry || null,
             createdAt: new Date() 
         });
-        console.log("Finance entry auto-added.");
     } catch(e) { console.error("Auto-finance failed", e); }
 }
 
-// --- OVERVIEW RENDERER (NEW) ---
+// --- DASHBOARD RENDERER (Restored Functionality) ---
+function renderDashboard() {
+    if(!members.length && !transactions.length) return;
+    const now = new Date().getTime();
+    
+    // 1. Calculate Stats
+    const txIncome = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+    const txExpense = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
+    const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
+    const totalRev = txIncome + memIncome;
+    const formatNum = (n) => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+    
+    // 2. Update Hero Cards
+    if(document.getElementById("hero-clients")) {
+        document.getElementById("hero-clients").innerText = members.length;
+        document.getElementById("hero-revenue").innerText = "₹" + formatNum(totalRev);
+        document.getElementById("hero-expense").innerText = "₹" + formatNum(txExpense);
+    }
+
+    // 3. Update Membership Plans (Donuts) - RESTORED LOGIC
+    const getStats = (minMo, maxMo) => {
+        const planMembers = members.filter(m => {
+            let dur = m.planDuration || "1m";
+            let months = 0;
+            if(dur.includes('d')) months = 0.5; 
+            else if(dur.includes('y')) months = parseInt(dur) * 12;
+            else months = parseInt(dur);
+            return months >= minMo && months < maxMo;
+        });
+        const total = planMembers.length;
+        const active = planMembers.filter(m => new Date(m.expiryDate).getTime() > now).length;
+        const pct = total === 0 ? 0 : (active / total) * 100;
+        return { active, inactive: total - active, pct };
+    };
+    
+    const updatePlanUI = (id, label, stats) => {
+        const container = document.getElementById(`row-${id}`);
+        const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+        const strokeDash = (stats.pct / 100) * 100; 
+        if(container) {
+            container.innerHTML = `
+                <div class="plan-left">
+                    <div class="donut-svg-wrapper">
+                        <svg width="44" height="44" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r="16" fill="none" stroke="#333" stroke-width="4" />
+                            <circle cx="20" cy="20" r="16" fill="none" stroke="${accent}" stroke-width="4" stroke-dasharray="${strokeDash} 100" transform="rotate(-90 20 20)" style="transition: stroke-dasharray 0.5s ease;" />
+                        </svg>
+                    </div>
+                    <div class="plan-name">${label}</div>
+                </div>
+                <div class="stat-stack">
+                    <div class="stat-pill"><span style="color:#fff">${stats.active}</span></div>
+                    <div class="stat-pill"><span style="color:#666">${stats.inactive}</span></div>
+                </div>`;
+        }
+    };
+    
+    updatePlanUI('platinum', 'Platinum<br>Membership', getStats(12, 99));
+    updatePlanUI('gold', 'Gold<br>Membership', getStats(6, 12));
+    updatePlanUI('silver', 'Silver<br>Membership', getStats(0, 6)); 
+
+    updateFinanceChart(totalRev, txExpense);
+    renderFilteredDashboardList();
+    updateMemberChart();
+}
+
+// --- ADMIN OVERVIEW RENDERER (New Tab) ---
 function renderOverview() {
     const gridContainer = document.getElementById("stats-grid-container");
     if(!gridContainer) return;
@@ -400,26 +459,13 @@ function renderOverview() {
     `;
 }
 
-// --- DASHBOARD RENDERER (Cleaned for Home Tab) ---
-function renderDashboard() {
-    if(!members.length && !transactions.length) return;
-    
-    const now = new Date().getTime();
-    const txIncome = transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
-    const txExpense = transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
-    const memIncome = members.reduce((a, b) => a + parseInt(b.lastPaidAmount||0), 0);
-    const totalRev = txIncome + memIncome;
-
-    updateFinanceChart(totalRev, txExpense);
-    renderFilteredDashboardList();
-    updateMemberChart();
-}
-
 // --- FILTER & CHARTS ---
 window.setMemberFilter = (filter) => {
     memberFilterState = filter;
     document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-    // Dashboard list logic removed toggle buttons, simplified to expiring list
+    if(document.getElementById(`btn-filter-${filter}`)) {
+        document.getElementById(`btn-filter-${filter}`).classList.add('active');
+    }
     renderFilteredDashboardList();
 }
 
@@ -428,34 +474,35 @@ function renderFilteredDashboardList() {
     if(!list) return;
     list.innerHTML = "";
     
-    const now = new Date();
+    const now = new Date().getTime();
     
     // Sort members: Expiring soonest first
     const sortedMembers = [...members].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
 
-    // Filter to show only active members expiring in next 30 days
-    const upcoming = sortedMembers.filter(m => {
-        const diff = new Date(m.expiryDate) - now;
-        const days = diff / (1000 * 60 * 60 * 24);
-        return days >= 0 && days <= 30;
+    // Filter Logic based on the Toggle Buttons on Home
+    const filtered = sortedMembers.filter(m => {
+        const isExpired = now > new Date(m.expiryDate).getTime();
+        return memberFilterState === 'active' ? !isExpired : isExpired;
     });
 
-    if(upcoming.length === 0) {
-        list.innerHTML = '<div style="padding:10px; color:#888; text-align:center;">No upcoming expiries.</div>';
+    if(filtered.length === 0) {
+        list.innerHTML = '<div style="padding:10px; color:#888; text-align:center;">No members found.</div>';
         return;
     }
 
-    upcoming.slice(0, 10).forEach(m => {
-        const end = new Date(m.expiryDate);
-        const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    filtered.slice(0, 10).forEach(m => {
+        const start = new Date(m.joinDate).getTime();
+        const end = new Date(m.expiryDate).getTime();
+        let pct = ((now - start) / (end - start)) * 100;
+        pct = Math.min(Math.max(pct, 0), 100);
+        const isExpired = now > end;
+        const color = isExpired ? '#ef4444' : getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
         
         list.innerHTML += `
             <div class="dash-row">
                 <span>${m.name}</span>
-                <span style="color:var(--text-main); font-weight:500;">${m.expiryDate}</span>
-                <div style="background:#ffedd5; color:#c2410c; padding:2px 8px; border-radius:10px; font-size:0.75rem;">
-                    ${daysLeft} Days left
-                </div>
+                <span style="color:${isExpired?'#ef4444':'#22c55e'}">${isExpired?'Expired':'Active'}</span>
+                <div class="progress-container"><div class="progress-track"><div class="progress-bar" style="width:${pct}%; background:${color}"></div></div><span class="progress-pct">${Math.floor(pct)}%</span></div>
             </div>`;
     });
 }
