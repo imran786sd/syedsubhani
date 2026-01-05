@@ -47,12 +47,12 @@
                 <div class="header-card menu-card">
                     <div class="time-section">
                         <div id="clock-display" class="clock-text">00:00 PM</div>
-                        <small>Krishna Mohan Kokkula</small>
+                        <small>Last Dashboard Refresh</small>
                     </div>
                     
                     <div class="nav-links">
                         <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
-                        <span onclick="switchTab('members')" id="tab-members" class="nav-item">Members</span>
+                        <span onclick="switchTab('overview')" id="tab-overview" class="nav-item">Overview</span> <span onclick="switchTab('members')" id="tab-members" class="nav-item">Members</span>
                         <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
                         <span onclick="switchTab('data')" id="tab-data" class="nav-item">Data IO</span>
                         
@@ -63,88 +63,58 @@
             </div>
             
             <div id="view-dashboard" class="view-section active">
-                <div class="layout-grid body-row">
-                    
-                    <div class="grid-item hero-card">
-                        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1000&auto=format&fit=crop" class="hero-bg" alt="Gym Hero">
-                        <div class="hero-overlay">
-                            <div class="theme-selector-container">
-                                <span>Theme:</span>
-                                <div class="theme-btn theme-red active" onclick="setTheme('red')"></div>
-                                <div class="theme-btn theme-blue" onclick="setTheme('blue')"></div>
-                                <div class="theme-btn theme-green" onclick="setTheme('green')"></div>
-                                <div class="theme-btn theme-orange" onclick="setTheme('orange')"></div>
-                            </div>
-                            <div class="hero-stats-blocks">
-                                <div class="hero-block">
-                                    <i class="fa-solid fa-users accent-icon"></i>
-                                    <div><h3 id="hero-clients">0</h3><small>Members</small></div>
-                                </div>
-                                <div class="hero-block">
-                                    <i class="fa-solid fa-arrow-trend-up accent-icon"></i>
-                                    <div><h3 id="hero-revenue">0</h3><small>Revenue</small></div>
-                                </div>
-                                <div class="hero-block">
-                                    <i class="fa-solid fa-arrow-trend-down" style="color:#ef4444"></i>
-                                    <div><h3 id="hero-expense">0</h3><small>Expenses</small></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stats-container">
-                        <div class="grid-item plans-card">
-                            <div class="card-header compact">
-                                <span>Overall Memberships</span>
-                                <div class="legend" style="font-size:0.7rem; font-weight:500; color:#888;">
-                                    <span style="color:#fff">Active</span> / <span style="color:#666">Expired</span>
-                                </div>
-                            </div>
-                            <div class="plan-list">
-                                <div class="plan-row" id="row-platinum"></div>
-                                <div class="plan-row" id="row-gold"></div>
-                                <div class="plan-row" id="row-silver"></div>
-                            </div>
-                        </div>
-
-                        <div class="grid-item list-card">
-                            <div class="card-header">
-                                <span>Membership Status</span>
-                                <div class="toggle-pill">
-                                    <button class="toggle-btn active" id="btn-filter-active" onclick="setMemberFilter('active')">Active</button>
-                                    <button class="toggle-btn" id="btn-filter-expired" onclick="setMemberFilter('expired')">Expired</button>
-                                </div>
-                            </div>
-                            <div class="table-header">
-                                <span>Name</span>
-                                <span>Status</span>
-                                <span>Progress</span>
-                            </div>
-                            <div id="dash-member-list" class="dash-scroll-area"></div>
-                        </div>
-
-                        <div class="grid-item finance-card">
-                            <div class="card-header compact">
-                                <span>Finance Overview</span>
-                                <div class="legend">
-                                    <span class="dot accent-bg"></span> Rev <span class="dot white"></span> Exp
-                                </div>
-                            </div>
-                            <div class="chart-wrapper compact">
-                                <canvas id="financeChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="grid-item acquisition-card">
-                            <div class="card-header">
-                                <span>Monthly Acquisition</span>
-                            </div>
-                            <div class="chart-wrapper-sm">
-                                <canvas id="memberChart"></canvas>
-                            </div>
-                        </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; padding: 0 10px;">
+                    <h2 style="margin:0;">Dashboard Analytics</h2>
+                    <div class="theme-selector-container" style="background:var(--bg-card); padding:5px 10px; border-radius:20px; border:1px solid var(--border);">
+                        <span style="font-size:0.8rem; margin-right:5px;">Theme:</span>
+                        <div class="theme-btn theme-red active" onclick="setTheme('red')"></div>
+                        <div class="theme-btn theme-blue" onclick="setTheme('blue')"></div>
+                        <div class="theme-btn theme-green" onclick="setTheme('green')"></div>
+                        <div class="theme-btn theme-orange" onclick="setTheme('orange')"></div>
                     </div>
                 </div>
+
+                <div class="stats-container">
+                    <div class="grid-item finance-card">
+                        <div class="card-header compact">
+                            <span>Finance Overview</span>
+                            <div class="legend">
+                                <span class="dot accent-bg"></span> Rev <span class="dot white"></span> Exp
+                            </div>
+                        </div>
+                        <div class="chart-wrapper compact">
+                            <canvas id="financeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="grid-item acquisition-card">
+                        <div class="card-header">
+                            <span>Monthly Acquisition</span>
+                        </div>
+                        <div class="chart-wrapper-sm">
+                            <canvas id="memberChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-item list-card">
+                        <div class="card-header">
+                            <span>Expiring Soon</span>
+                        </div>
+                        <div class="table-header">
+                            <span>Name</span>
+                            <span>Date</span>
+                            <span>Status</span>
+                        </div>
+                        <div id="dash-member-list" class="dash-scroll-area"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-overview" class="view-section" style="display:none;">
+                <div class="section-top">
+                    <h2>Admin Overview</h2>
+                </div>
+                <div class="dashboard-grid" id="stats-grid-container"></div>
             </div>
 
             <div id="view-members" class="view-section" style="display:none;">
@@ -223,8 +193,7 @@
                         </p>
 
                         <div style="background:var(--bg-body); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border);">
-                            <div style="font-size:0.8rem; font-weight:bold; margin-bottom:8px; color:var(--text-main);">Required CSV Format (Example):</div>
-                            
+                            <div style="font-size:0.8rem; font-weight:bold; margin-bottom:8px; color:var(--text-main);">Required CSV Format:</div>
                             <table style="width:100%; border-collapse:collapse; font-size:0.75rem; color:#aaa;">
                                 <tr style="border-bottom:1px solid var(--border); text-align:left;">
                                     <th style="padding:4px;">Name</th>
@@ -243,12 +212,11 @@
                                     <td style="padding:4px;">12000</td>
                                 </tr>
                             </table>
-                            
-                            <div style="margin-top:10px; font-size:0.7rem; color:#666; line-height:1.4;">
-                                <i class="fa-solid fa-circle-info"></i> <b>Date Format:</b> YYYY-MM-DD <br>
-                                <i class="fa-solid fa-circle-info"></i> <b>Plan Codes:</b> 1d, 7d, 15d, 1m, 3m, 6m, 1y
+                            <div style="margin-top:10px; font-size:0.7rem; color:#666;">
+                                <b>Format:</b> YYYY-MM-DD | <b>Plans:</b> 1d, 7d, 15d, 1m, 3m, 6m, 1y
                             </div>
                         </div>
+                        
                         <div style="display:flex; gap:10px; align-items:center;">
                             <input type="file" id="import-file" accept=".csv" style="font-size:0.9rem; color:#888;">
                             <button class="btn-sm" onclick="importMembers()">
