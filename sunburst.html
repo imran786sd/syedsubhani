@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v4.9 (Stable & Context Menu)</title>
+    <title>Sunburst Editor Pro v4.4 (Invisible Joints)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -27,7 +27,7 @@
             background: var(--bg);
         }
 
-        /* --- SIDEBAR --- */
+        /* --- SIDEBAR STRUCTURE --- */
         #sidebar {
             width: 460px;
             min-width: 440px;
@@ -40,6 +40,7 @@
             height: 100vh;
         }
 
+        /* --- TABS --- */
         .tabs { 
             display: flex; 
             background: #fff; 
@@ -57,6 +58,7 @@
         
         #btn-json { display: none; }
 
+        /* FIXED TAB CONTENT SCROLLING */
         .tab-content { 
             display: none; 
             flex-direction: column; 
@@ -68,6 +70,7 @@
         }
         .tab-content.active { display: flex !important; }
 
+        /* --- SIDEBAR BOTTOM FOOTER --- */
         #sidebar-footer {
             padding: 20px;
             border-top: 1px solid var(--border);
@@ -85,7 +88,7 @@
         .update-btn-main:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4); }
         .update-btn-main:active { transform: translateY(0); }
 
-        /* --- GRID --- */
+        /* --- GRID STYLES --- */
         #tab-grid { padding: 0; background: white; height: 100%; }
         
         .grid-header {
@@ -131,7 +134,11 @@
         .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #e9ecef; font-size: 18px; transition: 0.2s; opacity: 0; }
         .del-cell:hover { color: var(--danger) !important; background: #fff5f5; }
 
-        .grid-controls { padding: 20px; background: white; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 15px; }
+        /* Grid Controls Area */
+        .grid-controls { 
+            padding: 20px; background: white; border-top: 1px solid var(--border); 
+            display: flex; flex-direction: column; gap: 15px; 
+        }
         .btn-add {
             background: #eef2ff; color: var(--primary); border: 1px solid transparent;
             padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; 
@@ -140,6 +147,7 @@
         }
         .btn-add:hover { background: #e0e7ff; border-color: #c7d2fe; transform: translateY(-1px); }
 
+        /* Import Section */
         .import-section { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff; transition: box-shadow 0.2s; }
         .import-section:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .import-header { padding: 12px 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #555; user-select: none; transition: all 0.2s; }
@@ -147,10 +155,12 @@
         .import-body { padding: 15px; display: none; border-top: 1px solid #e0e0e0; background: #fcfcfc; }
         .import-body.open { display: block; }
         .import-body textarea { width: 100%; min-height: 100px; border: 1px solid #ced4da; padding: 12px; font-family: 'Consolas', monospace; font-size: 11px; margin-bottom: 12px; border-radius: 6px; background: #fff; color: #333; line-height: 1.5; box-sizing: border-box; }
+        .import-body textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1); outline: none; }
+        .import-help { font-size: 11px; color: #666; margin-bottom: 10px; background: #e3f2fd; padding: 8px 12px; border-radius: 4px; border-left: 3px solid #2196f3; }
         .btn-parse { width: 100%; padding: 10px; background: #495057; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
         .btn-parse:hover { background: #343a40; }
 
-        /* --- SETTINGS --- */
+        /* --- SETTINGS TAB STYLES --- */
         #tab-settings { padding: 25px 20px; gap: 20px; background: #f8f9fa; }
         #tab-json { padding: 20px; }
 
@@ -167,6 +177,7 @@
         input[type=range]:focus { outline: none; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #e9ecef; border-radius: 3px; }
         input[type=range]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; margin-top: -5px; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform 0.1s; }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
         .range-val { font-size: 11px; color: var(--primary); font-weight: 700; background: #eef2ff; padding: 2px 8px; border-radius: 10px; }
 
         .toggle-wrapper { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #e9ecef; cursor: pointer; }
@@ -174,10 +185,11 @@
         .color-picker-group { display: flex; align-items: center; gap: 8px; }
         .color-btn { width: 36px; height: 36px; padding: 0; border: 1px solid #ced4da; border-radius: 8px; cursor: pointer; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .color-btn input { width: 150%; height: 150%; margin: -25%; cursor: pointer; }
+        
         .sub-panel { background: #fcfcfc; border: 1px dashed #ddd; border-radius: 6px; padding: 12px; margin-top: 10px; }
         .sub-panel-title { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 8px; display: block; }
 
-        /* --- MAIN VIEW --- */
+        /* --- MAIN VIEW & MENU --- */
         #main {
             flex-grow: 1; background: var(--bg); position: relative;
             background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px); background-size: 24px 24px;
@@ -185,22 +197,35 @@
             overflow: hidden;
         }
         
-        #menu-container { position: absolute; top: 20px; right: 20px; z-index: 100; }
+        /* MENU BUTTON CONTAINER */
+        #menu-container {
+            position: absolute; top: 20px; right: 20px; z-index: 100;
+        }
+
         #menu-btn {
-            background: white; border: 1px solid #ced4da; color: #495057; width: 44px; height: 44px; border-radius: 12px;
-            font-size: 20px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            background: white; border: 1px solid #ced4da; color: #495057;
+            width: 44px; height: 44px; border-radius: 12px;
+            font-size: 20px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             display: flex; align-items: center; justify-content: center;
         }
         #menu-btn:hover { background: #f8f9fa; transform: scale(1.05); color: var(--primary); }
         
+        /* DROPDOWN MENU */
         #main-menu {
-            display: none; position: absolute; right: 0; top: 55px; background-color: white; min-width: 200px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 12px; border: 1px solid #e9ecef;
-            overflow: hidden; z-index: 101; padding: 6px 0; animation: fadeIn 0.15s ease-out;
+            display: none; position: absolute; right: 0; top: 55px;
+            background-color: white; min-width: 200px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-radius: 12px; border: 1px solid #e9ecef;
+            overflow: hidden; z-index: 101; padding: 6px 0;
+            animation: fadeIn 0.15s ease-out;
         }
         #main-menu.show { display: block; }
 
-        .menu-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; color: #495057; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.1s; }
+        .menu-item {
+            padding: 12px 20px; text-decoration: none; display: flex; align-items: center; gap: 12px;
+            color: #495057; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.1s;
+        }
         .menu-item:hover { background-color: #f1f3f5; color: var(--primary); }
         .menu-separator { height: 1px; background: #e9ecef; margin: 6px 0; }
         .menu-item.danger { color: #e03131; }
@@ -208,32 +233,40 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* CONTEXT MENU */
-        #ctx-menu {
-            display: none; position: absolute; z-index: 1000;
-            background: white; border: 1px solid #ced4da; border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 180px; overflow: hidden;
-        }
-        #ctx-menu .ctx-item { padding: 10px 15px; font-size: 13px; cursor: pointer; color: #333; transition: background 0.1s; }
-        #ctx-menu .ctx-item:hover { background: #f1f3f5; color: var(--primary); }
-        #ctx-menu .ctx-sep { height: 1px; background: #eee; margin: 2px 0; }
-        #ctx-menu .ctx-header { font-size: 11px; font-weight: 700; color: #999; padding: 8px 15px; background: #f9f9f9; border-bottom: 1px solid #eee; text-transform: uppercase; }
-
         #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; }
-        #chart svg { max-width: 100%; max-height: 100%; width: auto; height: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; display: block; border-radius: 16px; }
+        #chart svg {
+            max-width: 100%; max-height: 100%; width: auto; height: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; display: block; border-radius: 16px;
+        }
         
-        .pointer-line { fill: none; stroke-linecap: round; cursor: crosshair; }
-        .pointer-hit-area { fill: none; stroke: transparent; stroke-width: 15px; cursor: crosshair; }
+        .pointer-line { 
+            fill: none; stroke-linecap: round; cursor: crosshair; 
+        }
+        /* Increased stroke width for easier clicking on invisible hit area */
+        .pointer-hit-area {
+            fill: none; stroke: transparent; stroke-width: 15px; cursor: crosshair;
+        }
         
         text.draggable { cursor: move; }
         text.draggable:hover { font-weight: 900; }
         
+        /* HOVER REVEAL MAGIC */
         .control-handle { 
             cursor: move; stroke: var(--primary); stroke-width: 1px; fill: #4361ee; 
-            transition: opacity 0.2s, r 0.1s; opacity: 0; 
+            transition: opacity 0.2s, r 0.1s; 
+            opacity: 0; /* Invisible by default */
         }
-        .line-wrapper:hover .control-handle { opacity: 1; }
-        .control-handle.dragging { opacity: 1 !important; }
+        
+        /* Show handle when group is hovered */
+        .line-wrapper:hover .control-handle {
+            opacity: 1;
+        }
+        
+        /* Keep handle visible while dragging even if mouse slips off */
+        .control-handle.dragging {
+            opacity: 1 !important;
+        }
+
         .control-handle:hover { r: 6px; fill: #3a0ca3; stroke: white; stroke-width: 2px; opacity: 1; }
 
         .tooltip {
@@ -263,6 +296,7 @@
             <button class="btn-add" onclick="addGridRow()">
                 <span style="font-size:18px; line-height:1;">+</span> Add New Row
             </button>
+            
             <div class="import-section">
                 <div class="import-header" onclick="toggleImport()">
                     <span>📂 Bulk Import (Excel / CSV)</span>
@@ -349,10 +383,23 @@
         </div>
 
         <div class="settings-card">
+            <h3>Typography</h3>
+            <div class="control-grid">
+                <div><label class="control-label">Font</label><select id="fontFamily" onchange="renderCurrent()"><option value="'Segoe UI', sans-serif">Segoe UI</option><option value="Roboto, sans-serif">Roboto</option><option value="Arial, sans-serif">Arial</option></select></div>
+                <div><label class="control-label">Weight</label><select id="fontWeight" onchange="renderCurrent()"><option value="normal">Normal</option><option value="bold" selected>Bold</option><option value="900">Black</option></select></div>
+            </div>
+            <div class="control-grid" style="margin-top:10px;">
+                <div><label class="control-label">Style</label><select id="fontStyle" onchange="renderCurrent()"><option value="normal">Normal</option><option value="italic">Italic</option></select></div>
+                <div><label class="control-label">Color</label><div class="color-btn" style="width:100%"><input type="color" id="labelColor" value="#333333" oninput="renderCurrent()"></div></div>
+            </div>
+            <div class="control-row" style="margin-top:10px;"><label class="control-label">Size <span id="val-fs" class="range-val">12px</span></label><input type="range" id="fontSize" min="8" max="40" value="12" oninput="document.getElementById('val-fs').innerText = this.value+'px'; renderCurrent()"></div>
+        </div>
+
+        <div class="settings-card">
             <h3>Labels</h3>
             <div class="control-grid">
                 <div>
-                    <label class="control-label">Global Content</label>
+                    <label class="control-label">Content</label>
                     <select id="labelContent" onchange="renderCurrent()">
                         <option value="name">Name</option>
                         <option value="name_colon_percent">Name: %</option>
@@ -377,18 +424,20 @@
                 <div class="control-row"><select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()"><option value="inside">Inside</option><option value="outside">Outside (Pointers)</option></select></div>
                 <div id="labelOffsetControl" style="margin-top:10px;">
                     <div style="background:#e3f2fd; padding:10px; border-radius:6px; font-size:11px; margin-bottom:10px; border-left:3px solid #2196f3;">
-                        <strong>Tip:</strong> Hover line to edit. Double-click to add/remove joints. <strong>Right-click Label</strong> for specific format.
+                        <strong>Tip:</strong> Hover over a line to reveal edit joints. Double-click line to add bend.
                     </div>
                     <label class="control-label" style="font-weight: normal;">Label Distance <span id="val-dist" class="range-val">25px</span></label>
                     <input type="range" id="labelDist" min="0" max="150" value="40" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
                     
                     <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
                         <label class="control-label">Pointer Line Style</label>
+                        
                         <div class="control-row">
                             <select id="lineStyle" onchange="renderCurrent()">
                                 <option value="straight" selected>Straight (Multi-Drag)</option>
                             </select>
                         </div>
+
                         <div class="control-grid">
                             <div><div class="color-btn" style="width:100%; height:25px;"><input type="color" id="pointerColor" value="#888888" oninput="renderCurrent()"></div></div>
                             <div><input type="number" id="pointerWidth" value="1" min="0.5" max="5" step="0.5" onchange="renderCurrent()" style="padding:4px;"></div>
@@ -402,6 +451,11 @@
                 <div><label class="control-label" style="font-weight:normal;">Slice Gap <span id="val-gap" class="range-val">0px</span></label><input type="range" id="sliceGap" min="0" max="20" value="0" oninput="updateRangeLabel('gap', this.value, 'px'); renderCurrent()"></div>
                 <div><label class="control-label" style="font-weight:normal;">Ring Pad <span id="val-ring" class="range-val">0px</span></label><input type="range" id="ringGap" min="0" max="20" value="0" oninput="updateRangeLabel('ring', this.value, 'px'); renderCurrent()"></div>
             </div>
+        </div>
+
+        <div class="settings-card" style="border-left: 3px solid #6c757d;">
+            <h3>Advanced</h3>
+            <div class="control-row"><label class="control-label" style="font-weight:normal; cursor:pointer;"><input type="checkbox" id="showJsonTab" onchange="toggleJsonTab()"> &nbsp; Show JSON Tab</label></div>
         </div>
     </div>
 
@@ -430,36 +484,11 @@
 
     <div id="chart"></div>
     <div id="tooltip" class="tooltip"></div>
-    
-    <div id="ctx-menu">
-        <div class="ctx-header">Specific Label</div>
-        <div class="ctx-item" onclick="setNodeFormat('default')">Reset to Global</div>
-        <div class="ctx-sep"></div>
-        <div class="ctx-item" onclick="setNodeFormat('name')">Name Only</div>
-        <div class="ctx-item" onclick="setNodeFormat('value')">Value Only</div>
-        <div class="ctx-item" onclick="setNodeFormat('percent')">% Only</div>
-        <div class="ctx-item" onclick="setNodeFormat('name_colon_percent')">Name: %</div>
-        <div class="ctx-item" onclick="setNodeFormat('name_value')">Name (Value)</div>
-        <div class="ctx-item" onclick="setNodeFormat('all')">All Info</div>
-        <div class="ctx-sep"></div>
-        <div class="ctx-item" onclick="setNodeFormat('none')">Hide Label</div>
-        <div class="ctx-sep"></div>
-        <div class="ctx-item" style="color:#e03131" onclick="resetNodeLine()">Reset Line Shape</div>
-    </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v4.9_clean'; // Changed to ensure clean start
+    const STORAGE_KEY = 'sunburst_editor_v4.4_ghost';
     let activeTab = 'grid';
-    
-    // Global State for Customization Persistence
-    let customStates = {
-        lines: {},   // Key: "NamePath" -> Array of Points
-        formats: {}  // Key: "NamePath" -> "format string"
-    };
-    
-    let activeNodeId = null; // Used for Context Menu
-
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
         { l1: "Marketing", l2: "Social", l3: "IG", l4: "", color: "#29aef6", val: 300 },
@@ -498,11 +527,7 @@
     }
 
     function saveState() {
-        const payload = { 
-            gridData: gridData, 
-            settings: getSettings(),
-            customStates: customStates 
-        };
+        const payload = { gridData: gridData, settings: getSettings() };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     }
 
@@ -532,14 +557,6 @@
         try {
             const data = JSON.parse(raw);
             if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
-            
-            // ROBUST LOADING to prevent crashes
-            if(data.customStates) {
-                customStates = data.customStates;
-                if(!customStates.lines) customStates.lines = {};
-                if(!customStates.formats) customStates.formats = {};
-            }
-            
             if(data.settings) applySettings(data.settings);
         } catch(e) { console.log("Error loading state", e); }
     }
@@ -560,47 +577,10 @@
         if (!container.contains(e.target)) {
             document.getElementById('main-menu').classList.remove('show');
         }
-        // Close Context Menu
-        const ctx = document.getElementById('ctx-menu');
-        // If clicking outside context menu, close it
-        // Note: clicks inside context menu items will trigger their functions then close
-        if(ctx.style.display === 'block') {
-             ctx.style.display = 'none';
-        }
     });
 
-    // Helper for Unique IDs based on Path
-    function getNodePathKey(d) {
-        let path = [];
-        let curr = d;
-        while(curr.parent) {
-            path.unshift(curr.data.name);
-            curr = curr.parent;
-        }
-        path.unshift(curr.data.name); 
-        return path.join("###"); 
-    }
-
-    function setNodeFormat(fmt) {
-        if(activeNodeId) {
-            if(fmt === 'default') delete customStates.formats[activeNodeId];
-            else customStates.formats[activeNodeId] = fmt;
-            saveState();
-            renderCurrent();
-        }
-    }
-
-    function resetNodeLine() {
-        if(activeNodeId) {
-            delete customStates.lines[activeNodeId];
-            saveState();
-            renderCurrent();
-        }
-    }
-
     function exportProject() {
-        saveState();
-        const payload = { gridData: gridData, settings: getSettings(), customStates: customStates };
+        const payload = { gridData: gridData, settings: getSettings() };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -617,14 +597,7 @@
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                if(data.gridData) gridData = data.gridData;
-                
-                if(data.customStates) {
-                    customStates = data.customStates;
-                    if(!customStates.lines) customStates.lines = {};
-                    if(!customStates.formats) customStates.formats = {};
-                }
-                
+                if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
                 if(data.settings) applySettings(data.settings);
                 renderGridRows();
                 syncAndRender();
@@ -840,7 +813,7 @@
         const ringGap = parseFloat(document.getElementById('ringGap').value) || 0;
         const labelDist = parseInt(document.getElementById('labelDist').value) || 10;
         const showLabels = document.getElementById('showLabels').value;
-        const globalLabelContent = document.getElementById('labelContent').value; // GLOBAL
+        const labelContent = document.getElementById('labelContent').value;
         const centerContent = document.getElementById('centerContent').value;
         const customCenterText = document.getElementById('customCenterText').value;
         
@@ -937,11 +910,8 @@
         if(sortOrder === 'value') hierarchy.sort((a,b)=>b.value-a.value);
         else hierarchy.sort((a,b)=> d3.ascending(a.data.name, b.data.name));
 
-        // Assign persistent unique IDs based on Name Path
-        hierarchy.descendants().forEach((d, i) => {
-            d.pathKey = getNodePathKey(d);
-            d.uniqueId = `node-${d.depth}-${i}`;
-        });
+        // Assign unique IDs
+        hierarchy.descendants().forEach((d, i) => d.uniqueId = `node-${d.depth}-${i}`);
 
         const root = d3.partition().size([2*Math.PI, r])(hierarchy);
 
@@ -994,22 +964,16 @@
         if(showLabels !== 'none') {
             const labelNodes = root.descendants().filter(d => d.depth && d.value > 0 && (showLabels==='all' || (d.y0+d.y1)/2*(d.x1-d.x0)>10));
             
+            // POINTER LINES LAYER
             if(labelPosition === 'outside') {
                 const pointersGroup = g.append("g").attr("class", "pointers-layer");
                 
                 labelNodes.filter(d => !d.children).forEach(d => {
-                    // Check for hidden label state (SAFETY CHECKED)
-                    if (!customStates.formats) customStates.formats = {};
-                    const specificFmt = customStates.formats[d.pathKey];
-                    if(specificFmt === 'none') return;
-
                     const angle = (d.x0 + d.x1) / 2;
                     const outerR = Math.max(d.y0, d.y1 - ringGap);
                     
-                    // SAFE LINE LOGIC
-                    if (!customStates.lines) customStates.lines = {};
-                    
-                    if (!customStates.lines[d.pathKey]) {
+                    // Initialize or use existing points
+                    if (!d.polyPoints) {
                         const p1x = Math.cos(angle - Math.PI/2) * outerR;
                         const p1y = Math.sin(angle - Math.PI/2) * outerR;
                         const targetR = r + labelDist;
@@ -1021,19 +985,13 @@
                             {x: p2x, y: p2y, fixed: false} // End
                         ];
                     } else {
-                        try {
-                            d.polyPoints = JSON.parse(JSON.stringify(customStates.lines[d.pathKey])); 
-                            const p1x = Math.cos(angle - Math.PI/2) * outerR;
-                            const p1y = Math.sin(angle - Math.PI/2) * outerR;
-                            if(d.polyPoints.length > 0) d.polyPoints[0] = {x: p1x, y: p1y, fixed: true}; 
-                        } catch(e) {
-                            // Fallback
-                            const p1x = Math.cos(angle - Math.PI/2) * outerR;
-                            const p1y = Math.sin(angle - Math.PI/2) * outerR;
-                            d.polyPoints = [{x: p1x, y: p1y, fixed: true}, {x: p1x+10, y: p1y+10, fixed: false}];
-                        }
+                        // Update start point
+                        const p1x = Math.cos(angle - Math.PI/2) * outerR;
+                        const p1y = Math.sin(angle - Math.PI/2) * outerR;
+                        d.polyPoints[0] = {x: p1x, y: p1y, fixed: true};
                     }
 
+                    // GROUP WRAPPER for Hover Effect
                     const lineGroup = pointersGroup.append("g").attr("class", "line-wrapper line-group-" + d.uniqueId);
 
                     const updateLine = () => {
@@ -1041,6 +999,7 @@
 
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
 
+                        // Visual Line
                         lineGroup.append("polyline")
                             .attr("class", "pointer-line")
                             .attr("id", "line-" + d.uniqueId)
@@ -1049,6 +1008,7 @@
                             .attr("fill", "none")
                             .attr("points", pointsStr);
 
+                        // Invisible Hit Area
                         lineGroup.append("polyline")
                             .attr("class", "pointer-hit-area")
                             .attr("points", pointsStr)
@@ -1058,10 +1018,9 @@
                                 const newPoint = {x: mx, y: my, fixed: false};
                                 d.polyPoints.splice(d.polyPoints.length - 1, 0, newPoint);
                                 updateLine();
-                                customStates.lines[d.pathKey] = d.polyPoints;
-                                saveState();
                             });
 
+                        // Handles (Joints)
                         d.polyPoints.forEach((p, index) => {
                             if (index > 0 && index < d.polyPoints.length - 1) {
                                 const handle = lineGroup.append("circle")
@@ -1073,8 +1032,6 @@
                                         event.stopPropagation();
                                         d.polyPoints.splice(index, 1);
                                         updateLine();
-                                        customStates.lines[d.pathKey] = d.polyPoints;
-                                        saveState();
                                     });
                                 
                                 handle.call(d3.drag()
@@ -1084,11 +1041,7 @@
                                         p.y += event.dy;
                                         updateLine();
                                     })
-                                    .on("end", function() { 
-                                        d3.select(this).classed("dragging", false); 
-                                        customStates.lines[d.pathKey] = d.polyPoints;
-                                        saveState();
-                                    })
+                                    .on("end", function() { d3.select(this).classed("dragging", false); })
                                 );
                             }
                         });
@@ -1110,39 +1063,18 @@
                 .style("fill", labelColor)
                 .style("text-shadow", d => (labelPosition === 'outside' && !d.children) ? "none" : "0 0 3px rgba(0,0,0,0.6)")
                 .text(d => {
-                    // Check for per-leaf format override
-                    if (!customStates.formats) customStates.formats = {};
-                    const fmt = customStates.formats[d.pathKey] || globalLabelContent;
-                    
-                    if(fmt === 'none') return "";
-
                     let valStr = `${valPrefix}${d.value}${valSuffix}`;
                     let pct = root.value>0 ? ((d.value / root.value) * 100).toFixed(1)+"%" : "0%";
-                    
-                    if (fmt === 'percent') return pct;
-                    if (fmt === 'name_percent') return `${d.data.name} (${pct})`;
-                    if (fmt === 'name_colon_percent') return `${d.data.name}: ${pct}`;
-                    if (fmt === 'name_value') return `${d.data.name} (${valStr})`;
-                    if (fmt === 'all') return `${d.data.name}: ${valStr} (${pct})`;
-                    if (fmt === 'value') return valStr;
+                    if (labelContent === 'percent') return pct;
+                    if (labelContent === 'name_percent') return `${d.data.name} (${pct})`;
+                    if (labelContent === 'name_colon_percent') return `${d.data.name}: ${pct}`;
+                    if (labelContent === 'name_value') return `${d.data.name} (${valStr})`;
+                    if (labelContent === 'all') return `${d.data.name}: ${valStr} (${pct})`;
+                    if (labelContent === 'value') return valStr;
                     return d.data.name;
-                })
-                .on("contextmenu", function(event, d) {
-                    event.preventDefault();
-                    activeNodeId = d.pathKey;
-                    const menu = document.getElementById('ctx-menu');
-                    menu.style.display = 'block';
-                    menu.style.left = event.pageX + 'px';
-                    menu.style.top = event.pageY + 'px';
                 });
 
             labels.each(function(d) {
-                if (!customStates.formats) customStates.formats = {};
-                if(customStates.formats[d.pathKey] === 'none') {
-                    d3.select(this).style("display", "none");
-                    return;
-                }
-
                 if (labelPosition === 'outside' && !d.children && d.polyPoints) {
                     const lastP = d.polyPoints[d.polyPoints.length - 1];
                     let anchor = "middle";
@@ -1199,12 +1131,6 @@
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
                         d3.select(`.line-group-${d.uniqueId} .pointer-line`).attr("points", pointsStr);
                         d3.select(`.line-group-${d.uniqueId} .pointer-hit-area`).attr("points", pointsStr);
-                    }
-                })
-                .on("end", function(event, d) {
-                    if(d.polyPoints) {
-                        customStates.lines[d.pathKey] = d.polyPoints;
-                        saveState(); 
                     }
                 })
             );
