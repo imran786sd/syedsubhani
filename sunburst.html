@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v4.3 (Multi-Joint Lines)</title>
+    <title>Sunburst Editor Pro v4.4 (Invisible Joints)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -250,11 +250,24 @@
         text.draggable { cursor: move; }
         text.draggable:hover { font-weight: 900; }
         
+        /* HOVER REVEAL MAGIC */
         .control-handle { 
             cursor: move; stroke: var(--primary); stroke-width: 1px; fill: #4361ee; 
-            transition: r 0.1s; fill-opacity: 1;
+            transition: opacity 0.2s, r 0.1s; 
+            opacity: 0; /* Invisible by default */
         }
-        .control-handle:hover { r: 6px; fill: #3a0ca3; stroke: white; stroke-width: 2px; }
+        
+        /* Show handle when group is hovered */
+        .line-wrapper:hover .control-handle {
+            opacity: 1;
+        }
+        
+        /* Keep handle visible while dragging even if mouse slips off */
+        .control-handle.dragging {
+            opacity: 1 !important;
+        }
+
+        .control-handle:hover { r: 6px; fill: #3a0ca3; stroke: white; stroke-width: 2px; opacity: 1; }
 
         .tooltip {
             position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 10px 14px;
@@ -411,13 +424,20 @@
                 <div class="control-row"><select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()"><option value="inside">Inside</option><option value="outside">Outside (Pointers)</option></select></div>
                 <div id="labelOffsetControl" style="margin-top:10px;">
                     <div style="background:#e3f2fd; padding:10px; border-radius:6px; font-size:11px; margin-bottom:10px; border-left:3px solid #2196f3;">
-                        <strong>Tip:</strong> Double-click line to add bend. Double-click joint to remove.
+                        <strong>Tip:</strong> Hover over a line to reveal edit joints. Double-click line to add bend.
                     </div>
                     <label class="control-label" style="font-weight: normal;">Label Distance <span id="val-dist" class="range-val">25px</span></label>
                     <input type="range" id="labelDist" min="0" max="150" value="40" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
                     
                     <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
                         <label class="control-label">Pointer Line Style</label>
+                        
+                        <div class="control-row">
+                            <select id="lineStyle" onchange="renderCurrent()">
+                                <option value="straight" selected>Straight (Multi-Drag)</option>
+                            </select>
+                        </div>
+
                         <div class="control-grid">
                             <div><div class="color-btn" style="width:100%; height:25px;"><input type="color" id="pointerColor" value="#888888" oninput="renderCurrent()"></div></div>
                             <div><input type="number" id="pointerWidth" value="1" min="0.5" max="5" step="0.5" onchange="renderCurrent()" style="padding:4px;"></div>
@@ -467,7 +487,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v4.3_joints';
+    const STORAGE_KEY = 'sunburst_editor_v4.4_ghost';
     let activeTab = 'grid';
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
@@ -494,7 +514,7 @@
                      'opL1', 'opL2', 'opL3', 'opL4', 'bgColor', 'strokeColor', 'strokeWidth', 'cornerRadius',
                      'fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'labelColor',
                      'labelContent', 'centerContent', 'customCenterText', 'labelOrientation', 'labelRotation',
-                     'labelPosition', 'labelDist', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
+                     'labelPosition', 'labelDist', 'lineStyle', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
                      'sortOrder', 'valPrefix', 'valSuffix', 'showLegend', 'pointerColor', 'pointerWidth'];
 
         ids.forEach(id => {
@@ -954,36 +974,32 @@
                     
                     // Initialize or use existing points
                     if (!d.polyPoints) {
-                        // Point 1 (Start): Slice edge
                         const p1x = Math.cos(angle - Math.PI/2) * outerR;
                         const p1y = Math.sin(angle - Math.PI/2) * outerR;
-                        
-                        // Point 2 (End): Label
                         const targetR = r + labelDist;
                         const p2x = Math.cos(angle - Math.PI/2) * targetR;
                         const p2y = Math.sin(angle - Math.PI/2) * targetR;
                         
                         d.polyPoints = [
-                            {x: p1x, y: p1y, fixed: true}, // Start (Slice)
-                            {x: p2x, y: p2y, fixed: false} // End (Label)
+                            {x: p1x, y: p1y, fixed: true}, // Start
+                            {x: p2x, y: p2y, fixed: false} // End
                         ];
                     } else {
-                        // Update start point in case of resize
+                        // Update start point
                         const p1x = Math.cos(angle - Math.PI/2) * outerR;
                         const p1y = Math.sin(angle - Math.PI/2) * outerR;
                         d.polyPoints[0] = {x: p1x, y: p1y, fixed: true};
                     }
 
-                    // Render group for this specific line
-                    const lineGroup = pointersGroup.append("g").attr("class", "line-group-" + d.uniqueId);
+                    // GROUP WRAPPER for Hover Effect
+                    const lineGroup = pointersGroup.append("g").attr("class", "line-wrapper line-group-" + d.uniqueId);
 
                     const updateLine = () => {
-                        lineGroup.html(""); // Clear previous render
+                        lineGroup.html(""); // Clear
 
-                        // Convert points to string for polyline
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
 
-                        // Draw visible line
+                        // Visual Line
                         lineGroup.append("polyline")
                             .attr("class", "pointer-line")
                             .attr("id", "line-" + d.uniqueId)
@@ -992,44 +1008,41 @@
                             .attr("fill", "none")
                             .attr("points", pointsStr);
 
-                        // Draw thicker invisible hit area for double-click
+                        // Invisible Hit Area
                         lineGroup.append("polyline")
                             .attr("class", "pointer-hit-area")
                             .attr("points", pointsStr)
                             .on("dblclick", function(event) {
                                 event.stopPropagation();
                                 const [mx, my] = d3.pointer(event);
-                                // Simple logic: Insert new point before the last point
-                                // A better logic would find the segment index, but this is sufficient for visual editing
                                 const newPoint = {x: mx, y: my, fixed: false};
-                                
-                                // Insert at index 1 (after start) or intelligently based on distance? 
-                                // Let's simplify: insert before last point (Label)
                                 d.polyPoints.splice(d.polyPoints.length - 1, 0, newPoint);
                                 updateLine();
                             });
 
-                        // Draw Handles (Joints) - Skip first (Slice) and last (Label, dragged via text)
+                        // Handles (Joints)
                         d.polyPoints.forEach((p, index) => {
                             if (index > 0 && index < d.polyPoints.length - 1) {
-                                lineGroup.append("circle")
+                                const handle = lineGroup.append("circle")
                                     .attr("class", "control-handle")
                                     .attr("r", 4)
                                     .attr("cx", p.x)
                                     .attr("cy", p.y)
-                                    .call(d3.drag()
-                                        .on("drag", function(event) {
-                                            p.x += event.dx;
-                                            p.y += event.dy;
-                                            updateLine();
-                                            // Force label position update if needed (not needed here as text is separate)
-                                        })
-                                    )
                                     .on("dblclick", function(event) {
                                         event.stopPropagation();
-                                        d.polyPoints.splice(index, 1); // Remove this point
+                                        d.polyPoints.splice(index, 1);
                                         updateLine();
                                     });
+                                
+                                handle.call(d3.drag()
+                                    .on("start", function() { d3.select(this).classed("dragging", true); })
+                                    .on("drag", function(event) {
+                                        p.x += event.dx;
+                                        p.y += event.dy;
+                                        updateLine();
+                                    })
+                                    .on("end", function() { d3.select(this).classed("dragging", false); })
+                                );
                             }
                         });
                     };
@@ -1062,36 +1075,26 @@
                 });
 
             labels.each(function(d) {
-                // If we have custom points, use the last point for label position
                 if (labelPosition === 'outside' && !d.children && d.polyPoints) {
                     const lastP = d.polyPoints[d.polyPoints.length - 1];
-                    // We need to determine angle for text-anchor logic based on quadrant
-                    const angle = Math.atan2(lastP.y, lastP.x) + Math.PI/2; // Rough estimate
-                    
                     let anchor = "middle";
                     if (orientation === 'horizontal') {
                          if (lastP.x > 0) anchor = "start"; 
                          else anchor = "end"; 
                          d3.select(this).attr("dx", lastP.x > 0 ? "5px" : "-5px");
                     }
-
                     d3.select(this)
                       .attr("transform", `translate(${lastP.x},${lastP.y})`)
                       .attr("text-anchor", anchor);
-
                 } else {
-                    // Standard Logic for Inside labels or reset state
                     const angle = (d.x0 + d.x1) / 2; 
                     let radius = (d.y0 + d.y1) / 2;
                     if (labelPosition === 'outside' && !d.children) radius = r + labelDist;
-
                     const cx = radius * Math.cos(angle - Math.PI/2);
                     const cy = radius * Math.sin(angle - Math.PI/2);
-                    
                     let rotate = 0;
                     const degrees = (angle * 180 / Math.PI) - 90;
                     let anchor = "middle";
-
                     if(orientation === 'auto') {
                         rotate = degrees;
                         if (rotate > 90) rotate += 180; 
@@ -1099,7 +1102,6 @@
                     } else if (orientation === 'tangential') {
                         rotate = degrees + 90;
                     }
-
                     rotate += rotationOffset;
                     d3.select(this)
                       .attr("transform", `translate(${cx},${cy}) rotate(${rotate})`)
@@ -1107,7 +1109,7 @@
                 }
             });
 
-            // UPDATED DRAG LOGIC FOR TEXT
+            // DRAG TEXT
             labels.call(d3.drag()
                 .on("start", function() { d3.select(this).raise(); })
                 .on("drag", function(event, d) {
@@ -1118,30 +1120,17 @@
                     currX += event.dx;
                     currY += event.dy;
                     
-                    // Maintain rotation if present
                     const rotateStr = t.match(/rotate\([^)]+\)/) ? t.match(/rotate\([^)]+\)/)[0] : "";
                     d3.select(this).attr("transform", `translate(${currX},${currY}) ${rotateStr}`);
 
-                    // Update Last Point of Polyline
                     if(labelPosition === 'outside' && !d.children && d.polyPoints) {
                         const lastIdx = d.polyPoints.length - 1;
                         d.polyPoints[lastIdx].x = currX;
                         d.polyPoints[lastIdx].y = currY;
                         
-                        // Re-render just this line
-                        // Access the specific group
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
                         d3.select(`.line-group-${d.uniqueId} .pointer-line`).attr("points", pointsStr);
                         d3.select(`.line-group-${d.uniqueId} .pointer-hit-area`).attr("points", pointsStr);
-                        
-                        // Re-render handles logic is tricky inside drag because we cleared HTML in updateLine
-                        // Simplest hack: Move the circles if they exist? No, we need full updateLine to redraw structure
-                        // But full updateLine kills the drag event on circles. 
-                        // Text drag is safe because it only updates line points.
-                        
-                        // For visuals, we just update the DOM attributes of the lines
-                        const circles = d3.select(`.line-group-${d.uniqueId}`).selectAll("circle");
-                        // We don't drag circles here, we drag text.
                     }
                 })
             );
