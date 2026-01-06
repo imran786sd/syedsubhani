@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v4.0 (Elbow Lines)</title>
+    <title>Sunburst Editor Pro v4.1 (Custom Curves)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -242,8 +242,15 @@
         /* UPDATED POINTER LINE */
         .pointer-line { fill: none; stroke-linecap: round; pointer-events: none; }
         
+        /* DRAGGABLE CONTROLS */
         text.draggable { cursor: move; }
         text.draggable:hover { font-weight: 900; }
+        
+        .control-handle { 
+            cursor: pointer; stroke: var(--primary); stroke-width: 1px; fill: white; 
+            transition: r 0.1s; fill-opacity: 0.8;
+        }
+        .control-handle:hover { r: 6px; fill: var(--primary); }
 
         .tooltip {
             position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 10px 14px;
@@ -402,11 +409,17 @@
                     <label class="control-label" style="font-weight: normal;">Label Distance <span id="val-dist" class="range-val">25px</span></label>
                     <input type="range" id="labelDist" min="0" max="150" value="40" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
                     
-                    <label class="control-label" style="font-weight: normal; margin-top:10px;">Bend Distance <span id="val-bend" class="range-val">15px</span></label>
-                    <input type="range" id="bendDist" min="0" max="100" value="15" oninput="updateRangeLabel('bend', this.value, 'px'); renderCurrent()">
-
                     <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
-                        <label class="control-label">Pointer Line</label>
+                        <label class="control-label">Pointer Line Style</label>
+                        
+                        <div class="control-row">
+                            <select id="lineStyle" onchange="renderCurrent()">
+                                <option value="curve" selected>Curve (Adjustable)</option>
+                                <option value="elbow">Elbow (Adjustable)</option>
+                                <option value="straight">Straight</option>
+                            </select>
+                        </div>
+
                         <div class="control-grid">
                             <div><div class="color-btn" style="width:100%; height:25px;"><input type="color" id="pointerColor" value="#888888" oninput="renderCurrent()"></div></div>
                             <div><input type="number" id="pointerWidth" value="1" min="0.5" max="5" step="0.5" onchange="renderCurrent()" style="padding:4px;"></div>
@@ -456,7 +469,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v4.0_elbow';
+    const STORAGE_KEY = 'sunburst_editor_v4.1_curves';
     let activeTab = 'grid';
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
@@ -483,7 +496,7 @@
                      'opL1', 'opL2', 'opL3', 'opL4', 'bgColor', 'strokeColor', 'strokeWidth', 'cornerRadius',
                      'fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'labelColor',
                      'labelContent', 'centerContent', 'customCenterText', 'labelOrientation', 'labelRotation',
-                     'labelPosition', 'labelDist', 'bendDist', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
+                     'labelPosition', 'labelDist', 'lineStyle', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
                      'sortOrder', 'valPrefix', 'valSuffix', 'showLegend', 'pointerColor', 'pointerWidth'];
 
         ids.forEach(id => {
@@ -513,7 +526,6 @@
         updateRangeLabel('fs', document.getElementById('fontSize').value, 'px');
         updateRangeLabel('rot', document.getElementById('labelRotation').value, '°');
         updateRangeLabel('dist', document.getElementById('labelDist').value, 'px');
-        updateRangeLabel('bend', document.getElementById('bendDist').value, 'px');
         updateRangeLabel('pad', document.getElementById('chartPadding').value, 'px');
         updateRangeLabel('gap', document.getElementById('sliceGap').value, 'px');
         updateRangeLabel('ring', document.getElementById('ringGap').value, 'px');
@@ -777,12 +789,14 @@
         const rotationOffset = labelRotEl ? (parseInt(labelRotEl.value) || 0) : 0;
         const labelOrEl = document.getElementById('labelOrientation');
         const orientation = labelOrEl ? labelOrEl.value : 'auto';
+        
+        // New Line Style Parameter
+        const lineStyle = document.getElementById('lineStyle').value;
 
         const padding = parseInt(document.getElementById('chartPadding').value) || 50;
         const sliceGap = parseFloat(document.getElementById('sliceGap').value) || 0;
         const ringGap = parseFloat(document.getElementById('ringGap').value) || 0;
         const labelDist = parseInt(document.getElementById('labelDist').value) || 10;
-        const bendDist = parseInt(document.getElementById('bendDist').value) || 15; // NEW PARAMETER
         const showLabels = document.getElementById('showLabels').value;
         const labelContent = document.getElementById('labelContent').value;
         const centerContent = document.getElementById('centerContent').value;
@@ -935,38 +949,64 @@
         if(showLabels !== 'none') {
             const labelNodes = root.descendants().filter(d => d.depth && d.value > 0 && (showLabels==='all' || (d.y0+d.y1)/2*(d.x1-d.x0)>10));
             
+            // POINTER LINES LAYER
             if(labelPosition === 'outside') {
-                // CHANGED TO POLYLINE FOR ELBOW CONNECTORS
-                g.append("g").attr("class", "pointers-layer")
-                    .selectAll("polyline")
-                    .data(labelNodes.filter(d => !d.children)) 
-                    .join("polyline")
-                    .attr("class", "pointer-line")
-                    .attr("id", d => "line-" + d.uniqueId)
-                    .style("stroke", pointerColor)
-                    .style("stroke-width", pointerWidth)
-                    .attr("points", d => {
-                         const angle = (d.x0 + d.x1) / 2;
-                         const outerR = Math.max(d.y0, d.y1 - ringGap);
-                         // Point 1: Slice edge
-                         const p1x = Math.cos(angle - Math.PI/2) * outerR;
-                         const p1y = Math.sin(angle - Math.PI/2) * outerR;
-                         
-                         // Point 2: Elbow (based on bendDist)
-                         const elbowR = r + bendDist;
-                         const p2x = Math.cos(angle - Math.PI/2) * elbowR;
-                         const p2y = Math.sin(angle - Math.PI/2) * elbowR;
-                         
-                         // Point 3: Label
-                         const targetR = r + labelDist;
-                         const p3x = Math.cos(angle - Math.PI/2) * targetR;
-                         const p3y = Math.sin(angle - Math.PI/2) * targetR;
-                         
-                         // Store elbow point for drag logic
-                         d.elbow = {x: p2x, y: p2y};
-                         
-                         return `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`;
-                    });
+                const linesLayer = g.append("g").attr("class", "pointers-layer");
+                const handlesLayer = g.append("g").attr("class", "handles-layer");
+
+                labelNodes.filter(d => !d.children).forEach(d => {
+                    const angle = (d.x0 + d.x1) / 2;
+                    const outerR = Math.max(d.y0, d.y1 - ringGap);
+                    
+                    // Point 1 (Start): Slice edge
+                    d.p1x = Math.cos(angle - Math.PI/2) * outerR;
+                    d.p1y = Math.sin(angle - Math.PI/2) * outerR;
+                    
+                    // Point 3 (End - Default): Label
+                    const targetR = r + labelDist;
+                    d.p3x = Math.cos(angle - Math.PI/2) * targetR;
+                    d.p3y = Math.sin(angle - Math.PI/2) * targetR;
+
+                    // Point 2 (Control - Default): Midpoint with offset based on style
+                    const midR = outerR + (labelDist * 0.5);
+                    d.p2x = Math.cos(angle - Math.PI/2) * midR;
+                    d.p2y = Math.sin(angle - Math.PI/2) * midR;
+
+                    // Draw Path
+                    const path = linesLayer.append("path")
+                        .attr("class", "pointer-line")
+                        .attr("id", "line-" + d.uniqueId)
+                        .style("stroke", pointerColor)
+                        .style("stroke-width", pointerWidth)
+                        .attr("fill", "none");
+
+                    const updatePath = () => {
+                        if (lineStyle === 'straight') {
+                            path.attr("d", `M ${d.p1x},${d.p1y} L ${d.p3x},${d.p3y}`);
+                        } else if (lineStyle === 'elbow') {
+                            path.attr("d", `M ${d.p1x},${d.p1y} L ${d.p2x},${d.p2y} L ${d.p3x},${d.p3y}`);
+                        } else {
+                            // Quadratic Curve
+                            path.attr("d", `M ${d.p1x},${d.p1y} Q ${d.p2x},${d.p2y} ${d.p3x},${d.p3y}`);
+                        }
+                    };
+                    updatePath();
+
+                    // Draw Control Handle (Only if not straight)
+                    if (lineStyle !== 'straight') {
+                        const handle = handlesLayer.append("circle")
+                            .attr("class", "control-handle")
+                            .attr("r", 4)
+                            .attr("cx", d.p2x)
+                            .attr("cy", d.p2y)
+                            .call(d3.drag().on("drag", function(event) {
+                                d.p2x += event.dx;
+                                d.p2y += event.dy;
+                                d3.select(this).attr("cx", d.p2x).attr("cy", d.p2y);
+                                updatePath();
+                            }));
+                    }
+                });
             }
 
             const labels = g.append("g").attr("class", "labels-layer")
@@ -993,6 +1033,7 @@
                 });
 
             labels.each(function(d) {
+                // Calculate position based on data, same logic as lines
                 const angle = (d.x0 + d.x1) / 2; 
                 let radius = (d.y0 + d.y1) / 2;
                 if (labelPosition === 'outside' && !d.children) radius = r + labelDist;
@@ -1034,7 +1075,7 @@
                   .attr("text-anchor", anchor);
             });
 
-            // UPDATED DRAG LOGIC FOR POLYLINE
+            // UPDATED DRAG LOGIC
             labels.call(d3.drag()
                 .on("start", function() { d3.select(this).raise(); })
                 .on("drag", function(event, d) {
@@ -1048,13 +1089,19 @@
                     const rotate = t.match(/rotate\([^)]+\)/) ? t.match(/rotate\([^)]+\)/)[0] : "";
                     d3.select(this).attr("transform", `translate(${currX},${currY}) ${rotate}`);
 
-                    // Update Polyline points
+                    // Update Line Points (P3)
                     if(labelPosition === 'outside' && !d.children) {
-                        const line = d3.select("#line-" + d.uniqueId);
-                        const points = line.attr("points").split(" ");
-                        // Keep point 1 and 2, update point 3
-                        const newPoints = `${points[0]} ${points[1]} ${currX},${currY}`;
-                        line.attr("points", newPoints);
+                        d.p3x = currX;
+                        d.p3y = currY;
+                        
+                        const path = d3.select("#line-" + d.uniqueId);
+                        if (lineStyle === 'straight') {
+                            path.attr("d", `M ${d.p1x},${d.p1y} L ${d.p3x},${d.p3y}`);
+                        } else if (lineStyle === 'elbow') {
+                            path.attr("d", `M ${d.p1x},${d.p1y} L ${d.p2x},${d.p2y} L ${d.p3x},${d.p3y}`);
+                        } else {
+                            path.attr("d", `M ${d.p1x},${d.p1y} Q ${d.p2x},${d.p2y} ${d.p3x},${d.p3y}`);
+                        }
                     }
                 })
             );
