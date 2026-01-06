@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v3.9 (Movable Pointers)</title>
+    <title>Sunburst Editor Pro v4.0 (Elbow Lines)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -239,7 +239,9 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; display: block; border-radius: 16px;
         }
         
+        /* UPDATED POINTER LINE */
         .pointer-line { fill: none; stroke-linecap: round; pointer-events: none; }
+        
         text.draggable { cursor: move; }
         text.draggable:hover { font-weight: 900; }
 
@@ -376,7 +378,8 @@
                     <label class="control-label">Content</label>
                     <select id="labelContent" onchange="renderCurrent()">
                         <option value="name">Name</option>
-                        <option value="name_colon_percent">Name: %</option> <option value="value">Value</option>
+                        <option value="name_colon_percent">Name: %</option>
+                        <option value="value">Value</option>
                         <option value="percent">Percent</option>
                         <option value="all" selected>All</option>
                     </select>
@@ -396,8 +399,12 @@
                 <span class="sub-panel-title">Positioning</span>
                 <div class="control-row"><select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()"><option value="inside">Inside</option><option value="outside">Outside (Pointers)</option></select></div>
                 <div id="labelOffsetControl" style="margin-top:10px;">
-                    <label class="control-label" style="font-weight: normal;">Distance <span id="val-dist" class="range-val">25px</span></label>
-                    <input type="range" id="labelDist" min="0" max="100" value="25" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
+                    <label class="control-label" style="font-weight: normal;">Label Distance <span id="val-dist" class="range-val">25px</span></label>
+                    <input type="range" id="labelDist" min="0" max="150" value="40" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
+                    
+                    <label class="control-label" style="font-weight: normal; margin-top:10px;">Bend Distance <span id="val-bend" class="range-val">15px</span></label>
+                    <input type="range" id="bendDist" min="0" max="100" value="15" oninput="updateRangeLabel('bend', this.value, 'px'); renderCurrent()">
+
                     <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
                         <label class="control-label">Pointer Line</label>
                         <div class="control-grid">
@@ -449,7 +456,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v3.9_movable';
+    const STORAGE_KEY = 'sunburst_editor_v4.0_elbow';
     let activeTab = 'grid';
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
@@ -476,7 +483,7 @@
                      'opL1', 'opL2', 'opL3', 'opL4', 'bgColor', 'strokeColor', 'strokeWidth', 'cornerRadius',
                      'fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'labelColor',
                      'labelContent', 'centerContent', 'customCenterText', 'labelOrientation', 'labelRotation',
-                     'labelPosition', 'labelDist', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
+                     'labelPosition', 'labelDist', 'bendDist', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
                      'sortOrder', 'valPrefix', 'valSuffix', 'showLegend', 'pointerColor', 'pointerWidth'];
 
         ids.forEach(id => {
@@ -506,6 +513,7 @@
         updateRangeLabel('fs', document.getElementById('fontSize').value, 'px');
         updateRangeLabel('rot', document.getElementById('labelRotation').value, '°');
         updateRangeLabel('dist', document.getElementById('labelDist').value, 'px');
+        updateRangeLabel('bend', document.getElementById('bendDist').value, 'px');
         updateRangeLabel('pad', document.getElementById('chartPadding').value, 'px');
         updateRangeLabel('gap', document.getElementById('sliceGap').value, 'px');
         updateRangeLabel('ring', document.getElementById('ringGap').value, 'px');
@@ -592,11 +600,8 @@
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         const btn = document.getElementById(`btn-${t}`);
         if(btn) btn.classList.add('active');
-        
-        // Explicitly handle class toggling for display logic
         const content = document.getElementById(`tab-${t}`);
         content.classList.add('active');
-        
         if (activeTab === 'grid' && t === 'json') syncGridToJson();
         activeTab = t;
     }
@@ -777,6 +782,7 @@
         const sliceGap = parseFloat(document.getElementById('sliceGap').value) || 0;
         const ringGap = parseFloat(document.getElementById('ringGap').value) || 0;
         const labelDist = parseInt(document.getElementById('labelDist').value) || 10;
+        const bendDist = parseInt(document.getElementById('bendDist').value) || 15; // NEW PARAMETER
         const showLabels = document.getElementById('showLabels').value;
         const labelContent = document.getElementById('labelContent').value;
         const centerContent = document.getElementById('centerContent').value;
@@ -875,7 +881,7 @@
         if(sortOrder === 'value') hierarchy.sort((a,b)=>b.value-a.value);
         else hierarchy.sort((a,b)=> d3.ascending(a.data.name, b.data.name));
 
-        // Assign unique IDs to nodes for linking lines
+        // Assign unique IDs
         hierarchy.descendants().forEach((d, i) => d.uniqueId = `node-${d.depth}-${i}`);
 
         const root = d3.partition().size([2*Math.PI, r])(hierarchy);
@@ -929,36 +935,37 @@
         if(showLabels !== 'none') {
             const labelNodes = root.descendants().filter(d => d.depth && d.value > 0 && (showLabels==='all' || (d.y0+d.y1)/2*(d.x1-d.x0)>10));
             
-            let linesSelection;
-
             if(labelPosition === 'outside') {
-                linesSelection = g.append("g").attr("class", "pointers-layer")
-                    .selectAll("line")
+                // CHANGED TO POLYLINE FOR ELBOW CONNECTORS
+                g.append("g").attr("class", "pointers-layer")
+                    .selectAll("polyline")
                     .data(labelNodes.filter(d => !d.children)) 
-                    .join("line")
+                    .join("polyline")
                     .attr("class", "pointer-line")
-                    .attr("id", d => "line-" + d.uniqueId) // Assign matching ID
+                    .attr("id", d => "line-" + d.uniqueId)
                     .style("stroke", pointerColor)
                     .style("stroke-width", pointerWidth)
-                    .attr("x1", d => {
+                    .attr("points", d => {
                          const angle = (d.x0 + d.x1) / 2;
                          const outerR = Math.max(d.y0, d.y1 - ringGap);
-                         return Math.cos(angle - Math.PI/2) * outerR;
-                    })
-                    .attr("y1", d => {
-                         const angle = (d.x0 + d.x1) / 2;
-                         const outerR = Math.max(d.y0, d.y1 - ringGap);
-                         return Math.sin(angle - Math.PI/2) * outerR;
-                    })
-                    .attr("x2", d => {
-                         const angle = (d.x0 + d.x1) / 2;
-                         const targetR = r + labelDist - 5;
-                         return Math.cos(angle - Math.PI/2) * targetR;
-                    })
-                    .attr("y2", d => {
-                         const angle = (d.x0 + d.x1) / 2;
-                         const targetR = r + labelDist - 5;
-                         return Math.sin(angle - Math.PI/2) * targetR;
+                         // Point 1: Slice edge
+                         const p1x = Math.cos(angle - Math.PI/2) * outerR;
+                         const p1y = Math.sin(angle - Math.PI/2) * outerR;
+                         
+                         // Point 2: Elbow (based on bendDist)
+                         const elbowR = r + bendDist;
+                         const p2x = Math.cos(angle - Math.PI/2) * elbowR;
+                         const p2y = Math.sin(angle - Math.PI/2) * elbowR;
+                         
+                         // Point 3: Label
+                         const targetR = r + labelDist;
+                         const p3x = Math.cos(angle - Math.PI/2) * targetR;
+                         const p3y = Math.sin(angle - Math.PI/2) * targetR;
+                         
+                         // Store elbow point for drag logic
+                         d.elbow = {x: p2x, y: p2y};
+                         
+                         return `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`;
                     });
             }
 
@@ -978,7 +985,7 @@
                     let pct = root.value>0 ? ((d.value / root.value) * 100).toFixed(1)+"%" : "0%";
                     if (labelContent === 'percent') return pct;
                     if (labelContent === 'name_percent') return `${d.data.name} (${pct})`;
-                    if (labelContent === 'name_colon_percent') return `${d.data.name}: ${pct}`; // NEW FORMAT
+                    if (labelContent === 'name_colon_percent') return `${d.data.name}: ${pct}`;
                     if (labelContent === 'name_value') return `${d.data.name} (${valStr})`;
                     if (labelContent === 'all') return `${d.data.name}: ${valStr} (${pct})`;
                     if (labelContent === 'value') return valStr;
@@ -1027,7 +1034,7 @@
                   .attr("text-anchor", anchor);
             });
 
-            // UPDATED DRAG LOGIC FOR MOVABLE POINTERS
+            // UPDATED DRAG LOGIC FOR POLYLINE
             labels.call(d3.drag()
                 .on("start", function() { d3.select(this).raise(); })
                 .on("drag", function(event, d) {
@@ -1041,21 +1048,21 @@
                     const rotate = t.match(/rotate\([^)]+\)/) ? t.match(/rotate\([^)]+\)/)[0] : "";
                     d3.select(this).attr("transform", `translate(${currX},${currY}) ${rotate}`);
 
-                    // Move pointer line if it exists
+                    // Update Polyline points
                     if(labelPosition === 'outside' && !d.children) {
-                        d3.select("#line-" + d.uniqueId)
-                          .attr("x2", currX)
-                          .attr("y2", currY);
+                        const line = d3.select("#line-" + d.uniqueId);
+                        const points = line.attr("points").split(" ");
+                        // Keep point 1 and 2, update point 3
+                        const newPoints = `${points[0]} ${points[1]} ${currX},${currY}`;
+                        line.attr("points", newPoints);
                     }
                 })
             );
         }
 
-        // CENTER TEXT LOGIC WITH CUSTOM INPUT
         const cg = g.append("g").attr("text-anchor","middle").style("fill","#333");
         
         if (customCenterText && customCenterText.trim() !== "") {
-            // Custom text overrides everything
             cg.append("text").text(customCenterText)
               .attr("dy", "0.35em")
               .style("font-size", "24px")
