@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v4.1 (Custom Curves)</title>
+    <title>Sunburst Editor Pro v4.2 (Multi-Drag Straight Lines)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -247,10 +247,10 @@
         text.draggable:hover { font-weight: 900; }
         
         .control-handle { 
-            cursor: pointer; stroke: var(--primary); stroke-width: 1px; fill: white; 
-            transition: r 0.1s; fill-opacity: 0.8;
+            cursor: pointer; stroke: var(--primary); stroke-width: 1px; fill: var(--primary); 
+            transition: r 0.1s; fill-opacity: 1;
         }
-        .control-handle:hover { r: 6px; fill: var(--primary); }
+        .control-handle:hover { r: 6px; fill: var(--primary-hover); }
 
         .tooltip {
             position: absolute; background: rgba(33, 37, 41, 0.95); color: #fff; padding: 10px 14px;
@@ -414,9 +414,7 @@
                         
                         <div class="control-row">
                             <select id="lineStyle" onchange="renderCurrent()">
-                                <option value="curve" selected>Curve (Adjustable)</option>
-                                <option value="elbow">Elbow (Adjustable)</option>
-                                <option value="straight">Straight</option>
+                                <option value="straight" selected>Straight (Multi-Drag)</option>
                             </select>
                         </div>
 
@@ -469,7 +467,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v4.1_curves';
+    const STORAGE_KEY = 'sunburst_editor_v4.2_multi_drag';
     let activeTab = 'grid';
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
