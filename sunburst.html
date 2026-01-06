@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v4.8 (Per-Leaf Content)</title>
+    <title>Sunburst Editor Pro v4.9 (Stable & Context Menu)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -27,7 +27,7 @@
             background: var(--bg);
         }
 
-        /* --- SIDEBAR STRUCTURE --- */
+        /* --- SIDEBAR --- */
         #sidebar {
             width: 460px;
             min-width: 440px;
@@ -40,7 +40,6 @@
             height: 100vh;
         }
 
-        /* --- TABS --- */
         .tabs { 
             display: flex; 
             background: #fff; 
@@ -58,7 +57,6 @@
         
         #btn-json { display: none; }
 
-        /* FIXED TAB CONTENT SCROLLING */
         .tab-content { 
             display: none; 
             flex-direction: column; 
@@ -70,7 +68,6 @@
         }
         .tab-content.active { display: flex !important; }
 
-        /* --- SIDEBAR BOTTOM FOOTER --- */
         #sidebar-footer {
             padding: 20px;
             border-top: 1px solid var(--border);
@@ -88,7 +85,7 @@
         .update-btn-main:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4); }
         .update-btn-main:active { transform: translateY(0); }
 
-        /* --- GRID STYLES --- */
+        /* --- GRID --- */
         #tab-grid { padding: 0; background: white; height: 100%; }
         
         .grid-header {
@@ -134,11 +131,7 @@
         .del-cell { display: flex; align-items: center; justify-content: center; cursor: pointer; color: #e9ecef; font-size: 18px; transition: 0.2s; opacity: 0; }
         .del-cell:hover { color: var(--danger) !important; background: #fff5f5; }
 
-        /* Grid Controls Area */
-        .grid-controls { 
-            padding: 20px; background: white; border-top: 1px solid var(--border); 
-            display: flex; flex-direction: column; gap: 15px; 
-        }
+        .grid-controls { padding: 20px; background: white; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 15px; }
         .btn-add {
             background: #eef2ff; color: var(--primary); border: 1px solid transparent;
             padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; 
@@ -147,7 +140,6 @@
         }
         .btn-add:hover { background: #e0e7ff; border-color: #c7d2fe; transform: translateY(-1px); }
 
-        /* Import Section */
         .import-section { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff; transition: box-shadow 0.2s; }
         .import-section:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .import-header { padding: 12px 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #555; user-select: none; transition: all 0.2s; }
@@ -155,12 +147,10 @@
         .import-body { padding: 15px; display: none; border-top: 1px solid #e0e0e0; background: #fcfcfc; }
         .import-body.open { display: block; }
         .import-body textarea { width: 100%; min-height: 100px; border: 1px solid #ced4da; padding: 12px; font-family: 'Consolas', monospace; font-size: 11px; margin-bottom: 12px; border-radius: 6px; background: #fff; color: #333; line-height: 1.5; box-sizing: border-box; }
-        .import-body textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1); outline: none; }
-        .import-help { font-size: 11px; color: #666; margin-bottom: 10px; background: #e3f2fd; padding: 8px 12px; border-radius: 4px; border-left: 3px solid #2196f3; }
         .btn-parse { width: 100%; padding: 10px; background: #495057; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
         .btn-parse:hover { background: #343a40; }
 
-        /* --- SETTINGS TAB STYLES --- */
+        /* --- SETTINGS --- */
         #tab-settings { padding: 25px 20px; gap: 20px; background: #f8f9fa; }
         #tab-json { padding: 20px; }
 
@@ -177,7 +167,6 @@
         input[type=range]:focus { outline: none; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #e9ecef; border-radius: 3px; }
         input[type=range]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; margin-top: -5px; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform 0.1s; }
-        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
         .range-val { font-size: 11px; color: var(--primary); font-weight: 700; background: #eef2ff; padding: 2px 8px; border-radius: 10px; }
 
         .toggle-wrapper { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #e9ecef; cursor: pointer; }
@@ -185,11 +174,10 @@
         .color-picker-group { display: flex; align-items: center; gap: 8px; }
         .color-btn { width: 36px; height: 36px; padding: 0; border: 1px solid #ced4da; border-radius: 8px; cursor: pointer; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .color-btn input { width: 150%; height: 150%; margin: -25%; cursor: pointer; }
-        
         .sub-panel { background: #fcfcfc; border: 1px dashed #ddd; border-radius: 6px; padding: 12px; margin-top: 10px; }
         .sub-panel-title { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 8px; display: block; }
 
-        /* --- MAIN VIEW & MENU --- */
+        /* --- MAIN VIEW --- */
         #main {
             flex-grow: 1; background: var(--bg); position: relative;
             background-image: radial-gradient(#d1d5db 1.5px, transparent 1.5px); background-size: 24px 24px;
@@ -197,35 +185,22 @@
             overflow: hidden;
         }
         
-        /* MENU BUTTON CONTAINER */
-        #menu-container {
-            position: absolute; top: 20px; right: 20px; z-index: 100;
-        }
-
+        #menu-container { position: absolute; top: 20px; right: 20px; z-index: 100; }
         #menu-btn {
-            background: white; border: 1px solid #ced4da; color: #495057;
-            width: 44px; height: 44px; border-radius: 12px;
-            font-size: 20px; cursor: pointer; transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            background: white; border: 1px solid #ced4da; color: #495057; width: 44px; height: 44px; border-radius: 12px;
+            font-size: 20px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             display: flex; align-items: center; justify-content: center;
         }
         #menu-btn:hover { background: #f8f9fa; transform: scale(1.05); color: var(--primary); }
         
-        /* DROPDOWN MENU */
         #main-menu {
-            display: none; position: absolute; right: 0; top: 55px;
-            background-color: white; min-width: 200px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            border-radius: 12px; border: 1px solid #e9ecef;
-            overflow: hidden; z-index: 101; padding: 6px 0;
-            animation: fadeIn 0.15s ease-out;
+            display: none; position: absolute; right: 0; top: 55px; background-color: white; min-width: 200px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 12px; border: 1px solid #e9ecef;
+            overflow: hidden; z-index: 101; padding: 6px 0; animation: fadeIn 0.15s ease-out;
         }
         #main-menu.show { display: block; }
 
-        .menu-item {
-            padding: 12px 20px; text-decoration: none; display: flex; align-items: center; gap: 12px;
-            color: #495057; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.1s;
-        }
+        .menu-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; color: #495057; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.1s; }
         .menu-item:hover { background-color: #f1f3f5; color: var(--primary); }
         .menu-separator { height: 1px; background: #e9ecef; margin: 6px 0; }
         .menu-item.danger { color: #e03131; }
@@ -239,49 +214,26 @@
             background: white; border: 1px solid #ced4da; border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 180px; overflow: hidden;
         }
-        #ctx-menu .ctx-item {
-            padding: 10px 15px; font-size: 13px; cursor: pointer; color: #333; transition: background 0.1s;
-        }
+        #ctx-menu .ctx-item { padding: 10px 15px; font-size: 13px; cursor: pointer; color: #333; transition: background 0.1s; }
         #ctx-menu .ctx-item:hover { background: #f1f3f5; color: var(--primary); }
         #ctx-menu .ctx-sep { height: 1px; background: #eee; margin: 2px 0; }
-        #ctx-menu .ctx-header {
-            font-size: 11px; font-weight: 700; color: #999; padding: 8px 15px; background: #f9f9f9; border-bottom: 1px solid #eee; text-transform: uppercase;
-        }
+        #ctx-menu .ctx-header { font-size: 11px; font-weight: 700; color: #999; padding: 8px 15px; background: #f9f9f9; border-bottom: 1px solid #eee; text-transform: uppercase; }
 
         #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; }
-        #chart svg {
-            max-width: 100%; max-height: 100%; width: auto; height: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; display: block; border-radius: 16px;
-        }
+        #chart svg { max-width: 100%; max-height: 100%; width: auto; height: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.12); background: white; display: block; border-radius: 16px; }
         
-        .pointer-line { 
-            fill: none; stroke-linecap: round; cursor: crosshair; 
-        }
-        /* Increased stroke width for easier clicking on invisible hit area */
-        .pointer-hit-area {
-            fill: none; stroke: transparent; stroke-width: 15px; cursor: crosshair;
-        }
+        .pointer-line { fill: none; stroke-linecap: round; cursor: crosshair; }
+        .pointer-hit-area { fill: none; stroke: transparent; stroke-width: 15px; cursor: crosshair; }
         
         text.draggable { cursor: move; }
         text.draggable:hover { font-weight: 900; }
         
-        /* HOVER REVEAL MAGIC */
         .control-handle { 
             cursor: move; stroke: var(--primary); stroke-width: 1px; fill: #4361ee; 
-            transition: opacity 0.2s, r 0.1s; 
-            opacity: 0; /* Invisible by default */
+            transition: opacity 0.2s, r 0.1s; opacity: 0; 
         }
-        
-        /* Show handle when group is hovered */
-        .line-wrapper:hover .control-handle {
-            opacity: 1;
-        }
-        
-        /* Keep handle visible while dragging even if mouse slips off */
-        .control-handle.dragging {
-            opacity: 1 !important;
-        }
-
+        .line-wrapper:hover .control-handle { opacity: 1; }
+        .control-handle.dragging { opacity: 1 !important; }
         .control-handle:hover { r: 6px; fill: #3a0ca3; stroke: white; stroke-width: 2px; opacity: 1; }
 
         .tooltip {
@@ -311,7 +263,6 @@
             <button class="btn-add" onclick="addGridRow()">
                 <span style="font-size:18px; line-height:1;">+</span> Add New Row
             </button>
-            
             <div class="import-section">
                 <div class="import-header" onclick="toggleImport()">
                     <span>📂 Bulk Import (Excel / CSV)</span>
@@ -426,7 +377,7 @@
                 <div class="control-row"><select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()"><option value="inside">Inside</option><option value="outside">Outside (Pointers)</option></select></div>
                 <div id="labelOffsetControl" style="margin-top:10px;">
                     <div style="background:#e3f2fd; padding:10px; border-radius:6px; font-size:11px; margin-bottom:10px; border-left:3px solid #2196f3;">
-                        <strong>Tip:</strong> Hover over a line to reveal edit joints. <br><strong>Right-Click Label</strong> for specific format.
+                        <strong>Tip:</strong> Hover line to edit. Double-click to add/remove joints. <strong>Right-click Label</strong> for specific format.
                     </div>
                     <label class="control-label" style="font-weight: normal;">Label Distance <span id="val-dist" class="range-val">25px</span></label>
                     <input type="range" id="labelDist" min="0" max="150" value="40" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
@@ -492,19 +443,22 @@
         <div class="ctx-item" onclick="setNodeFormat('all')">All Info</div>
         <div class="ctx-sep"></div>
         <div class="ctx-item" onclick="setNodeFormat('none')">Hide Label</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" style="color:#e03131" onclick="resetNodeLine()">Reset Line Shape</div>
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v4.8_context';
+    const STORAGE_KEY = 'sunburst_editor_v4.9_clean'; // Changed to ensure clean start
     let activeTab = 'grid';
     
     // Global State for Customization Persistence
     let customStates = {
+        lines: {},   // Key: "NamePath" -> Array of Points
         formats: {}  // Key: "NamePath" -> "format string"
     };
     
-    let activeNodeId = null; // Used for Context Menu context
+    let activeNodeId = null; // Used for Context Menu
 
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
@@ -547,7 +501,7 @@
         const payload = { 
             gridData: gridData, 
             settings: getSettings(),
-            customStates: customStates // Persist the custom formats
+            customStates: customStates 
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     }
@@ -578,7 +532,14 @@
         try {
             const data = JSON.parse(raw);
             if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
-            if(data.customStates) customStates = data.customStates; // Load persistence
+            
+            // ROBUST LOADING to prevent crashes
+            if(data.customStates) {
+                customStates = data.customStates;
+                if(!customStates.lines) customStates.lines = {};
+                if(!customStates.formats) customStates.formats = {};
+            }
+            
             if(data.settings) applySettings(data.settings);
         } catch(e) { console.log("Error loading state", e); }
     }
@@ -594,13 +555,21 @@
         menu.classList.toggle('show');
     }
 
-    // Context Menu Logic
     document.addEventListener('click', function(e) {
-        document.getElementById('main-menu').classList.remove('show');
-        document.getElementById('ctx-menu').style.display = 'none';
+        const container = document.getElementById('menu-container');
+        if (!container.contains(e.target)) {
+            document.getElementById('main-menu').classList.remove('show');
+        }
+        // Close Context Menu
+        const ctx = document.getElementById('ctx-menu');
+        // If clicking outside context menu, close it
+        // Note: clicks inside context menu items will trigger their functions then close
+        if(ctx.style.display === 'block') {
+             ctx.style.display = 'none';
+        }
     });
 
-    // Helper to get Unique Node ID based on path names
+    // Helper for Unique IDs based on Path
     function getNodePathKey(d) {
         let path = [];
         let curr = d;
@@ -608,14 +577,22 @@
             path.unshift(curr.data.name);
             curr = curr.parent;
         }
-        path.unshift(curr.data.name); // Root name
-        return path.join("###"); // Separator
+        path.unshift(curr.data.name); 
+        return path.join("###"); 
     }
 
     function setNodeFormat(fmt) {
         if(activeNodeId) {
             if(fmt === 'default') delete customStates.formats[activeNodeId];
             else customStates.formats[activeNodeId] = fmt;
+            saveState();
+            renderCurrent();
+        }
+    }
+
+    function resetNodeLine() {
+        if(activeNodeId) {
+            delete customStates.lines[activeNodeId];
             saveState();
             renderCurrent();
         }
@@ -641,7 +618,13 @@
             try {
                 const data = JSON.parse(e.target.result);
                 if(data.gridData) gridData = data.gridData;
-                if(data.customStates) customStates = data.customStates;
+                
+                if(data.customStates) {
+                    customStates = data.customStates;
+                    if(!customStates.lines) customStates.lines = {};
+                    if(!customStates.formats) customStates.formats = {};
+                }
+                
                 if(data.settings) applySettings(data.settings);
                 renderGridRows();
                 syncAndRender();
@@ -1015,7 +998,7 @@
                 const pointersGroup = g.append("g").attr("class", "pointers-layer");
                 
                 labelNodes.filter(d => !d.children).forEach(d => {
-                    // Check for hidden label state
+                    // Check for hidden label state (SAFETY CHECKED)
                     if (!customStates.formats) customStates.formats = {};
                     const specificFmt = customStates.formats[d.pathKey];
                     if(specificFmt === 'none') return;
@@ -1023,8 +1006,10 @@
                     const angle = (d.x0 + d.x1) / 2;
                     const outerR = Math.max(d.y0, d.y1 - ringGap);
                     
-                    // Default Straight Line
-                    if (!d.polyPoints) {
+                    // SAFE LINE LOGIC
+                    if (!customStates.lines) customStates.lines = {};
+                    
+                    if (!customStates.lines[d.pathKey]) {
                         const p1x = Math.cos(angle - Math.PI/2) * outerR;
                         const p1y = Math.sin(angle - Math.PI/2) * outerR;
                         const targetR = r + labelDist;
@@ -1036,13 +1021,19 @@
                             {x: p2x, y: p2y, fixed: false} // End
                         ];
                     } else {
-                        // Update start point
-                        const p1x = Math.cos(angle - Math.PI/2) * outerR;
-                        const p1y = Math.sin(angle - Math.PI/2) * outerR;
-                        d.polyPoints[0] = {x: p1x, y: p1y, fixed: true};
+                        try {
+                            d.polyPoints = JSON.parse(JSON.stringify(customStates.lines[d.pathKey])); 
+                            const p1x = Math.cos(angle - Math.PI/2) * outerR;
+                            const p1y = Math.sin(angle - Math.PI/2) * outerR;
+                            if(d.polyPoints.length > 0) d.polyPoints[0] = {x: p1x, y: p1y, fixed: true}; 
+                        } catch(e) {
+                            // Fallback
+                            const p1x = Math.cos(angle - Math.PI/2) * outerR;
+                            const p1y = Math.sin(angle - Math.PI/2) * outerR;
+                            d.polyPoints = [{x: p1x, y: p1y, fixed: true}, {x: p1x+10, y: p1y+10, fixed: false}];
+                        }
                     }
 
-                    // GROUP WRAPPER for Hover Effect
                     const lineGroup = pointersGroup.append("g").attr("class", "line-wrapper line-group-" + d.uniqueId);
 
                     const updateLine = () => {
@@ -1050,7 +1041,6 @@
 
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
 
-                        // Visual Line
                         lineGroup.append("polyline")
                             .attr("class", "pointer-line")
                             .attr("id", "line-" + d.uniqueId)
@@ -1059,7 +1049,6 @@
                             .attr("fill", "none")
                             .attr("points", pointsStr);
 
-                        // Invisible Hit Area
                         lineGroup.append("polyline")
                             .attr("class", "pointer-hit-area")
                             .attr("points", pointsStr)
@@ -1069,9 +1058,10 @@
                                 const newPoint = {x: mx, y: my, fixed: false};
                                 d.polyPoints.splice(d.polyPoints.length - 1, 0, newPoint);
                                 updateLine();
+                                customStates.lines[d.pathKey] = d.polyPoints;
+                                saveState();
                             });
 
-                        // Handles (Joints)
                         d.polyPoints.forEach((p, index) => {
                             if (index > 0 && index < d.polyPoints.length - 1) {
                                 const handle = lineGroup.append("circle")
@@ -1083,6 +1073,8 @@
                                         event.stopPropagation();
                                         d.polyPoints.splice(index, 1);
                                         updateLine();
+                                        customStates.lines[d.pathKey] = d.polyPoints;
+                                        saveState();
                                     });
                                 
                                 handle.call(d3.drag()
@@ -1092,7 +1084,11 @@
                                         p.y += event.dy;
                                         updateLine();
                                     })
-                                    .on("end", function() { d3.select(this).classed("dragging", false); })
+                                    .on("end", function() { 
+                                        d3.select(this).classed("dragging", false); 
+                                        customStates.lines[d.pathKey] = d.polyPoints;
+                                        saveState();
+                                    })
                                 );
                             }
                         });
@@ -1117,6 +1113,7 @@
                     // Check for per-leaf format override
                     if (!customStates.formats) customStates.formats = {};
                     const fmt = customStates.formats[d.pathKey] || globalLabelContent;
+                    
                     if(fmt === 'none') return "";
 
                     let valStr = `${valPrefix}${d.value}${valSuffix}`;
@@ -1140,8 +1137,8 @@
                 });
 
             labels.each(function(d) {
-                // If hidden via context menu
-                if(customStates.formats && customStates.formats[d.pathKey] === 'none') {
+                if (!customStates.formats) customStates.formats = {};
+                if(customStates.formats[d.pathKey] === 'none') {
                     d3.select(this).style("display", "none");
                     return;
                 }
@@ -1202,6 +1199,12 @@
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
                         d3.select(`.line-group-${d.uniqueId} .pointer-line`).attr("points", pointsStr);
                         d3.select(`.line-group-${d.uniqueId} .pointer-hit-area`).attr("points", pointsStr);
+                    }
+                })
+                .on("end", function(event, d) {
+                    if(d.polyPoints) {
+                        customStates.lines[d.pathKey] = d.polyPoints;
+                        saveState(); 
                     }
                 })
             );
