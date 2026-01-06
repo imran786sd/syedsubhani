@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v4.7 (Crash Fix)</title>
+    <title>Sunburst Editor Pro v4.8 (Per-Leaf Content)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -257,6 +257,7 @@
         .pointer-line { 
             fill: none; stroke-linecap: round; cursor: crosshair; 
         }
+        /* Increased stroke width for easier clicking on invisible hit area */
         .pointer-hit-area {
             fill: none; stroke: transparent; stroke-width: 15px; cursor: crosshair;
         }
@@ -264,12 +265,23 @@
         text.draggable { cursor: move; }
         text.draggable:hover { font-weight: 900; }
         
+        /* HOVER REVEAL MAGIC */
         .control-handle { 
             cursor: move; stroke: var(--primary); stroke-width: 1px; fill: #4361ee; 
-            transition: opacity 0.2s, r 0.1s; opacity: 0; 
+            transition: opacity 0.2s, r 0.1s; 
+            opacity: 0; /* Invisible by default */
         }
-        .line-wrapper:hover .control-handle { opacity: 1; }
-        .control-handle.dragging { opacity: 1 !important; }
+        
+        /* Show handle when group is hovered */
+        .line-wrapper:hover .control-handle {
+            opacity: 1;
+        }
+        
+        /* Keep handle visible while dragging even if mouse slips off */
+        .control-handle.dragging {
+            opacity: 1 !important;
+        }
+
         .control-handle:hover { r: 6px; fill: #3a0ca3; stroke: white; stroke-width: 2px; opacity: 1; }
 
         .tooltip {
@@ -299,6 +311,7 @@
             <button class="btn-add" onclick="addGridRow()">
                 <span style="font-size:18px; line-height:1;">+</span> Add New Row
             </button>
+            
             <div class="import-section">
                 <div class="import-header" onclick="toggleImport()">
                     <span>📂 Bulk Import (Excel / CSV)</span>
@@ -413,7 +426,7 @@
                 <div class="control-row"><select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()"><option value="inside">Inside</option><option value="outside">Outside (Pointers)</option></select></div>
                 <div id="labelOffsetControl" style="margin-top:10px;">
                     <div style="background:#e3f2fd; padding:10px; border-radius:6px; font-size:11px; margin-bottom:10px; border-left:3px solid #2196f3;">
-                        <strong>Tip:</strong> Double-click line to add/remove joints. <br><strong>Right-Click Label</strong> for specific format.
+                        <strong>Tip:</strong> Hover over a line to reveal edit joints. <br><strong>Right-Click Label</strong> for specific format.
                     </div>
                     <label class="control-label" style="font-weight: normal;">Label Distance <span id="val-dist" class="range-val">25px</span></label>
                     <input type="range" id="labelDist" min="0" max="150" value="40" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
@@ -479,22 +492,19 @@
         <div class="ctx-item" onclick="setNodeFormat('all')">All Info</div>
         <div class="ctx-sep"></div>
         <div class="ctx-item" onclick="setNodeFormat('none')">Hide Label</div>
-        <div class="ctx-sep"></div>
-        <div class="ctx-item" style="color:#e03131" onclick="resetNodeLine()">Reset Line Shape</div>
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v4.7_fix';
+    const STORAGE_KEY = 'sunburst_editor_v4.8_context';
     let activeTab = 'grid';
     
-    // Global State with robust defaults
+    // Global State for Customization Persistence
     let customStates = {
-        lines: {},   
-        formats: {}  
+        formats: {}  // Key: "NamePath" -> "format string"
     };
     
-    let activeNodeId = null;
+    let activeNodeId = null; // Used for Context Menu context
 
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
@@ -537,7 +547,7 @@
         const payload = { 
             gridData: gridData, 
             settings: getSettings(),
-            customStates: customStates 
+            customStates: customStates // Persist the custom formats
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     }
@@ -568,15 +578,7 @@
         try {
             const data = JSON.parse(raw);
             if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
-            
-            // ROBUST LOADING FIX
-            if(data.customStates) {
-                customStates = data.customStates;
-                // Ensure properties exist to prevent crashes
-                if(!customStates.lines) customStates.lines = {};
-                if(!customStates.formats) customStates.formats = {};
-            }
-            
+            if(data.customStates) customStates = data.customStates; // Load persistence
             if(data.settings) applySettings(data.settings);
         } catch(e) { console.log("Error loading state", e); }
     }
@@ -594,11 +596,7 @@
 
     // Context Menu Logic
     document.addEventListener('click', function(e) {
-        const container = document.getElementById('menu-container');
-        if (!container.contains(e.target)) {
-            document.getElementById('main-menu').classList.remove('show');
-        }
-        // Close context menu on any click
+        document.getElementById('main-menu').classList.remove('show');
         document.getElementById('ctx-menu').style.display = 'none';
     });
 
@@ -610,22 +608,14 @@
             path.unshift(curr.data.name);
             curr = curr.parent;
         }
-        path.unshift(curr.data.name); 
-        return path.join("###"); 
+        path.unshift(curr.data.name); // Root name
+        return path.join("###"); // Separator
     }
 
     function setNodeFormat(fmt) {
         if(activeNodeId) {
             if(fmt === 'default') delete customStates.formats[activeNodeId];
             else customStates.formats[activeNodeId] = fmt;
-            saveState();
-            renderCurrent();
-        }
-    }
-
-    function resetNodeLine() {
-        if(activeNodeId) {
-            delete customStates.lines[activeNodeId];
             saveState();
             renderCurrent();
         }
@@ -651,14 +641,7 @@
             try {
                 const data = JSON.parse(e.target.result);
                 if(data.gridData) gridData = data.gridData;
-                
-                // ROBUST IMPORT
-                if(data.customStates) {
-                    customStates = data.customStates;
-                    if(!customStates.lines) customStates.lines = {};
-                    if(!customStates.formats) customStates.formats = {};
-                }
-                
+                if(data.customStates) customStates = data.customStates;
                 if(data.settings) applySettings(data.settings);
                 renderGridRows();
                 syncAndRender();
@@ -1032,7 +1015,7 @@
                 const pointersGroup = g.append("g").attr("class", "pointers-layer");
                 
                 labelNodes.filter(d => !d.children).forEach(d => {
-                    // Safety check for formats
+                    // Check for hidden label state
                     if (!customStates.formats) customStates.formats = {};
                     const specificFmt = customStates.formats[d.pathKey];
                     if(specificFmt === 'none') return;
@@ -1040,10 +1023,8 @@
                     const angle = (d.x0 + d.x1) / 2;
                     const outerR = Math.max(d.y0, d.y1 - ringGap);
                     
-                    // Safety check for lines
-                    if (!customStates.lines) customStates.lines = {};
-
-                    if (!customStates.lines[d.pathKey]) {
+                    // Default Straight Line
+                    if (!d.polyPoints) {
                         const p1x = Math.cos(angle - Math.PI/2) * outerR;
                         const p1y = Math.sin(angle - Math.PI/2) * outerR;
                         const targetR = r + labelDist;
@@ -1051,31 +1032,25 @@
                         const p2y = Math.sin(angle - Math.PI/2) * targetR;
                         
                         d.polyPoints = [
-                            {x: p1x, y: p1y, fixed: true}, 
-                            {x: p2x, y: p2y, fixed: false} 
+                            {x: p1x, y: p1y, fixed: true}, // Start
+                            {x: p2x, y: p2y, fixed: false} // End
                         ];
                     } else {
-                        // Safe Copy logic
-                        try {
-                            d.polyPoints = JSON.parse(JSON.stringify(customStates.lines[d.pathKey])); 
-                            const p1x = Math.cos(angle - Math.PI/2) * outerR;
-                            const p1y = Math.sin(angle - Math.PI/2) * outerR;
-                            if(d.polyPoints.length > 0) d.polyPoints[0] = {x: p1x, y: p1y, fixed: true}; 
-                        } catch(e) {
-                            // Fallback if data is weird
-                            const p1x = Math.cos(angle - Math.PI/2) * outerR;
-                            const p1y = Math.sin(angle - Math.PI/2) * outerR;
-                            d.polyPoints = [{x: p1x, y: p1y, fixed: true}, {x: p1x+10, y: p1y+10, fixed: false}];
-                        }
+                        // Update start point
+                        const p1x = Math.cos(angle - Math.PI/2) * outerR;
+                        const p1y = Math.sin(angle - Math.PI/2) * outerR;
+                        d.polyPoints[0] = {x: p1x, y: p1y, fixed: true};
                     }
 
+                    // GROUP WRAPPER for Hover Effect
                     const lineGroup = pointersGroup.append("g").attr("class", "line-wrapper line-group-" + d.uniqueId);
 
                     const updateLine = () => {
-                        lineGroup.html(""); 
+                        lineGroup.html(""); // Clear
 
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
 
+                        // Visual Line
                         lineGroup.append("polyline")
                             .attr("class", "pointer-line")
                             .attr("id", "line-" + d.uniqueId)
@@ -1084,6 +1059,7 @@
                             .attr("fill", "none")
                             .attr("points", pointsStr);
 
+                        // Invisible Hit Area
                         lineGroup.append("polyline")
                             .attr("class", "pointer-hit-area")
                             .attr("points", pointsStr)
@@ -1093,10 +1069,9 @@
                                 const newPoint = {x: mx, y: my, fixed: false};
                                 d.polyPoints.splice(d.polyPoints.length - 1, 0, newPoint);
                                 updateLine();
-                                customStates.lines[d.pathKey] = d.polyPoints;
-                                saveState();
                             });
 
+                        // Handles (Joints)
                         d.polyPoints.forEach((p, index) => {
                             if (index > 0 && index < d.polyPoints.length - 1) {
                                 const handle = lineGroup.append("circle")
@@ -1108,8 +1083,6 @@
                                         event.stopPropagation();
                                         d.polyPoints.splice(index, 1);
                                         updateLine();
-                                        customStates.lines[d.pathKey] = d.polyPoints;
-                                        saveState();
                                     });
                                 
                                 handle.call(d3.drag()
@@ -1119,11 +1092,7 @@
                                         p.y += event.dy;
                                         updateLine();
                                     })
-                                    .on("end", function() { 
-                                        d3.select(this).classed("dragging", false); 
-                                        customStates.lines[d.pathKey] = d.polyPoints;
-                                        saveState();
-                                    })
+                                    .on("end", function() { d3.select(this).classed("dragging", false); })
                                 );
                             }
                         });
@@ -1145,6 +1114,7 @@
                 .style("fill", labelColor)
                 .style("text-shadow", d => (labelPosition === 'outside' && !d.children) ? "none" : "0 0 3px rgba(0,0,0,0.6)")
                 .text(d => {
+                    // Check for per-leaf format override
                     if (!customStates.formats) customStates.formats = {};
                     const fmt = customStates.formats[d.pathKey] || globalLabelContent;
                     if(fmt === 'none') return "";
@@ -1170,8 +1140,8 @@
                 });
 
             labels.each(function(d) {
-                if (!customStates.formats) customStates.formats = {};
-                if(customStates.formats[d.pathKey] === 'none') {
+                // If hidden via context menu
+                if(customStates.formats && customStates.formats[d.pathKey] === 'none') {
                     d3.select(this).style("display", "none");
                     return;
                 }
@@ -1230,15 +1200,8 @@
                         d.polyPoints[lastIdx].y = currY;
                         
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
-                        
                         d3.select(`.line-group-${d.uniqueId} .pointer-line`).attr("points", pointsStr);
                         d3.select(`.line-group-${d.uniqueId} .pointer-hit-area`).attr("points", pointsStr);
-                    }
-                })
-                .on("end", function(event, d) {
-                    if(d.polyPoints) {
-                        customStates.lines[d.pathKey] = d.polyPoints;
-                        saveState(); 
                     }
                 })
             );
