@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v5.0 (Per-Leaf Content)</title>
+    <title>Sunburst Editor Pro v5.1 (Simple & Options)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -233,21 +233,6 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CONTEXT MENU (NEW) --- */
-        #ctx-menu {
-            display: none; position: absolute; z-index: 2000;
-            background: white; border: 1px solid #ced4da; border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 180px; overflow: hidden;
-        }
-        #ctx-menu .ctx-item {
-            padding: 10px 15px; font-size: 13px; cursor: pointer; color: #333; transition: background 0.1s;
-        }
-        #ctx-menu .ctx-item:hover { background: #f1f3f5; color: var(--primary); }
-        #ctx-menu .ctx-sep { height: 1px; background: #eee; margin: 2px 0; }
-        #ctx-menu .ctx-header {
-            font-size: 11px; font-weight: 700; color: #999; padding: 8px 15px; background: #f9f9f9; border-bottom: 1px solid #eee; text-transform: uppercase;
-        }
-
         #chart { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; }
         #chart svg {
             max-width: 100%; max-height: 100%; width: auto; height: auto;
@@ -398,15 +383,31 @@
         </div>
 
         <div class="settings-card">
+            <h3>Typography</h3>
+            <div class="control-grid">
+                <div><label class="control-label">Font</label><select id="fontFamily" onchange="renderCurrent()"><option value="'Segoe UI', sans-serif">Segoe UI</option><option value="Roboto, sans-serif">Roboto</option><option value="Arial, sans-serif">Arial</option></select></div>
+                <div><label class="control-label">Weight</label><select id="fontWeight" onchange="renderCurrent()"><option value="normal">Normal</option><option value="bold" selected>Bold</option><option value="900">Black</option></select></div>
+            </div>
+            <div class="control-grid" style="margin-top:10px;">
+                <div><label class="control-label">Style</label><select id="fontStyle" onchange="renderCurrent()"><option value="normal">Normal</option><option value="italic">Italic</option></select></div>
+                <div><label class="control-label">Color</label><div class="color-btn" style="width:100%"><input type="color" id="labelColor" value="#333333" oninput="renderCurrent()"></div></div>
+            </div>
+            <div class="control-row" style="margin-top:10px;"><label class="control-label">Size <span id="val-fs" class="range-val">12px</span></label><input type="range" id="fontSize" min="8" max="40" value="12" oninput="document.getElementById('val-fs').innerText = this.value+'px'; renderCurrent()"></div>
+        </div>
+
+        <div class="settings-card">
             <h3>Labels</h3>
             <div class="control-grid">
                 <div>
-                    <label class="control-label">Global Content</label>
+                    <label class="control-label">Content</label>
                     <select id="labelContent" onchange="renderCurrent()">
                         <option value="name">Name</option>
-                        <option value="name_colon_percent">Name: %</option>
                         <option value="value">Value</option>
-                        <option value="percent">Percent</option>
+                        <option value="percent">Percentage (%)</option>
+                        <option value="name_colon_percent">Name: %</option>
+                        <option value="name_colon_value">Name: Value</option>
+                        <option value="name_value">Name (Value)</option>
+                        <option value="name_dash_pct_val">Name (% - Value)</option>
                         <option value="all" selected>All</option>
                     </select>
                 </div>
@@ -426,18 +427,20 @@
                 <div class="control-row"><select id="labelPosition" onchange="toggleLabelControls(); renderCurrent()"><option value="inside">Inside</option><option value="outside">Outside (Pointers)</option></select></div>
                 <div id="labelOffsetControl" style="margin-top:10px;">
                     <div style="background:#e3f2fd; padding:10px; border-radius:6px; font-size:11px; margin-bottom:10px; border-left:3px solid #2196f3;">
-                        <strong>Tip:</strong> Hover line to edit. Double-click to add/remove joints. <strong>Right-click Label</strong> for specific format.
+                        <strong>Tip:</strong> Hover over a line to reveal edit joints. Double-click line to add bend.
                     </div>
                     <label class="control-label" style="font-weight: normal;">Label Distance <span id="val-dist" class="range-val">25px</span></label>
                     <input type="range" id="labelDist" min="0" max="150" value="40" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
                     
                     <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
                         <label class="control-label">Pointer Line Style</label>
+                        
                         <div class="control-row">
                             <select id="lineStyle" onchange="renderCurrent()">
                                 <option value="straight" selected>Straight (Multi-Drag)</option>
                             </select>
                         </div>
+
                         <div class="control-grid">
                             <div><div class="color-btn" style="width:100%; height:25px;"><input type="color" id="pointerColor" value="#888888" oninput="renderCurrent()"></div></div>
                             <div><input type="number" id="pointerWidth" value="1" min="0.5" max="5" step="0.5" onchange="renderCurrent()" style="padding:4px;"></div>
@@ -451,6 +454,11 @@
                 <div><label class="control-label" style="font-weight:normal;">Slice Gap <span id="val-gap" class="range-val">0px</span></label><input type="range" id="sliceGap" min="0" max="20" value="0" oninput="updateRangeLabel('gap', this.value, 'px'); renderCurrent()"></div>
                 <div><label class="control-label" style="font-weight:normal;">Ring Pad <span id="val-ring" class="range-val">0px</span></label><input type="range" id="ringGap" min="0" max="20" value="0" oninput="updateRangeLabel('ring', this.value, 'px'); renderCurrent()"></div>
             </div>
+        </div>
+
+        <div class="settings-card" style="border-left: 3px solid #6c757d;">
+            <h3>Advanced</h3>
+            <div class="control-row"><label class="control-label" style="font-weight:normal; cursor:pointer;"><input type="checkbox" id="showJsonTab" onchange="toggleJsonTab()"> &nbsp; Show JSON Tab</label></div>
         </div>
     </div>
 
@@ -479,31 +487,11 @@
 
     <div id="chart"></div>
     <div id="tooltip" class="tooltip"></div>
-    
-    <div id="ctx-menu">
-        <div class="ctx-header">Leaf Content</div>
-        <div class="ctx-item" onclick="setNodeFormat('default')">Reset to Global</div>
-        <div class="ctx-sep"></div>
-        <div class="ctx-item" onclick="setNodeFormat('name')">Name Only</div>
-        <div class="ctx-item" onclick="setNodeFormat('value')">Value Only</div>
-        <div class="ctx-item" onclick="setNodeFormat('percent')">% Only</div>
-        <div class="ctx-item" onclick="setNodeFormat('name_colon_percent')">Name: %</div>
-        <div class="ctx-item" onclick="setNodeFormat('name_value')">Name (Value)</div>
-        <div class="ctx-item" onclick="setNodeFormat('all')">All Info</div>
-        <div class="ctx-sep"></div>
-        <div class="ctx-item" onclick="setNodeFormat('none')">Hide Label</div>
-    </div>
 </div>
 
 <script>
-    // CHANGED KEY TO PREVENT CRASHES FROM OLD DATA
-    const STORAGE_KEY = 'sunburst_editor_v5.0_stable';
+    const STORAGE_KEY = 'sunburst_editor_v5.1_options';
     let activeTab = 'grid';
-    
-    // Global State for Customization Persistence
-    let customFormats = {}; 
-    let activeNodeId = null; // Used for Context Menu context
-
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
         { l1: "Marketing", l2: "Social", l3: "IG", l4: "", color: "#29aef6", val: 300 },
@@ -542,11 +530,7 @@
     }
 
     function saveState() {
-        const payload = { 
-            gridData: gridData, 
-            settings: getSettings(),
-            customFormats: customFormats 
-        };
+        const payload = { gridData: gridData, settings: getSettings() };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     }
 
@@ -576,7 +560,6 @@
         try {
             const data = JSON.parse(raw);
             if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
-            if(data.customFormats) customFormats = data.customFormats;
             if(data.settings) applySettings(data.settings);
         } catch(e) { console.log("Error loading state", e); }
     }
@@ -597,37 +580,10 @@
         if (!container.contains(e.target)) {
             document.getElementById('main-menu').classList.remove('show');
         }
-        // Close Context Menu
-        const ctx = document.getElementById('ctx-menu');
-        if(ctx.style.display === 'block') {
-             ctx.style.display = 'none';
-        }
     });
 
-    // Helper to get Unique Node ID based on path names
-    function getPathKey(d) {
-        let path = [];
-        let curr = d;
-        while(curr.parent) {
-            path.unshift(curr.data.name);
-            curr = curr.parent;
-        }
-        path.unshift(curr.data.name); 
-        return path.join("###"); 
-    }
-
-    function setNodeFormat(fmt) {
-        if(activeNodeId) {
-            if(fmt === 'default') delete customFormats[activeNodeId];
-            else customFormats[activeNodeId] = fmt;
-            saveState();
-            renderCurrent();
-        }
-    }
-
     function exportProject() {
-        saveState();
-        const payload = { gridData: gridData, settings: getSettings(), customFormats: customFormats };
+        const payload = { gridData: gridData, settings: getSettings() };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -644,8 +600,7 @@
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                if(data.gridData) gridData = data.gridData;
-                if(data.customFormats) customFormats = data.customFormats;
+                if(data.gridData && Array.isArray(data.gridData)) gridData = data.gridData;
                 if(data.settings) applySettings(data.settings);
                 renderGridRows();
                 syncAndRender();
@@ -856,12 +811,15 @@
         const labelOrEl = document.getElementById('labelOrientation');
         const orientation = labelOrEl ? labelOrEl.value : 'auto';
         
+        // New Line Style Parameter
+        const lineStyle = document.getElementById('lineStyle').value;
+
         const padding = parseInt(document.getElementById('chartPadding').value) || 50;
         const sliceGap = parseFloat(document.getElementById('sliceGap').value) || 0;
         const ringGap = parseFloat(document.getElementById('ringGap').value) || 0;
         const labelDist = parseInt(document.getElementById('labelDist').value) || 10;
         const showLabels = document.getElementById('showLabels').value;
-        const globalLabelContent = document.getElementById('labelContent').value; // GLOBAL
+        const labelContent = document.getElementById('labelContent').value;
         const centerContent = document.getElementById('centerContent').value;
         const customCenterText = document.getElementById('customCenterText').value;
         
@@ -958,11 +916,8 @@
         if(sortOrder === 'value') hierarchy.sort((a,b)=>b.value-a.value);
         else hierarchy.sort((a,b)=> d3.ascending(a.data.name, b.data.name));
 
-        // Assign persistent unique IDs based on Name Path
-        hierarchy.descendants().forEach((d, i) => {
-            d.pathKey = getPathKey(d);
-            d.uniqueId = `node-${d.depth}-${i}`;
-        });
+        // Assign unique IDs
+        hierarchy.descendants().forEach((d, i) => d.uniqueId = `node-${d.depth}-${i}`);
 
         const root = d3.partition().size([2*Math.PI, r])(hierarchy);
 
@@ -1020,9 +975,6 @@
                 const pointersGroup = g.append("g").attr("class", "pointers-layer");
                 
                 labelNodes.filter(d => !d.children).forEach(d => {
-                    const specificFmt = customFormats[d.pathKey];
-                    if(specificFmt === 'none') return; // Hide line if label hidden
-
                     const angle = (d.x0 + d.x1) / 2;
                     const outerR = Math.max(d.y0, d.y1 - ringGap);
                     
@@ -1039,6 +991,7 @@
                             {x: p2x, y: p2y, fixed: false} // End
                         ];
                     } else {
+                        // Update start point
                         const p1x = Math.cos(angle - Math.PI/2) * outerR;
                         const p1y = Math.sin(angle - Math.PI/2) * outerR;
                         d.polyPoints[0] = {x: p1x, y: p1y, fixed: true};
@@ -1116,38 +1069,22 @@
                 .style("fill", labelColor)
                 .style("text-shadow", d => (labelPosition === 'outside' && !d.children) ? "none" : "0 0 3px rgba(0,0,0,0.6)")
                 .text(d => {
-                    // CONTEXT MENU LOGIC: Check custom format, else fallback to global
-                    const fmt = customFormats[d.pathKey] || globalLabelContent;
-                    
-                    if(fmt === 'none') return "";
-
                     let valStr = `${valPrefix}${d.value}${valSuffix}`;
                     let pct = root.value>0 ? ((d.value / root.value) * 100).toFixed(1)+"%" : "0%";
                     
-                    if (fmt === 'percent') return pct;
-                    if (fmt === 'name_percent') return `${d.data.name} (${pct})`;
-                    if (fmt === 'name_colon_percent') return `${d.data.name}: ${pct}`;
-                    if (fmt === 'name_value') return `${d.data.name} (${valStr})`;
-                    if (fmt === 'all') return `${d.data.name}: ${valStr} (${pct})`;
-                    if (fmt === 'value') return valStr;
+                    if (labelContent === 'percent') return pct;
+                    if (labelContent === 'name_percent') return `${d.data.name} (${pct})`;
+                    if (labelContent === 'name_colon_percent') return `${d.data.name}: ${pct}`; // ADDED
+                    if (labelContent === 'name_colon_value') return `${d.data.name}: ${valStr}`; // ADDED
+                    if (labelContent === 'name_value') return `${d.data.name} (${valStr})`;
+                    if (labelContent === 'name_dash_pct_val') return `${d.data.name} (${pct} - ${valStr})`; // ADDED
+                    if (labelContent === 'all') return `${d.data.name}: ${valStr} (${pct})`;
+                    if (labelContent === 'value') return valStr;
                     return d.data.name;
-                })
-                .on("contextmenu", function(event, d) {
-                    event.preventDefault();
-                    activeNodeId = d.pathKey;
-                    const menu = document.getElementById('ctx-menu');
-                    menu.style.display = 'block';
-                    menu.style.left = event.pageX + 'px';
-                    menu.style.top = event.pageY + 'px';
                 });
 
             labels.each(function(d) {
-                // If hidden via context menu
-                if(customFormats[d.pathKey] === 'none') {
-                    d3.select(this).style("display", "none");
-                    return;
-                }
-
+                // Calculate position based on data, same logic as lines
                 if (labelPosition === 'outside' && !d.children && d.polyPoints) {
                     const lastP = d.polyPoints[d.polyPoints.length - 1];
                     let anchor = "middle";
@@ -1163,11 +1100,14 @@
                     const angle = (d.x0 + d.x1) / 2; 
                     let radius = (d.y0 + d.y1) / 2;
                     if (labelPosition === 'outside' && !d.children) radius = r + labelDist;
+
                     const cx = radius * Math.cos(angle - Math.PI/2);
                     const cy = radius * Math.sin(angle - Math.PI/2);
+                    
                     let rotate = 0;
                     const degrees = (angle * 180 / Math.PI) - 90;
                     let anchor = "middle";
+
                     if(orientation === 'auto') {
                         rotate = degrees;
                         if (rotate > 90) rotate += 180; 
@@ -1175,6 +1115,7 @@
                     } else if (orientation === 'tangential') {
                         rotate = degrees + 90;
                     }
+
                     rotate += rotationOffset;
                     d3.select(this)
                       .attr("transform", `translate(${cx},${cy}) rotate(${rotate})`)
@@ -1182,7 +1123,7 @@
                 }
             });
 
-            // DRAG TEXT
+            // UPDATED DRAG LOGIC FOR TEXT
             labels.call(d3.drag()
                 .on("start", function() { d3.select(this).raise(); })
                 .on("drag", function(event, d) {
