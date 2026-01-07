@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v6.3 (Crash Fix)</title>
+    <title>Sunburst Editor Pro v6.5 (Center Alignment & Per-Level)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -432,6 +432,14 @@
                     </select>
                 </div>
             </div>
+            
+            <div class="control-row" style="margin-top:10px;">
+                <label class="control-label">Label Alignment</label>
+                <select id="labelAttachment" onchange="renderCurrent()">
+                    <option value="auto" selected>Auto (Side)</option>
+                    <option value="middle">Center (Middle)</option>
+                </select>
+            </div>
 
             <div class="control-row" style="margin-top:10px;"><label class="control-label">Orientation</label><select id="labelOrientation" onchange="renderCurrent()"><option value="auto" selected>Auto (Radial)</option><option value="horizontal">Horizontal</option><option value="tangential">Tangential</option></select></div>
             <div class="control-row"><label class="control-label">Rotation <span id="val-rot" class="range-val">0°</span></label><input type="range" id="labelRotation" min="-180" max="180" value="0" oninput="updateRangeLabel('rot', this.value, '°'); renderCurrent()"></div>
@@ -446,6 +454,17 @@
                     <label class="control-label" style="font-weight: normal;">Label Distance <span id="val-dist" class="range-val">25px</span></label>
                     <input type="range" id="labelDist" min="0" max="150" value="40" oninput="updateRangeLabel('dist', this.value, 'px'); renderCurrent()">
                     
+                    <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div>
+                            <label class="control-label" style="font-weight:normal; font-size:11px;">Text Nudge X</label>
+                            <input type="range" id="textOffsetX" min="-50" max="50" value="0" oninput="renderCurrent()">
+                        </div>
+                        <div>
+                            <label class="control-label" style="font-weight:normal; font-size:11px;">Text Nudge Y</label>
+                            <input type="range" id="textOffsetY" min="-50" max="50" value="0" oninput="renderCurrent()">
+                        </div>
+                    </div>
+
                     <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
                         <label class="control-label">Pointer Line Style</label>
                         <div class="control-row">
@@ -497,7 +516,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v6.3_crashfix';
+    const STORAGE_KEY = 'sunburst_editor_v6.5_final';
     let activeTab = 'grid';
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
@@ -523,9 +542,9 @@
         const ids = ['chartWidth', 'chartHeight', 'chartTitle', 'colorTheme', 'visualStyle', 'textureOverlay',
                      'opL1', 'opL2', 'opL3', 'opL4', 'bgColor', 'strokeColor', 'strokeWidth', 'cornerRadius',
                      'fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'labelColor',
-                     'centerContent', 'customCenterText', 'labelOrientation', 'labelRotation',
+                     'centerContent', 'customCenterText', 'labelOrientation', 'labelRotation', 'labelAttachment',
                      'contentL1', 'contentL2', 'contentL3', 'contentL4',
-                     'labelPosition', 'labelDist', 'lineStyle', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
+                     'labelPosition', 'labelDist', 'textOffsetX', 'textOffsetY', 'lineStyle', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
                      'sortOrder', 'valPrefix', 'valSuffix', 'showLegend', 'pointerColor', 'pointerWidth'];
 
         ids.forEach(id => {
@@ -826,6 +845,7 @@
         const orientation = labelOrEl ? labelOrEl.value : 'auto';
         
         const lineStyle = document.getElementById('lineStyle').value;
+        const labelAttachment = document.getElementById('labelAttachment').value; // NEW ATTACHMENT
 
         const padding = parseInt(document.getElementById('chartPadding').value) || 50;
         const sliceGap = parseFloat(document.getElementById('sliceGap').value) || 0;
@@ -833,6 +853,10 @@
         const labelDist = parseInt(document.getElementById('labelDist').value) || 10;
         const showLabels = document.getElementById('showLabels').value;
         
+        // Offset Logic
+        const textOffsetX = parseInt(document.getElementById('textOffsetX').value) || 0;
+        const textOffsetY = parseInt(document.getElementById('textOffsetY').value) || 0;
+
         // --- MULTI-LEVEL CONTENT ---
         const contentL1 = document.getElementById('contentL1').value;
         const contentL2 = document.getElementById('contentL2').value;
@@ -1124,14 +1148,25 @@
                 if (labelPosition === 'outside' && !d.children && d.polyPoints) {
                     const lastP = d.polyPoints[d.polyPoints.length - 1];
                     let anchor = "middle";
-                    if (orientation === 'horizontal') {
-                         if (lastP.x > 0) anchor = "start"; 
-                         else anchor = "end"; 
-                         d3.select(this).attr("dx", lastP.x > 0 ? "5px" : "-5px");
+                    if(labelAttachment === 'middle') {
+                        anchor = "middle";
+                        // Offset by Nudge
+                        const finalX = lastP.x + textOffsetX;
+                        const finalY = lastP.y + textOffsetY;
+                        d3.select(this).attr("transform", `translate(${finalX},${finalY})`);
+                    } else {
+                        // Side Auto
+                        if (orientation === 'horizontal') {
+                             if (lastP.x > 0) anchor = "start"; 
+                             else anchor = "end"; 
+                             d3.select(this).attr("dx", lastP.x > 0 ? "5px" : "-5px");
+                        }
+                        const finalX = lastP.x + textOffsetX;
+                        const finalY = lastP.y + textOffsetY;
+                        d3.select(this).attr("transform", `translate(${finalX},${finalY})`);
                     }
-                    d3.select(this)
-                      .attr("transform", `translate(${lastP.x},${lastP.y})`)
-                      .attr("text-anchor", anchor);
+                    d3.select(this).attr("text-anchor", anchor);
+
                 } else {
                     const angle = (d.x0 + d.x1) / 2; 
                     let radius = (d.y0 + d.y1) / 2;
@@ -1171,8 +1206,13 @@
 
                     if(labelPosition === 'outside' && !d.children && d.polyPoints) {
                         const lastIdx = d.polyPoints.length - 1;
-                        d.polyPoints[lastIdx].x = currX;
-                        d.polyPoints[lastIdx].y = currY;
+                        
+                        // Inverse the Nudge to find true line tip position
+                        const trueLineX = currX - textOffsetX;
+                        const trueLineY = currY - textOffsetY;
+
+                        d.polyPoints[lastIdx].x = trueLineX;
+                        d.polyPoints[lastIdx].y = trueLineY;
                         
                         const pointsStr = d.polyPoints.map(p => `${p.x},${p.y}`).join(" ");
                         d3.select(`.line-group-${d.uniqueId} .pointer-line`).attr("points", pointsStr);
