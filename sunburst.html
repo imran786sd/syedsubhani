@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v6.1 (Per-Level Fixed)</title>
+    <title>Sunburst Editor Pro v6.2 (Stable & Per-Level)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -497,7 +497,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v6.1_fixed';
+    const STORAGE_KEY = 'sunburst_editor_v6.2_stable';
     let activeTab = 'grid';
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
@@ -532,8 +532,14 @@
             const el = document.getElementById(id);
             if(el) settings[id] = el.value;
         });
-        settings['bgTransparent'] = document.getElementById('bgTransparent').checked;
-        settings['showJsonTab'] = document.getElementById('showJsonTab').checked;
+        
+        // Safety checks for checkboxes
+        const bgTrans = document.getElementById('bgTransparent');
+        if(bgTrans) settings['bgTransparent'] = bgTrans.checked;
+        
+        const jsonTab = document.getElementById('showJsonTab');
+        if(jsonTab) settings['showJsonTab'] = jsonTab.checked;
+
         return settings;
     }
 
