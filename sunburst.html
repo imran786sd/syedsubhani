@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunburst Editor Pro v5.1 (Simple & Options)</title>
+    <title>Sunburst Editor Pro v6.0 (Per-Level Labels)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -398,25 +398,39 @@
         <div class="settings-card">
             <h3>Labels</h3>
             <div class="control-grid">
-                <div>
-                    <label class="control-label">Content</label>
-                    <select id="labelContent" onchange="renderCurrent()">
-                        <option value="name">Name</option>
-                        <option value="value">Value</option>
-                        <option value="percent">Percentage (%)</option>
-                        <option value="name_colon_percent">Name: %</option>
-                        <option value="name_colon_value">Name: Value</option>
-                        <option value="name_value">Name (Value)</option>
-                        <option value="name_dash_pct_val">Name (% - Value)</option>
-                        <option value="all" selected>All</option>
-                    </select>
-                </div>
                 <div><label class="control-label">Center Type</label><select id="centerContent" onchange="renderCurrent()"><option value="total" selected>Total</option><option value="name">Root</option><option value="both">Both</option><option value="none">None</option></select></div>
+                <div>
+                    <label class="control-label">Custom Center</label>
+                    <input type="text" id="customCenterText" placeholder="e.g. 2024" oninput="renderCurrent()" style="padding:8px; font-size:12px;">
+                </div>
             </div>
             
-            <div class="control-row" style="margin-top:10px;">
-                <label class="control-label">Custom Center Text (Overrides above)</label>
-                <input type="text" id="customCenterText" placeholder="e.g. 2024 Report" oninput="renderCurrent()">
+            <div class="sub-panel" style="margin-top:15px;">
+                <span class="sub-panel-title">Content per Level</span>
+                <div class="control-row">
+                    <label class="control-label" style="font-weight:normal;">Level 1</label>
+                    <select id="contentL1" onchange="renderCurrent()">
+                        <option value="name" selected>Name</option><option value="value">Value</option><option value="percent">Percent</option><option value="name_colon_percent">Name: %</option><option value="all">All</option><option value="none">None</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label class="control-label" style="font-weight:normal;">Level 2</label>
+                    <select id="contentL2" onchange="renderCurrent()">
+                        <option value="name" selected>Name</option><option value="value">Value</option><option value="percent">Percent</option><option value="name_colon_percent">Name: %</option><option value="all">All</option><option value="none">None</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label class="control-label" style="font-weight:normal;">Level 3</label>
+                    <select id="contentL3" onchange="renderCurrent()">
+                        <option value="name" selected>Name</option><option value="value">Value</option><option value="percent">Percent</option><option value="name_colon_percent">Name: %</option><option value="all">All</option><option value="none">None</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label class="control-label" style="font-weight:normal;">Level 4</label>
+                    <select id="contentL4" onchange="renderCurrent()">
+                        <option value="name" selected>Name</option><option value="value">Value</option><option value="percent">Percent</option><option value="name_colon_percent">Name: %</option><option value="all">All</option><option value="none">None</option>
+                    </select>
+                </div>
             </div>
 
             <div class="control-row" style="margin-top:10px;"><label class="control-label">Orientation</label><select id="labelOrientation" onchange="renderCurrent()"><option value="auto" selected>Auto (Radial)</option><option value="horizontal">Horizontal</option><option value="tangential">Tangential</option></select></div>
@@ -434,13 +448,11 @@
                     
                     <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
                         <label class="control-label">Pointer Line Style</label>
-                        
                         <div class="control-row">
                             <select id="lineStyle" onchange="renderCurrent()">
                                 <option value="straight" selected>Straight (Multi-Drag)</option>
                             </select>
                         </div>
-
                         <div class="control-grid">
                             <div><div class="color-btn" style="width:100%; height:25px;"><input type="color" id="pointerColor" value="#888888" oninput="renderCurrent()"></div></div>
                             <div><input type="number" id="pointerWidth" value="1" min="0.5" max="5" step="0.5" onchange="renderCurrent()" style="padding:4px;"></div>
@@ -454,11 +466,6 @@
                 <div><label class="control-label" style="font-weight:normal;">Slice Gap <span id="val-gap" class="range-val">0px</span></label><input type="range" id="sliceGap" min="0" max="20" value="0" oninput="updateRangeLabel('gap', this.value, 'px'); renderCurrent()"></div>
                 <div><label class="control-label" style="font-weight:normal;">Ring Pad <span id="val-ring" class="range-val">0px</span></label><input type="range" id="ringGap" min="0" max="20" value="0" oninput="updateRangeLabel('ring', this.value, 'px'); renderCurrent()"></div>
             </div>
-        </div>
-
-        <div class="settings-card" style="border-left: 3px solid #6c757d;">
-            <h3>Advanced</h3>
-            <div class="control-row"><label class="control-label" style="font-weight:normal; cursor:pointer;"><input type="checkbox" id="showJsonTab" onchange="toggleJsonTab()"> &nbsp; Show JSON Tab</label></div>
         </div>
     </div>
 
@@ -490,7 +497,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'sunburst_editor_v5.1_options';
+    const STORAGE_KEY = 'sunburst_editor_v6.0_levels';
     let activeTab = 'grid';
     let gridData = [
         { l1: "Marketing", l2: "Social", l3: "FB", l4: "", color: "#29aef6", val: 500 },
@@ -516,7 +523,8 @@
         const ids = ['chartWidth', 'chartHeight', 'chartTitle', 'colorTheme', 'visualStyle', 'textureOverlay',
                      'opL1', 'opL2', 'opL3', 'opL4', 'bgColor', 'strokeColor', 'strokeWidth', 'cornerRadius',
                      'fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'labelColor',
-                     'labelContent', 'centerContent', 'customCenterText', 'labelOrientation', 'labelRotation',
+                     'centerContent', 'customCenterText', 'labelOrientation', 'labelRotation',
+                     'contentL1', 'contentL2', 'contentL3', 'contentL4',
                      'labelPosition', 'labelDist', 'lineStyle', 'showLabels', 'chartPadding', 'sliceGap', 'ringGap',
                      'sortOrder', 'valPrefix', 'valSuffix', 'showLegend', 'pointerColor', 'pointerWidth'];
 
@@ -811,7 +819,6 @@
         const labelOrEl = document.getElementById('labelOrientation');
         const orientation = labelOrEl ? labelOrEl.value : 'auto';
         
-        // New Line Style Parameter
         const lineStyle = document.getElementById('lineStyle').value;
 
         const padding = parseInt(document.getElementById('chartPadding').value) || 50;
@@ -819,7 +826,13 @@
         const ringGap = parseFloat(document.getElementById('ringGap').value) || 0;
         const labelDist = parseInt(document.getElementById('labelDist').value) || 10;
         const showLabels = document.getElementById('showLabels').value;
-        const labelContent = document.getElementById('labelContent').value;
+        
+        // --- MULTI-LEVEL CONTENT ---
+        const contentL1 = document.getElementById('contentL1').value;
+        const contentL2 = document.getElementById('contentL2').value;
+        const contentL3 = document.getElementById('contentL3').value;
+        const contentL4 = document.getElementById('contentL4').value;
+
         const centerContent = document.getElementById('centerContent').value;
         const customCenterText = document.getElementById('customCenterText').value;
         
@@ -1072,19 +1085,36 @@
                     let valStr = `${valPrefix}${d.value}${valSuffix}`;
                     let pct = root.value>0 ? ((d.value / root.value) * 100).toFixed(1)+"%" : "0%";
                     
-                    if (labelContent === 'percent') return pct;
-                    if (labelContent === 'name_percent') return `${d.data.name} (${pct})`;
-                    if (labelContent === 'name_colon_percent') return `${d.data.name}: ${pct}`; // ADDED
-                    if (labelContent === 'name_colon_value') return `${d.data.name}: ${valStr}`; // ADDED
-                    if (labelContent === 'name_value') return `${d.data.name} (${valStr})`;
-                    if (labelContent === 'name_dash_pct_val') return `${d.data.name} (${pct} - ${valStr})`; // ADDED
-                    if (labelContent === 'all') return `${d.data.name}: ${valStr} (${pct})`;
-                    if (labelContent === 'value') return valStr;
+                    // LEVEL BASED FORMATTING LOGIC
+                    let contentMode = 'name';
+                    if(d.depth === 1) contentMode = contentL1;
+                    else if(d.depth === 2) contentMode = contentL2;
+                    else if(d.depth === 3) contentMode = contentL3;
+                    else if(d.depth === 4) contentMode = contentL4;
+                    
+                    if (contentMode === 'none') return "";
+                    if (contentMode === 'percent') return pct;
+                    if (contentMode === 'name_percent') return `${d.data.name} (${pct})`;
+                    if (contentMode === 'name_colon_percent') return `${d.data.name}: ${pct}`;
+                    if (contentMode === 'name_value') return `${d.data.name} (${valStr})`;
+                    if (contentMode === 'all') return `${d.data.name}: ${valStr} (${pct})`;
+                    if (contentMode === 'value') return valStr;
                     return d.data.name;
                 });
 
             labels.each(function(d) {
-                // Calculate position based on data, same logic as lines
+                // Check if hidden by level
+                let contentMode = 'name';
+                if(d.depth === 1) contentMode = contentL1;
+                else if(d.depth === 2) contentMode = contentL2;
+                else if(d.depth === 3) contentMode = contentL3;
+                else if(d.depth === 4) contentMode = contentL4;
+                
+                if(contentMode === 'none') {
+                    d3.select(this).style("display", "none");
+                    return;
+                }
+
                 if (labelPosition === 'outside' && !d.children && d.polyPoints) {
                     const lastP = d.polyPoints[d.polyPoints.length - 1];
                     let anchor = "middle";
@@ -1100,14 +1130,11 @@
                     const angle = (d.x0 + d.x1) / 2; 
                     let radius = (d.y0 + d.y1) / 2;
                     if (labelPosition === 'outside' && !d.children) radius = r + labelDist;
-
                     const cx = radius * Math.cos(angle - Math.PI/2);
                     const cy = radius * Math.sin(angle - Math.PI/2);
-                    
                     let rotate = 0;
                     const degrees = (angle * 180 / Math.PI) - 90;
                     let anchor = "middle";
-
                     if(orientation === 'auto') {
                         rotate = degrees;
                         if (rotate > 90) rotate += 180; 
@@ -1115,7 +1142,6 @@
                     } else if (orientation === 'tangential') {
                         rotate = degrees + 90;
                     }
-
                     rotate += rotationOffset;
                     d3.select(this)
                       .attr("transform", `translate(${cx},${cy}) rotate(${rotate})`)
@@ -1123,7 +1149,7 @@
                 }
             });
 
-            // UPDATED DRAG LOGIC FOR TEXT
+            // DRAG TEXT
             labels.call(d3.drag()
                 .on("start", function() { d3.select(this).raise(); })
                 .on("drag", function(event, d) {
