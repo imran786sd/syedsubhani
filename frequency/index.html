@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Frequency - Main Menu</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #050505;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            overflow: hidden;
+            text-align: center;
+            user-select: none;
+        }
+
+        #container {
+            width: 800px;
+            max-width: 90%;
+            padding: 40px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.1);
+            background: rgba(0, 20, 40, 0.8);
+            position: relative;
+        }
+
+        h1 {
+            font-size: 60px;
+            margin: 0;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            animation: glitch 3s infinite;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #aaa;
+            margin-top: 10px;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+
+        .btn-main {
+            display: inline-block;
+            padding: 15px 40px;
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #000;
+            background-color: #00ffff;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 20px #00ffff;
+            transition: all 0.2s;
+            text-decoration: none;
+            margin-bottom: 30px;
+        }
+
+        .btn-main:hover {
+            background-color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 0 40px #00ffff;
+        }
+
+        .level-select {
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 20px;
+        }
+
+        .level-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .btn-level {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            margin: 0 5px;
+            border: 1px solid #444;
+            color: #888;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-level:hover {
+            border-color: #00ffff;
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+        }
+
+        .controls {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* Glitch Animation for Title */
+        @keyframes glitch {
+            0% { opacity: 1; transform: translate(0); }
+            92% { opacity: 1; transform: translate(0); }
+            93% { opacity: 0.8; transform: translate(-2px, 2px); }
+            94% { opacity: 1; transform: translate(2px, -2px); }
+            96% { opacity: 0.5; transform: translate(-2px, 0); }
+            98% { opacity: 1; transform: translate(0); }
+            100% { opacity: 1; }
+        }
+
+        /* Scanline Overlay */
+        .scanline {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanline"></div>
+
+    <div id="container">
+        <h1>The Frequency</h1>
+        <div class="subtitle">SIGNAL DETECTED // SYSTEM READY</div>
+
+        <button class="btn-main" onclick="loadLevel(1)">INITIATE LINK</button>
+
+        <div class="level-select">
+            <span class="level-label">JUMP TO FREQUENCY:</span>
+            <button class="btn-level" onclick="loadLevel(1)">1</button>
+            <button class="btn-level" onclick="loadLevel(2)">2</button>
+            <button class="btn-level" onclick="loadLevel(3)">3</button>
+            <button class="btn-level" onclick="loadLevel(4)">4</button>
+            <button class="btn-level" onclick="loadLevel(5)">5</button>
+        </div>
+
+        <div class="controls">
+            CONTROLS<br>
+            [ARROWS] Move &nbsp; | &nbsp; [SPACE] Jump<br>
+            [G] Fire Weapon &nbsp; | &nbsp; [F] Pulse Wave
+        </div>
+    </div>
+
+    <script>
+        // Simple function to direct the browser to the correct file
+        function loadLevel(num) {
+            // This assumes your files are named level1.html, level2.html, etc.
+            window.location.href = "level" + num + ".html";
+        }
+    </script>
+
+</body>
+</html>

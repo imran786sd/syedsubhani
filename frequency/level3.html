@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Frequency - Level 3: Final Fix</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #050510;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            touch-action: none;
+            user-select: none;
+        }
+        canvas {
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+            /* Dark Purple/Grey Gradient for the City */
+            background: linear-gradient(to bottom, #1a1025, #050208);
+            max-width: 100%; max-height: 100%;
+        }
+        #ui {
+            position: absolute; top: 30px;
+            width: 100%; text-align: center; pointer-events: none;
+            text-shadow: 0 1px 2px black; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 18px; letter-spacing: 4px; text-transform: uppercase; color: #00ffff; }
+        #chapter-text { font-size: 16px; color: #cc88ff; margin-top: 5px; font-weight: bold; text-transform: uppercase;}
+        #score { font-size: 12px; color: #fff; margin-top: 5px; opacity: 0.6; }
+        
+        #start-msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #00ffff; font-size: 20px; text-align: center;
+            animation: blink 1s infinite; pointer-events: none;
+        }
+        
+        #win-msg {
+            display: none; position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 20;
+        }
+        #win-msg h2 { font-size: 40px; text-shadow: 0 0 20px #00ffff; margin-bottom: 10px; }
+
+        #mobile-controls {
+            position: absolute; bottom: 20px; width: 100%; height: 120px;
+            pointer-events: none; display: flex; justify-content: space-between;
+            padding: 0 20px; box-sizing: border-box; z-index: 100;
+        }
+        .control-group { pointer-events: auto; display: flex; gap: 15px; align-items: flex-end; }
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%; color: rgba(255, 255, 255, 0.8); display: flex;
+            justify-content: center; align-items: center; font-size: 24px;
+            backdrop-filter: blur(4px); touch-action: manipulation;
+        }
+        .touch-btn:active { background: rgba(0, 255, 255, 0.3); border-color: #00ffff; color: #fff; }
+        #btn-left, #btn-right { width: 70px; height: 70px; }
+        #btn-jump { width: 80px; height: 80px; margin-bottom: 10px; }
+        #btn-pulse { width: 60px; height: 60px; font-size: 14px; margin-bottom: 20px; border-color: rgba(0,255,255,0.4); color: #00ffff; }
+        #btn-shoot { width: 60px; height: 60px; font-size: 14px; margin-bottom: 10px; border-color: rgba(255, 80, 80, 0.6); color: #ff5555; }
+
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <h1>The Frequency</h1>
+    <div id="chapter-text">LEVEL 3: THE GREY CITY</div>
+    <div id="score">0m / 20000m</div>
+</div>
+
+<div id="start-msg">TAP / PRESS ANY KEY TO START<br><span style="font-size:14px; color:#aaa;">Target: Hyper-Loop Station (20,000m)</span></div>
+
+<div id="win-msg">
+    <h2>STATION REACHED</h2>
+    <p>Ascending to Upper City...</p>
+    <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; background:transparent; border:1px solid cyan; color:cyan; cursor:pointer;">NEXT LEVEL</button>
+</div>
+
+<div id="mobile-controls">
+    <div class="control-group"><div class="touch-btn" id="btn-left">←</div><div class="touch-btn" id="btn-right">→</div></div>
+    <div class="control-group"><div class="touch-btn" id="btn-shoot">G</div><div class="touch-btn" id="btn-pulse">F</div><div class="touch-btn" id="btn-jump">▲</div></div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const winEl = document.getElementById('win-msg');
+    const startMsg = document.getElementById('start-msg');
+
+    function resize() { canvas.width = 800; canvas.height = 450; }
+    resize(); window.addEventListener('resize', resize);
+
+    const Audio = {
+        ctx: null,
+        init: function() {
+            if (this.ctx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+            startMsg.style.display = 'none';
+        },
+        playTone: function(freq, type, duration, vol=0.1) {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(); osc.stop(this.ctx.currentTime + duration);
+        },
+        jump: function() { this.playTone(200, 'sine', 0.1, 0.1); },
+        pulse: function() { this.playTone(800, 'sine', 0.3, 0.1); },
+        laser: function() { this.playTone(600, 'sawtooth', 0.1, 0.1); },
+        crash: function() { this.playTone(100, 'square', 0.3, 0.2); }
+    };
+
+    const GRAVITY = 0.6; const GROUND_FRICTION = 0.8; const AIR_RESISTANCE = 0.98; 
+    const MOVE_SPEED = 0.8; const MAX_SPEED = 6; const JUMP_FORCE = 14;
+    const PLAYER_START_X = 100;
+    const WIN_DIST = 20000; 
+
+    let frame = 0; let camX = 0; let camY = 0; let camZoom = 1.0;
+    let distanceTraveled = 0; let gameState = "PLAYING"; 
+    let lastCheckpoint = { x: PLAYER_START_X, y: 300 };
+
+    const keys = { right: false, left: false, up: false, f: false, g: false };
+
+    function activateAudio() { Audio.init(); }
+
+    function handleTouch(btnId, keyName, isPressed) {
+        const btn = document.getElementById(btnId);
+        const startAction = (e) => {
+            e.preventDefault(); activateAudio();
+            if (keyName === 'f' && !keys.f && isPressed) createPulse();
+            if (keyName === 'g' && !keys.g && isPressed) fireLaser();
+            if (keyName === 'up' && !keys.up && isPressed && player.coyoteTimer > 0) {
+                 player.velY = -JUMP_FORCE; player.grounded = false; player.coyoteTimer = 0; Audio.jump();
+            }
+            keys[keyName] = true;
+        };
+        const endAction = (e) => { e.preventDefault(); keys[keyName] = false; };
+        btn.addEventListener('touchstart', startAction, {passive: false});
+        btn.addEventListener('touchend', endAction, {passive: false});
+        btn.addEventListener('mousedown', startAction); btn.addEventListener('mouseup', endAction);
+    }
+    handleTouch('btn-left', 'left'); handleTouch('btn-right', 'right');
+    handleTouch('btn-jump', 'up'); handleTouch('btn-pulse', 'f');
+    handleTouch('btn-shoot', 'g');
+
+    window.addEventListener('keydown', (e) => {
+        activateAudio();
+        if(gameState === "WON") return;
+        if(e.code === 'ArrowRight') keys.right = true;
+        if(e.code === 'ArrowLeft') keys.left = true;
+        if(e.code === 'Space' || e.code === 'ArrowUp') {
+            if(!keys.up && player.coyoteTimer > 0) { player.velY = -JUMP_FORCE; player.grounded = false; player.coyoteTimer = 0; Audio.jump(); }
+            keys.up = true;
+        }
+        if(e.code === 'KeyF') { if(!keys.f) createPulse(); keys.f = true; }
+        if(e.code === 'KeyG') { if(!keys.g) fireLaser(); keys.g = true; }
+    });
+    window.addEventListener('keyup', (e) => {
+        if(e.code === 'ArrowRight') keys.right = false; if(e.code === 'ArrowLeft') keys.left = false;
+        if(e.code === 'Space' || e.code === 'ArrowUp') keys.up = false; 
+        if(e.code === 'KeyF') keys.f = false; if(e.code === 'KeyG') keys.g = false;
+    });
+
+    class MovingPlatform {
+        constructor(x, y, w, h, vx, vy, range) {
+            this.x = x; this.y = y; this.w = w; this.h = h;
+            this.vx = vx; this.vy = vy; 
+            this.startX = x; this.startY = y;
+            this.range = range; 
+        }
+        update() {
+            this.x += this.vx; this.y += this.vy;
+            if (Math.abs(this.x - this.startX) > this.range) this.vx *= -1;
+            if (Math.abs(this.y - this.startY) > this.range) this.vy *= -1;
+        }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = "#1a1225"; 
+            ctx.fillRect(drawX, drawY, this.w, this.h);
+            ctx.strokeStyle = "#8844ff"; // Purple outline for platforms
+            ctx.lineWidth = 2; ctx.strokeRect(drawX, drawY, this.w, this.h);
+            ctx.fillStyle = "rgba(0, 255, 255, 0.3)"; ctx.fillRect(drawX + 5, drawY + this.h, this.w - 10, 5);
+            ctx.fillStyle = "#00ffff";
+            if(Math.abs(this.vx) > 0) ctx.fillRect(drawX + (frame % this.w), drawY + 2, 10, 2);
+        }
+    }
+
+    class SignalBeam {
+        constructor(x, y) { this.x = x; this.y = y; this.w = 10; this.h = 100; }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = "#222"; ctx.fillRect(drawX, drawY, this.w, this.h);
+            if(Math.floor(frame / 30) % 2 === 0) {
+                ctx.fillStyle = "red"; ctx.shadowBlur = 10; ctx.shadowColor = "red";
+                ctx.fillRect(drawX + 2, drawY + 10, 6, this.h - 20); ctx.shadowBlur = 0;
+            }
+        }
+        checkCollision(p) {
+            if(Math.floor(frame / 30) % 2 !== 0) return false; 
+            if (p.x < this.x + this.w && p.x + p.w > this.x && p.y < this.y + this.h && p.y + p.h > this.y) return true;
+            return false;
+        }
+    }
+
+    class Station {
+        constructor(x, y) { this.x = x; this.y = y; this.w = 100; this.h = 150; }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = "#222"; ctx.fillRect(drawX, drawY, this.w, this.h);
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.strokeRect(drawX, drawY, this.w, this.h);
+            ctx.fillStyle = "rgba(0, 255, 255, 0.3)";
+            ctx.fillRect(drawX + 20, drawY + 20, 60, this.h - 20);
+            ctx.fillStyle = "#fff"; ctx.fillText("EXIT", drawX + 35, drawY + 15);
+        }
+        checkWin(p) {
+            if (p.x > this.x + 20 && p.x < this.x + 80 && p.y > this.y) {
+                gameState = "WON";
+                winEl.style.display = "block";
+            }
+        }
+    }
+
+    // --- PLAYER CLASS (FIXED VISIBILITY & ANIMATION) ---
+    class Player {
+        constructor() {
+            this.x = PLAYER_START_X; this.y = 100; this.w = 22; this.h = 30; this.velX = 0; this.velY = 0;
+            this.grounded = false; this.facingRight = true; this.animTimer = 0; this.idleTimer = 0; this.dead = false; this.coyoteTimer = 0;
+            this.ridingVx = 0;
+        }
+        update() {
+            if(this.dead || gameState === "WON") return;
+            
+            let moving = false;
+            if (keys.right) { if (this.velX < MAX_SPEED) this.velX += MOVE_SPEED; this.facingRight = true; moving = true; }
+            if (keys.left) { if (this.velX > -MAX_SPEED) this.velX -= MOVE_SPEED; this.facingRight = false; moving = true; }
+            
+            this.idleTimer += 0.05;
+            
+            if ((moving || Math.abs(this.ridingVx) > 0.1) && this.grounded) {
+                this.animTimer += 0.2; 
+            } else {
+                this.animTimer = 0;
+            }
+
+            if(this.grounded) { this.velX *= GROUND_FRICTION; this.coyoteTimer = 6; } else { this.velX *= AIR_RESISTANCE; this.coyoteTimer--; }
+
+            this.velY += GRAVITY; 
+            this.x += this.velX + this.ridingVx;
+            this.ridingVx = 0; 
+
+            if(this.x > distanceTraveled) distanceTraveled = this.x;
+
+            this.grounded = false;
+            for(let plat of platforms) {
+                if (this.x < plat.x + plat.w && this.x + this.w > plat.x) {
+                    if (this.y + this.h > plat.y && this.y + this.h < plat.y + this.velY + 20 && this.velY >= 0) {
+                        this.y = plat.y - this.h; this.velY = 0; this.grounded = true;
+                        this.ridingVx = plat.vx; 
+                    }
+                }
+            }
+
+            for(let beam of beams) { if(beam.checkCollision(this)) die(); }
+            if(station) station.checkWin(this);
+
+            this.y += this.velY;
+            if(this.y > canvas.height + 600) die(); 
+
+            let targetX = this.x - canvas.width / 3;
+            camX += (targetX - camX) * 0.1;
+            camY += ((this.y - 250) - camY) * 0.05;
+        }
+        draw() {
+            if(this.dead) return;
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            
+            // --- CHARACTER VISUALS FIXED ---
+            // Main Color: Black
+            // Outline: Neon Cyan (to pop against dark BG)
+            ctx.fillStyle = "#000000"; 
+            ctx.strokeStyle = "#00ffff"; // High Contrast Outline
+            
+            let bobY = 0;
+            if (!this.grounded) { bobY = -4; } 
+            else if (Math.abs(this.velX) > 0.1 || Math.abs(this.ridingVx) > 0.1) { bobY = Math.sin(this.animTimer * 2) * 1.5; } 
+            else { bobY = Math.sin(this.idleTimer) * 0.5; }
+
+            let swing = Math.sin(this.animTimer) * 12; 
+
+            // Draw Back Arm
+            this.drawArm(drawX + 2, drawY + 10 + bobY, -swing);
+            
+            // Draw Legs (Stroke Rect for outline)
+            ctx.fillRect(drawX + 6 + (swing*0.5), drawY + 28, 4, 14); 
+            ctx.strokeRect(drawX + 6 + (swing*0.5), drawY + 28, 4, 14); 
+            
+            ctx.fillRect(drawX + 12 - (swing*0.5), drawY + 28, 4, 14); 
+            ctx.strokeRect(drawX + 12 - (swing*0.5), drawY + 28, 4, 14); 
+
+            // Draw Body
+            ctx.fillRect(drawX, drawY + bobY, 22, 28); 
+            ctx.strokeRect(drawX, drawY + bobY, 22, 28); // Outline Body
+
+            // Backpack
+            ctx.fillRect(drawX - 2, drawY - 14 + bobY, 26, 16); 
+            ctx.strokeRect(drawX - 2, drawY - 14 + bobY, 26, 16); 
+            
+            let antWobble = Math.sin(frame * 0.05) * 0.5; if(Math.abs(this.velX)>1) antWobble = -this.velX;
+            ctx.fillStyle = "#00ffff"; 
+            ctx.fillRect(drawX + 10 + antWobble, drawY - 20 + bobY, 2, 6);
+
+            // Draw Front Arm
+            this.drawArm(drawX + 18, drawY + 10 + bobY, swing);
+            
+            let eyeH = Math.abs(this.velX) > 1 ? 3 : 6; 
+            ctx.shadowBlur = 10; ctx.shadowColor = "#00ffff"; ctx.fillStyle = "#00ffff";
+            if(this.facingRight) ctx.fillRect(drawX + 18, drawY + 5 + bobY, 6, eyeH); 
+            else ctx.fillRect(drawX + 2, drawY + 5 + bobY, 6, eyeH); 
+            ctx.shadowBlur = 0;
+        }
+        drawArm(pivotX, pivotY, angleOffset) {
+            let endX = pivotX; let endY = pivotY + 16;
+            if(Math.abs(this.velX) > 0.5 || Math.abs(this.ridingVx) > 0.5) { 
+                endX = pivotX + angleOffset; endY = pivotY + 14 - Math.abs(angleOffset * 0.2); 
+            }
+            ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = "#00ffff"; // Cyan Arms
+            ctx.moveTo(pivotX, pivotY); ctx.lineTo(endX, endY); ctx.stroke();
+            ctx.fillStyle = "#000"; ctx.fillRect(endX - 3, endY - 2, 6, 6); 
+            ctx.strokeRect(endX - 3, endY - 2, 6, 6);
+        }
+    }
+
+    class Drone {
+        constructor(x, y) {
+            this.x = x; this.y = y; this.w = 25; this.h = 15; this.startX = x;
+        }
+        update() {
+            this.x = this.startX + Math.sin(frame * 0.05) * 100;
+            if(Math.abs(player.x - this.x) < 25 && Math.abs(player.y - this.y) < 25 && !player.dead) die();
+        }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = "#333";
+            ctx.beginPath(); ctx.moveTo(drawX, drawY); ctx.lineTo(drawX+this.w, drawY); ctx.lineTo(drawX+this.w/2, drawY+this.h); ctx.fill();
+            ctx.fillStyle = "red"; ctx.fillRect(drawX + 8, drawY + 2, 8, 4);
+        }
+    }
+
+    class Pulse {
+        constructor(x, y) { this.x = x; this.y = y; this.radius = 1; this.alpha = 1; this.active = true; Audio.pulse(); }
+        update() { 
+            this.radius += 10; this.alpha -= 0.05; if(this.alpha <= 0) this.active = false; 
+            enemies.forEach((e, i) => { 
+                let dx = this.x - e.x; let dy = this.y - e.y;
+                if(Math.sqrt(dx*dx + dy*dy) < this.radius) { enemies.splice(i, 1); Audio.crash(); }
+            });
+        }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.beginPath(); ctx.arc(drawX, drawY, this.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(200, 0, 255, ${this.alpha})`; ctx.lineWidth = 4; ctx.stroke();
+        }
+    }
+
+    // --- VISIBLE DESTRUCTION EFFECT ---
+    class Debris {
+        constructor(x, y) { 
+            this.x = x; this.y = y; 
+            this.vx = (Math.random()-0.5)*10; 
+            this.vy = (Math.random()-0.5)*10; 
+            this.life = 1.0; 
+            // Randomly white or cyan so it is visible against dark background
+            this.color = Math.random() > 0.5 ? "#00ffff" : "#ffffff";
+        }
+        update() { this.x+=this.vx; this.y+=this.vy; this.life-=0.05; }
+        draw() { 
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = this.color; 
+            ctx.fillRect(this.x-camX, this.y-camY, 4, 4); 
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    function fireLaser() {
+        Audio.laser();
+        let dir = player.facingRight ? 1 : -1;
+        bullets.push({ x: player.x + (dir * 20), y: player.y + 10, vx: dir * 15, life: 60 });
+    }
+
+    function createPulse() { pulses.push(new Pulse(player.x + 10, player.y + 15)); }
+
+    function die() {
+        if(player.dead) return;
+        player.dead = true; Audio.crash();
+        for(let i=0; i<25; i++) debris.push(new Debris(player.x, player.y));
+        setTimeout(() => {
+            player.x = lastCheckpoint.x; player.y = 200; 
+            player.velX = 0; player.velY = 0;
+            
+            // Snap camera to prevent jitter
+            camX = player.x - 400; 
+            
+            player.dead = false;
+            resetLevelAt(player.x);
+        }, 1000);
+    }
+
+    let platforms = []; let enemies = []; let beams = []; let bullets = []; let debris = []; let pulses = [];
+    let nextPlatformX = -100; let station = null;
+    
+    let bgBuildings = [];
+    for(let i=0; i<30; i++) bgBuildings.push({x: i*100, y: 100 + Math.random()*200, w: 40 + Math.random()*60, h: 500});
+
+    function resetLevelAt(startX) {
+        platforms = []; enemies = []; beams = []; bullets = []; debris = [];
+        platforms.push(new MovingPlatform(startX - 500, 350, 1000, 500, 0, 0, 0));
+        camX = startX - 400; 
+        nextPlatformX = startX + 600;
+    }
+
+    function generateTerrain() {
+        if(nextPlatformX > WIN_DIST + 1000) return;
+        
+        while(nextPlatformX < camX + canvas.width + 1000) {
+            
+            if(nextPlatformX > WIN_DIST && !station) {
+                platforms.push(new MovingPlatform(nextPlatformX, 350, 1000, 500, 0, 0, 0));
+                station = new Station(nextPlatformX + 800, 200);
+                nextPlatformX += 2000;
+                return;
+            }
+
+            if (Math.random() < 0.6) {
+                let w = 300 + Math.random() * 200;
+                let speed = 2 + Math.random() * 2;
+                platforms.push(new MovingPlatform(nextPlatformX, 350, w, 20, speed, 0, 400));
+                if(Math.random() < 0.3) beams.push(new SignalBeam(nextPlatformX + w/2, 250));
+                nextPlatformX += w + 100 + (Math.random() * 150);
+            } 
+            else {
+                let w = 150;
+                platforms.push(new MovingPlatform(nextPlatformX, 350, w, 20, 0, 2, 100));
+                if(Math.random() < 0.5) enemies.push(new Drone(nextPlatformX + 300, 200));
+                nextPlatformX += w + 150 + (Math.random() * 100);
+            }
+        }
+        if(platforms.length > 0 && platforms[0].x < camX - 1000) platforms.shift();
+    }
+
+    const player = new Player();
+    resetLevelAt(100);
+
+    function loop() {
+        scoreEl.innerText = Math.floor(distanceTraveled) + "m / " + WIN_DIST + "m";
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        generateTerrain();
+
+        // Parallax BG
+        ctx.fillStyle = "#1a1225"; 
+        bgBuildings.forEach(b => {
+            let px = (b.x - camX * 0.2) % 1600; if(px < -200) px += 1600;
+            ctx.fillRect(px, b.y, b.w, b.h);
+            ctx.fillStyle = "rgba(180, 160, 255, 0.1)"; 
+            if(Math.random() > 0.99) ctx.fillRect(px + 10, b.y + 20, 10, 10);
+            ctx.fillStyle = "#1a1225";
+        });
+
+        // Scanline Effect
+        ctx.fillStyle = "rgba(150, 100, 255, 0.05)";
+        ctx.fillRect(0, frame % 450, 800, 2);
+
+        ctx.save();
+        ctx.translate(0, 0); 
+        
+        if(station) station.draw();
+        platforms.forEach(p => { p.update(); p.draw(); });
+        beams.forEach(b => b.draw());
+        enemies.forEach(e => { e.update(); e.draw(); });
+        
+        ctx.fillStyle = "cyan";
+        for(let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i]; b.x += b.vx; b.life--;
+            ctx.fillRect(b.x - camX, b.y - camY, 15, 4);
+            if(b.life <= 0) bullets.splice(i, 1);
+        }
+
+        player.update(); player.draw();
+        
+        pulses.forEach((p,i) => { p.update(); p.draw(); if(!p.active) pulses.splice(i,1); });
+        debris.forEach((d,i) => { d.update(); d.draw(); if(d.life<=0) debris.splice(i,1); });
+
+        ctx.restore();
+        frame++; requestAnimationFrame(loop);
+    }
+    loop();
+
+</script>
+</body>
+</html>

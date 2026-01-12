@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Frequency - Final Boss Fix</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #050505;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            touch-action: none;
+            user-select: none;
+        }
+        canvas {
+            border: 2px solid #550000;
+            box-shadow: 0 0 50px rgba(255,0,0,0.3);
+            background: #000;
+            max-width: 100%; max-height: 100%;
+        }
+        #ui {
+            position: absolute; top: 30px;
+            width: 100%; text-align: center; pointer-events: none;
+            text-shadow: 0 1px 2px black; z-index: 10;
+        }
+        h1 { margin: 0; font-size: 18px; letter-spacing: 4px; text-transform: uppercase; color: #ff5555; }
+        #chapter-text { font-size: 16px; color: #ffaaaa; margin-top: 5px; font-weight: bold; text-transform: uppercase;}
+        #score { font-size: 12px; color: #fff; margin-top: 5px; opacity: 0.6; }
+        
+        #checkpoint-msg {
+            position: absolute; top: 15%; width: 100%; text-align: center;
+            color: #00ffff; font-weight: bold; font-size: 14px;
+            text-shadow: 0 0 5px cyan; opacity: 0; transition: opacity 0.5s;
+            pointer-events: none; z-index: 15;
+        }
+
+        #start-msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ff5555; font-size: 20px; text-align: center;
+            animation: blink 1s infinite; pointer-events: none;
+        }
+        
+        #win-msg {
+            display: none; position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 20;
+        }
+        #win-msg h2 { font-size: 40px; text-shadow: 0 0 20px #00ffff; margin-bottom: 10px; }
+        
+        #boss-ui {
+            position: absolute; top: 80px; width: 100%; text-align: center; display: none; pointer-events: none;
+        }
+        #boss-bar-frame {
+            width: 400px; height: 15px; background: #222; margin: 0 auto; border: 2px solid #fff;
+        }
+        #boss-hp { width: 100%; height: 100%; background: #ff0000; transition: width 0.1s; }
+
+        #mobile-controls {
+            position: absolute; bottom: 20px; width: 100%; height: 120px;
+            pointer-events: none; display: flex; justify-content: space-between;
+            padding: 0 20px; box-sizing: border-box; z-index: 100;
+        }
+        .control-group { pointer-events: auto; display: flex; gap: 15px; align-items: flex-end; }
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%; color: rgba(255, 255, 255, 0.8); display: flex;
+            justify-content: center; align-items: center; font-size: 24px;
+            backdrop-filter: blur(4px); touch-action: manipulation;
+        }
+        .touch-btn:active { background: rgba(0, 255, 255, 0.3); border-color: #00ffff; color: #fff; }
+        #btn-left, #btn-right { width: 70px; height: 70px; }
+        #btn-jump { width: 80px; height: 80px; margin-bottom: 10px; }
+        #btn-pulse { width: 60px; height: 60px; font-size: 14px; margin-bottom: 20px; border-color: rgba(0,255,255,0.4); color: #00ffff; }
+        #btn-shoot { width: 60px; height: 60px; font-size: 14px; margin-bottom: 10px; border-color: rgba(255, 80, 80, 0.6); color: #ff5555; }
+
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <h1>The Frequency</h1>
+    <div id="chapter-text">LEVEL 2: THE CORE</div>
+    <div id="score">0m / 5000m</div>
+</div>
+
+<div id="checkpoint-msg"></div>
+
+<div id="boss-ui">
+    <div style="color:red; font-weight:bold; margin-bottom:5px; text-shadow: 0 0 10px red;">THE OVERSEER</div>
+    <div id="boss-bar-frame"><div id="boss-hp"></div></div>
+</div>
+
+<div id="start-msg">TAP / PRESS ANY KEY TO START<br><span style="font-size:14px; color:#fff;">'G' to Shoot - 'F' for Pulse</span><br><span style="font-size:12px; color:yellow;">DEV MODE: BOSS FIGHT</span></div>
+
+<div id="win-msg">
+    <h2>TARGET ELIMINATED</h2>
+    <p>The Core has been destroyed.</p>
+    <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; background:transparent; border:1px solid cyan; color:cyan; cursor:pointer;">REPLAY</button>
+</div>
+
+<div id="mobile-controls">
+    <div class="control-group"><div class="touch-btn" id="btn-left">←</div><div class="touch-btn" id="btn-right">→</div></div>
+    <div class="control-group"><div class="touch-btn" id="btn-shoot">G</div><div class="touch-btn" id="btn-pulse">F</div><div class="touch-btn" id="btn-jump">▲</div></div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    // --- DEVELOPER MODE SWITCH ---
+    const DEV_MODE_BOSS = false; 
+    // -----------------------------
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const chapterEl = document.getElementById('chapter-text');
+    const scoreEl = document.getElementById('score');
+    const winEl = document.getElementById('win-msg');
+    const startMsg = document.getElementById('start-msg');
+    const checkEl = document.getElementById('checkpoint-msg');
+
+    if(!DEV_MODE_BOSS) {
+        startMsg.innerHTML = "TAP / PRESS ANY KEY TO START<br><span style='font-size:14px; color:#fff;'>'G' to Shoot - 'F' for Pulse</span>";
+    }
+
+    function resize() { canvas.width = 800; canvas.height = 450; }
+    resize(); window.addEventListener('resize', resize);
+
+    const Audio = {
+        ctx: null,
+        rainNode: null,
+        init: function() {
+            if (this.ctx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+            this.startRain();
+            startMsg.style.display = 'none';
+        },
+        playTone: function(freq, type, duration, vol=0.1) {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+        },
+        playNoise: function(duration, vol=0.5) {
+            if (!this.ctx) return;
+            const bufferSize = this.ctx.sampleRate * duration;
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+            const gain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 1000;
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+            noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination); noise.start();
+        },
+        startRain: function() {
+            if (!this.ctx) return;
+            const bufferSize = 2 * this.ctx.sampleRate;
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.1;
+            const noise = this.ctx.createBufferSource(); noise.buffer = buffer; noise.loop = true;
+            const gain = this.ctx.createGain(); gain.gain.value = 0.05; this.rainNode = gain;
+            const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 800;
+            noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination); noise.start();
+        },
+        jump: function() { this.playTone(150, 'square', 0.1, 0.05); },
+        pulse: function() { 
+            if(!this.ctx) return;
+            const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+            osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+        },
+        laser: function() { this.playTone(600, 'sawtooth', 0.1, 0.1); },
+        bossShoot: function() { this.playTone(200, 'sawtooth', 0.3, 0.2); },
+        hit: function() { this.playTone(100, 'square', 0.2, 0.2); },
+        crash: function() { this.playNoise(0.5, 0.2); },
+        thunder: function() { this.playNoise(1.5, 0.4); },
+        explode: function() { this.playNoise(2.0, 0.8); } // Bigger sound for explosion
+    };
+
+    const GRAVITY = 0.6; const GROUND_FRICTION = 0.8; const AIR_RESISTANCE = 0.98; 
+    const MOVE_SPEED = 0.8; const MAX_SPEED = 6; const JUMP_FORCE = 14;
+    const PLAYER_START_X = DEV_MODE_BOSS ? 29500 : 100;
+    
+    const CH1_END = 1000; const CH2_END = 2500; const CH3_END = 4500; const WIN_DIST = 5000; 
+
+    let frame = 0; 
+    let camX = PLAYER_START_X - 400; 
+    let camY = 0; let camZoom = 1.0; let targetZoom = 1.0;
+    
+    let distanceTraveled = PLAYER_START_X; 
+    let currentChapter = 1; let gameState = "PLAYING"; 
+    let whiteOutAlpha = 0; let flashAlpha = 0; 
+    
+    let lastCheckpoint = { x: PLAYER_START_X, y: 350 };
+    let savedChapter = DEV_MODE_BOSS ? 4 : 1; 
+    let towerBaseLocation = null;
+
+    const keys = { right: false, left: false, up: false, f: false, g: false };
+
+    function activateAudio() { Audio.init(); }
+
+    function handleTouch(btnId, keyName, isPressed) {
+        const btn = document.getElementById(btnId);
+        const startAction = (e) => {
+            e.preventDefault(); activateAudio();
+            if (keyName === 'f' && !keys.f && isPressed) createPulse();
+            if (keyName === 'g' && !keys.g && isPressed) fireLaser();
+            if (keyName === 'up' && !keys.up && isPressed && player.coyoteTimer > 0) {
+                 player.velY = -JUMP_FORCE; player.grounded = false; player.coyoteTimer = 0; Audio.jump();
+            }
+            keys[keyName] = true;
+        };
+        const endAction = (e) => { e.preventDefault(); keys[keyName] = false; };
+        btn.addEventListener('touchstart', startAction, {passive: false});
+        btn.addEventListener('touchend', endAction, {passive: false});
+        btn.addEventListener('mousedown', startAction); btn.addEventListener('mouseup', endAction);
+    }
+    handleTouch('btn-left', 'left'); handleTouch('btn-right', 'right');
+    handleTouch('btn-jump', 'up'); handleTouch('btn-pulse', 'f');
+    handleTouch('btn-shoot', 'g');
+
+    window.addEventListener('keydown', (e) => {
+        activateAudio();
+        if(gameState === "WON") return;
+        if(e.code === 'ArrowRight') keys.right = true;
+        if(e.code === 'ArrowLeft') keys.left = true;
+        if(e.code === 'Space' || e.code === 'ArrowUp') {
+            if(!keys.up && player.coyoteTimer > 0) { player.velY = -JUMP_FORCE; player.grounded = false; player.coyoteTimer = 0; Audio.jump(); }
+            keys.up = true;
+        }
+        if(e.code === 'KeyF') { if(!keys.f) createPulse(); keys.f = true; }
+        if(e.code === 'KeyG') { if(!keys.g) fireLaser(); keys.g = true; }
+    });
+    window.addEventListener('keyup', (e) => {
+        if(e.code === 'ArrowRight') keys.right = false; if(e.code === 'ArrowLeft') keys.left = false;
+        if(e.code === 'Space' || e.code === 'ArrowUp') keys.up = false; 
+        if(e.code === 'KeyF') keys.f = false; if(e.code === 'KeyG') keys.g = false;
+    });
+
+    // --- LOGIC ---
+
+    class Boss {
+        constructor(x, y) {
+            this.x = x; this.y = y; this.w = 120; this.h = 100;
+            this.hp = 30; this.maxHp = 30; 
+            this.active = false; 
+            this.waiting = true; 
+            this.hoverY = y; 
+            this.timer = 0;
+            this.attackTimer = 0;
+            this.attackInterval = 90; 
+            this.dead = false;
+        }
+        update() {
+            if(this.dead) return; // Stop logic if dead
+
+            if (this.waiting) {
+                if (player.x > this.x - 600) {
+                    this.active = true;
+                    this.waiting = false;
+                    document.getElementById('boss-ui').style.display = 'block';
+                } else {
+                    return; 
+                }
+            }
+            if(!this.active) return;
+            
+            let targetY = player.y - 50; 
+            this.y += (targetY - this.y) * 0.05; 
+            if(this.y > 350) this.y = 350;
+            if(this.y < 50) this.y = 50;
+
+            this.attackTimer++;
+            if(this.attackTimer > this.attackInterval) {
+                this.shootAtPlayer();
+                this.attackTimer = 0;
+            }
+            
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                if (b.x > this.x && b.x < this.x + this.w && b.y > this.y && b.y < this.y + this.h) {
+                    this.hp--; 
+                    bullets.splice(i, 1); 
+                    Audio.hit();
+                    document.getElementById('boss-hp').style.width = (this.hp / this.maxHp * 100) + "%";
+                    if (this.hp <= 0) {
+                        this.dead = true;
+                        explodeBoss(this.x + this.w/2, this.y + this.h/2);
+                        winGame();
+                    }
+                }
+            }
+        }
+        shootAtPlayer() {
+            if(this.hp <= 0) return; // No shooting if dead
+            Audio.bossShoot();
+            let centerX = this.x + this.w/2;
+            let centerY = this.y + this.h/2;
+            let playerCenterX = player.x + player.w/2;
+            let playerCenterY = player.y + player.h/2;
+            let angle = Math.atan2(playerCenterY - centerY, playerCenterX - centerX);
+            let speed = 7;
+            bossBullets.push({
+                x: centerX - 40,
+                y: centerY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: 120
+            });
+        }
+        draw() {
+            if(this.dead) return; // Don't draw if dead
+            if(!this.active && !this.waiting) return;
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = "#111"; ctx.fillRect(drawX, drawY, this.w, this.h); 
+            ctx.strokeStyle = "red"; ctx.lineWidth = 4; ctx.strokeRect(drawX, drawY, this.w, this.h); 
+            let eyeColor = "red";
+            if(this.attackTimer > this.attackInterval - 20) eyeColor = "#fff"; 
+            ctx.fillStyle = eyeColor; 
+            let eyeX = drawX + 40; let eyeY = drawY + 40 + Math.sin(frame * 0.1) * 5;
+            ctx.fillRect(eyeX, eyeY, 40, 20);
+            ctx.shadowBlur = 20; ctx.shadowColor = eyeColor; 
+            ctx.fillRect(eyeX, eyeY, 40, 20); ctx.shadowBlur = 0;
+        }
+    }
+
+    function fireLaser() {
+        Audio.laser();
+        let dir = player.facingRight ? 1 : -1;
+        bullets.push({ 
+            x: player.x + (dir * 20), 
+            y: player.y + 10, 
+            vx: dir * 15, 
+            life: 60 
+        });
+    }
+
+    // *** NEW EXPLOSION LOGIC ***
+    function explodeBoss(bx, by) {
+        Audio.explode();
+        // Create 300 particles
+        for(let i = 0; i < 300; i++) {
+            debris.push(new Debris(bx, by, (Math.random() > 0.5 ? "red" : "white")));
+        }
+        // Big white flash
+        whiteOutAlpha = 1.0;
+        // Hide Boss UI
+        document.getElementById('boss-ui').style.display = 'none';
+    }
+
+    function resetLevelAt(startX) {
+        platforms = [];
+        enemies = [];
+        gates = [];
+        ghosts = [];
+        bullets = [];
+        bossBullets = []; 
+        boss = null;
+        finalCore = null;
+        document.getElementById('boss-ui').style.display = 'none';
+
+        currentHeight = 350; 
+        
+        // ** FIX: If starting late (Boss Fight), manually setup the arena **
+        if (startX > 28000) {
+            // Rebuild the arena floor manually because generateTerrain won't catch up immediately
+            platforms.push({ x: startX - 1000, y: 350, w: 2000, h: 600 });
+            // Re-spawn boss immediately
+            boss = new Boss(startX + 600, 150); // Offset from spawn
+            boss.active = true; // Force active
+            boss.waiting = false;
+            document.getElementById('boss-ui').style.display = 'block';
+            document.getElementById('boss-hp').style.width = "100%";
+            
+            // Set generator way ahead
+            nextPlatformX = startX + 3000;
+        } else {
+            // Normal Level Start
+            platforms.push({ x: startX - 2000, y: 350, w: 4000, h: 1000 });
+            nextPlatformX = startX + 2000;
+        }
+    }
+
+    class Lightning {
+        constructor() {
+            this.x = Math.random() * 1000 + camX - 100;
+            this.segments = [];
+            let currY = -200; let currX = this.x;
+            while(currY < 600) {
+                let nextX = currX + (Math.random() - 0.5) * 100; let nextY = currY + Math.random() * 100;
+                this.segments.push({x1:currX, y1:currY, x2:nextX, y2:nextY}); currX = nextX; currY = nextY;
+            }
+            this.life = 10; flashAlpha = 0.8; Audio.thunder();
+        }
+        draw() {
+            if(this.life <= 0) return;
+            this.life--;
+            ctx.save(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.shadowBlur = 20; ctx.shadowColor = "#fff";
+            ctx.beginPath();
+            this.segments.forEach(s => { ctx.moveTo(s.x1 - camX, s.y1 - camY); ctx.lineTo(s.x2 - camX, s.y2 - camY); });
+            ctx.stroke(); ctx.restore();
+        }
+    }
+
+    class Debris {
+        constructor(x, y, color = "#000") {
+            this.x = x; this.y = y; 
+            // More explosive velocity
+            this.vx = (Math.random() - 0.5) * 15; 
+            this.vy = (Math.random() - 0.5) * 15;
+            this.size = Math.random() * 4 + 2; 
+            this.life = 1.0 + Math.random(); // Varied life
+            this.rot = Math.random() * Math.PI; this.color = color;
+        }
+        update() { this.x += this.vx; this.y += this.vy; this.vy += GRAVITY * 0.5; this.life -= 0.01; this.rot += 0.1; }
+        draw() {
+            if(this.life <= 0) return;
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.save(); ctx.translate(drawX, drawY); ctx.rotate(this.rot);
+            ctx.globalAlpha = this.life; ctx.fillStyle = this.color; ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+            ctx.restore(); ctx.globalAlpha = 1;
+        }
+    }
+
+    class Player {
+        constructor() {
+            this.x = PLAYER_START_X; this.y = 100; this.w = 22; this.h = 30; this.velX = 0; this.velY = 0;
+            this.grounded = false; this.facingRight = true; this.animTimer = 0; this.idleTimer = 0; this.coyoteTimer = 0; this.dead = false;
+        }
+        update() {
+            if(this.dead || gameState === "WON") return;
+            let moving = false;
+            if (keys.right) { if (this.velX < MAX_SPEED) this.velX += MOVE_SPEED; this.facingRight = true; moving = true; }
+            if (keys.left) { if (this.velX > -MAX_SPEED) this.velX -= MOVE_SPEED; this.facingRight = false; moving = true; }
+            
+            if (Math.abs(this.velX) > 3) targetZoom = 0.75; else targetZoom = 1.2;
+            if(this.x > distanceTraveled) distanceTraveled = this.x;
+            this.idleTimer += 0.05;
+            if (moving && this.grounded) this.animTimer += 0.2; else this.animTimer = 0;
+            if(this.grounded) { this.velX *= GROUND_FRICTION; this.coyoteTimer = 6; } else { this.velX *= AIR_RESISTANCE; this.coyoteTimer--; }
+
+            this.velY += GRAVITY; this.x += this.velX;
+            gates.forEach(gate => {
+                if (!gate.isOpen() && this.y + this.h > gate.y && this.y < gate.y + gate.h) {
+                    if (this.velX > 0 && this.x + this.w > gate.x && this.x < gate.x) { this.x = gate.x - this.w; this.velX = 0; }
+                    if (this.velX < 0 && this.x < gate.x + gate.w && this.x > gate.x) { this.x = gate.x + gate.w; this.velX = 0; }
+                }
+            });
+            this.y += this.velY; this.grounded = false;
+            
+            for(let plat of platforms) {
+                if (this.x < plat.x + plat.w && this.x + this.w > plat.x) {
+                    if (this.y + this.h > plat.y && this.y + this.h < plat.y + this.velY + 20 && this.velY >= 0) {
+                        this.y = plat.y - this.h; this.velY = 0; this.grounded = true;
+                        
+                        if (currentChapter > savedChapter) {
+                            savedChapter = currentChapter;
+                            lastCheckpoint = { x: this.x, y: this.y };
+                            checkEl.innerText = "CHAPTER " + currentChapter + " REACHED - PROGRESS SAVED";
+                            checkEl.style.opacity = 1; setTimeout(() => checkEl.style.opacity = 0, 3000);
+                        }
+                    }
+                }
+            }
+            for(let ghost of ghosts) {
+                if(ghost.active && this.x < ghost.x + ghost.w && this.x + this.w > ghost.x) {
+                    if (this.y + this.h > ghost.y && this.y + this.h < ghost.y + this.velY + 20 && this.velY >= 0) {
+                        this.y = ghost.y - this.h; this.velY = 0; this.grounded = true;
+                    }
+                }
+            }
+            if(this.y > canvas.height + 600) die(); 
+            
+            let targetX = this.x - canvas.width / 2;
+            if (boss && boss.active && !boss.dead) targetX = boss.x - 600; 
+            
+            camX += (targetX - camX) * 0.08; camY += ((this.y - 250) - camY) * 0.05; camZoom += (targetZoom - camZoom) * 0.02;
+        }
+        draw() {
+            if(this.dead) return;
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = "#000000"; 
+            let bobY = (!this.grounded) ? -4 : (Math.abs(this.velX) > 0.5 ? Math.sin(this.animTimer * 2) * 1.5 : Math.sin(this.idleTimer) * 1);
+            let swing = Math.sin(this.animTimer) * 12; 
+            this.drawArm(drawX + 2, drawY + 10 + bobY, -swing);
+            ctx.fillRect(drawX + 6 + (swing*0.5), drawY + 28, 4, 14); ctx.fillRect(drawX, drawY + bobY, 22, 28); ctx.fillRect(drawX + 12 - (swing*0.5), drawY + 28, 4, 14); ctx.fillRect(drawX - 2, drawY - 14 + bobY, 26, 16); 
+            let antWobble = Math.sin(frame * 0.1) * 2; if(Math.abs(this.velX)>1) antWobble = -this.velX;
+            ctx.fillRect(drawX + 10 + antWobble, drawY - 20 + bobY, 2, 6);
+            this.drawArm(drawX + 18, drawY + 10 + bobY, swing);
+            let eyeH = Math.abs(this.velX) > 1 ? 3 : 6; ctx.shadowBlur = 15; ctx.shadowColor = "#00ffff"; ctx.fillStyle = "#00ffff";
+            if(this.facingRight) ctx.fillRect(drawX + 18, drawY - 10 + bobY, 6, eyeH); else ctx.fillRect(drawX + 2, drawY - 10 + bobY, 6, eyeH); ctx.shadowBlur = 0;
+        }
+        drawArm(pivotX, pivotY, angleOffset) {
+            ctx.fillStyle = "#000000"; let endX = pivotX; let endY = pivotY + 16;
+            if(Math.abs(this.velX) > 0.5) { endX = pivotX + angleOffset; endY = pivotY + 14 - Math.abs(angleOffset * 0.2); }
+            ctx.beginPath(); ctx.lineWidth = 4; ctx.strokeStyle = "#000"; ctx.moveTo(pivotX, pivotY); ctx.lineTo(endX, endY); ctx.stroke();
+            ctx.fillStyle = "#000"; ctx.fillRect(endX - 3, endY - 2, 6, 6); 
+        }
+    }
+
+    class Scrapper {
+        constructor(x, y, platform) {
+            this.x = x; this.y = y; this.w = 30; this.h = 20; this.platform = platform;
+            this.speed = 2; this.dir = 1; this.stunned = 0; this.dead = false;
+        }
+        update() {
+            if(gameState === "WON" || this.dead) return;
+            this.y = this.platform.y - this.h; 
+            if (this.stunned > 0) { this.stunned--; return; }
+            let nextX = this.x + (this.speed * this.dir) + (this.w/2 * this.dir);
+            gates.forEach(g => { if(!g.isOpen() && nextX > g.x && nextX < g.x + g.w) this.dir *= -1; });
+            this.x += this.speed * this.dir;
+            if (this.x > this.platform.x + this.platform.w - this.w) this.dir = -1;
+            if (this.x < this.platform.x) this.dir = 1;
+            if (!player.dead && player.x < this.x + this.w && player.x + player.w > this.x && player.y < this.y + this.h && player.y + player.h > this.y) die();
+        }
+        draw() {
+            if(this.dead) return;
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = this.stunned > 0 ? "#555" : "#000"; 
+            ctx.beginPath(); ctx.moveTo(drawX, drawY + this.h); ctx.lineTo(drawX + this.w/2, drawY); ctx.lineTo(drawX + this.w, drawY + this.h); ctx.fill();
+            let legOffset = this.stunned > 0 ? 0 : Math.sin(frame * 0.5) * 5;
+            ctx.strokeStyle = this.stunned > 0 ? "#555" : "#000"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(drawX + 5, drawY + 10); ctx.lineTo(drawX - 5 + legOffset, drawY + 25); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(drawX + 25, drawY + 10); ctx.lineTo(drawX + 35 - legOffset, drawY + 25); ctx.stroke();
+            ctx.fillStyle = this.stunned > 0 ? "#888" : "#ff0000"; ctx.shadowBlur = this.stunned > 0 ? 0 : 10; ctx.shadowColor = "#ff0000";
+            let eyeX = this.dir === 1 ? drawX + 18 : drawX + 6; ctx.fillRect(eyeX, drawY + 6, 6, 4); ctx.shadowBlur = 0;
+        }
+    }
+
+    class Drone {
+        constructor(x, y) {
+            this.x = x; this.y = y; this.w = 20; this.h = 20; 
+            this.stunned = 0; this.bobOffset = Math.random() * 100; this.dead = false;
+        }
+        update() {
+            if(gameState === "WON" || this.dead) return;
+            if (this.stunned > 0) {
+                this.stunned--; this.y += 8; 
+                for(let plat of platforms) {
+                    if (this.x < plat.x + plat.w && this.x + this.w > plat.x && this.y + this.h > plat.y && this.y < plat.y + 20) {
+                        this.dead = true; Audio.crash();
+                        for(let i=0; i<10; i++) debris.push(new Debris(this.x, this.y, "#555"));
+                    }
+                }
+                return;
+            }
+            this.y += Math.sin(frame * 0.05 + this.bobOffset) * 1.5; 
+            let dx = player.x - this.x; let dy = (player.y - 20) - this.y; let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 400 && dist > 10) { this.x += (dx / dist) * 2.5; this.y += (dy / dist) * 2.5; }
+            if (!player.dead && player.x < this.x + this.w && player.x + player.w > this.x && player.y < this.y + this.h && player.y + player.h > this.y) die();
+        }
+        draw() {
+            if (this.dead) return;
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = this.stunned > 0 ? "#555" : "#111";
+            ctx.beginPath(); ctx.moveTo(drawX + this.w/2, drawY); ctx.lineTo(drawX + this.w, drawY + this.h/2); ctx.lineTo(drawX + this.w/2, drawY + this.h); ctx.lineTo(drawX, drawY + this.h/2); ctx.fill();
+            ctx.fillStyle = this.stunned > 0 ? "#888" : "#ff0000"; ctx.shadowBlur = this.stunned > 0 ? 0 : 15; ctx.shadowColor = "#ff0000";
+            ctx.beginPath(); ctx.arc(drawX + this.w/2, drawY + this.h/2, 4, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+            if (this.stunned <= 0) {
+                ctx.fillStyle = "rgba(255, 0, 0, 0.1)"; ctx.beginPath(); ctx.moveTo(drawX + this.w/2, drawY + this.h/2); ctx.lineTo(drawX + this.w/2 - 30, drawY + 100); ctx.lineTo(drawX + this.w/2 + 30, drawY + 100); ctx.fill();
+            }
+        }
+    }
+
+    class Gate {
+        constructor(x, y) { this.x = x; this.h = 400; this.y = y - 400; this.w = 40; this.openHeight = 0; this.triggered = false; }
+        isOpen() { return this.openHeight >= 80; }
+        update() { if (this.triggered && this.openHeight < 80) this.openHeight += 1; }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.fillStyle = "#111"; ctx.fillRect(drawX, drawY, 10, this.h); ctx.fillRect(drawX + 30, drawY, 10, this.h); 
+            ctx.fillStyle = "#000"; let doorCurrentH = this.h - this.openHeight; ctx.fillRect(drawX + 10, drawY, 20, doorCurrentH);
+            ctx.fillStyle = this.triggered ? "#00ffff" : "#ff0000"; ctx.shadowBlur = 15; ctx.shadowColor = this.triggered ? "#00ffff" : "#ff0000";
+            ctx.beginPath(); ctx.arc(drawX + 5, drawY + this.h - 20, 2, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+        }
+    }
+
+    class GhostPlatform {
+        constructor(x, y, w) { this.x = x; this.y = y; this.w = w; this.h = 20; this.active = false; this.timer = 0; }
+        update() { if(this.active) { this.timer--; if(this.timer <= 0) this.active = false; } }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            if (this.active) {
+                ctx.fillStyle = `rgba(0, 255, 255, ${this.timer/60})`; ctx.shadowBlur = 10; ctx.shadowColor = "#00ffff";
+                ctx.fillRect(drawX, drawY, this.w, this.h); ctx.shadowBlur = 0;
+            } else {
+                let opacity = currentChapter === 4 ? 0.6 : 0.2;
+                ctx.strokeStyle = `rgba(0, 255, 255, ${opacity})`; ctx.lineWidth = 2; ctx.beginPath();
+                ctx.setLineDash([5, 5]); ctx.strokeRect(drawX, drawY, this.w, this.h); ctx.setLineDash([]);
+                if(Math.random() < 0.1) { ctx.fillStyle = "#00ffff"; ctx.fillRect(drawX + Math.random()*this.w, drawY + Math.random()*this.h, 2, 2); }
+            }
+        }
+    }
+
+    class Core {
+        constructor(x, y) { this.x = x; this.y = y; this.r = 30; this.active = false; }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            let pulse = Math.sin(frame * 0.1) * 5; ctx.fillStyle = "#fff"; ctx.shadowBlur = 40; ctx.shadowColor = "#00ffff";
+            ctx.beginPath(); ctx.arc(drawX, drawY, this.r + pulse, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+            ctx.strokeStyle = "rgba(0,255,255,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(drawX, drawY); ctx.lineTo(drawX, drawY - 1000); ctx.stroke();
+        }
+    }
+
+    class Pulse {
+        constructor(x, y) { this.x = x; this.y = y; this.radius = 1; this.alpha = 1; this.active = true; Audio.pulse(); }
+        update() { 
+            this.radius += 8; this.alpha -= 0.03; if(this.alpha <= 0) this.active = false; 
+            
+            enemies.forEach(enemy => { 
+                let dx = this.x - (enemy.x + enemy.w/2); let dy = this.y - (enemy.y + enemy.h/2); 
+                if (Math.sqrt(dx*dx + dy*dy) < this.radius + 20) enemy.stunned = 180; 
+            });
+            
+            gates.forEach(gate => { 
+                let gx = gate.x + gate.w/2; let gy = gate.y + gate.h; 
+                if (Math.sqrt(Math.pow(this.x - gx,2) + Math.pow(this.y - gy,2)) < this.radius && !gate.triggered) { gate.triggered = true; Audio.jump(); } 
+            });
+            
+            ghosts.forEach(ghost => { let gx = ghost.x + ghost.w/2; let gy = ghost.y + ghost.h/2; if (Math.sqrt(Math.pow(this.x - gx,2) + Math.pow(this.y - gy,2)) < this.radius && !ghost.active) { ghost.active = true; ghost.timer = 240; Audio.jump(); } });
+            
+            if(finalCore && !finalCore.active) { let dx = this.x - finalCore.x; let dy = this.y - finalCore.y; if(Math.sqrt(dx*dx + dy*dy) < this.radius + 50) winGame(); }
+        }
+        draw() {
+            const drawX = this.x - camX; const drawY = this.y - camY;
+            ctx.beginPath(); ctx.arc(drawX, drawY, this.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(0, 255, 255, ${this.alpha})`; ctx.lineWidth = 4; ctx.stroke();
+        }
+    }
+
+    class Splash { constructor(x,y){this.x=x;this.y=y;this.vx=(Math.random()-0.5)*4;this.vy=-(Math.random()*2+1);this.life=1.0;this.active=true;} update(){this.x+=this.vx;this.y+=this.vy;this.vy+=0.2;this.life-=0.05;if(this.life<=0)this.active=false;} draw(){const drawX=this.x-camX;const drawY=this.y-camY;ctx.fillStyle=`rgba(120,160,180,${this.life})`;ctx.fillRect(drawX,drawY,2,2);} }
+    class Rain { constructor(){this.reset();} reset(){this.x=Math.random()*canvas.width;this.y=Math.random()*-100;this.speed=Math.random()*3+4;this.thickness=Math.random()*0.5+0.8;this.wind=-0.5;} update(){this.y+=this.speed;this.x+=this.wind;let visualX=(this.x-camX)%canvas.width;if(visualX<0)visualX+=canvas.width;let hit=false;if(this.y>100){for(let plat of platforms){let pScreenX=plat.x-camX;if(visualX>pScreenX&&visualX<pScreenX+plat.w){if((this.y+camY)>=plat.y&&(this.y+camY)<plat.y+this.speed+5){if(Math.random()<0.25)splashes.push(new Splash(visualX+camX,plat.y));this.reset();hit=true;break;}}}}if(!hit&&this.y>canvas.height)this.reset();} draw(){const length=this.speed*1.5;ctx.strokeStyle="rgba(100,120,140,0.8)";ctx.lineWidth=this.thickness;ctx.beginPath();let visualX=(this.x-camX)%canvas.width;if(visualX<0)visualX+=canvas.width;ctx.moveTo(visualX,this.y);ctx.lineTo(visualX-(this.wind*0.5),this.y-length);ctx.stroke();} }
+
+    let platforms = []; let enemies = []; let gates = []; let ghosts = []; let debris = []; let lightnings = [];
+    let finalCore = null; 
+    let nextPlatformX = DEV_MODE_BOSS ? 29500 : -100; 
+    let currentHeight = 350;
+    let bgShapes = []; for(let i=0; i<10; i++) bgShapes.push({ x: i * 300, y: 100 + Math.random()*200, w: 100+Math.random()*200, h: 400 });
+    
+    let boss = null;
+    let bullets = [];
+    let bossBullets = []; 
+
+    function createPulse() { pulses.push(new Pulse(player.x + 10, player.y + 15)); }
+
+    function die() {
+        if(player.dead || gameState === "WON") return;
+        player.dead = true; Audio.crash();
+        for(let i=0; i<15; i++) debris.push(new Debris(player.x + 10, player.y + 15));
+        
+        setTimeout(() => {
+            let spawnX, spawnY;
+            if (towerBaseLocation && player.x > towerBaseLocation.x - 1000) {
+                spawnX = towerBaseLocation.x + 50; 
+                spawnY = towerBaseLocation.y - 100;
+            } else {
+                spawnX = lastCheckpoint.x;
+                spawnY = 250;
+            }
+
+            resetLevelAt(spawnX);
+
+            player.x = spawnX; 
+            player.y = 250; // Drop from air
+            player.velX = 0; player.velY = 0; player.dead = false;
+            
+            camX = spawnX - canvas.width / 2;
+            camY = 0;
+
+            enemies = enemies.filter(e => {
+                let dist = Math.sqrt(Math.pow(e.x - player.x, 2) + Math.pow(e.y - player.y, 2));
+                return dist > 500;
+            });
+
+        }, 1500);
+    }
+
+    function winGame() {
+        if(gameState === "WON") return;
+        gameState = "WON"; 
+        if(finalCore) finalCore.active = true; 
+        // Explosion already handled in Boss logic
+        document.getElementById('ui').style.display = 'none'; document.getElementById('mobile-controls').style.display = 'none';
+        document.getElementById('boss-ui').style.display = 'none';
+        setTimeout(() => { winEl.style.display = "block"; }, 2000);
+    }
+
+    function updateChapter() {
+        let dist = Math.floor(Math.max(0, (distanceTraveled - 100) / 6));
+        if (dist < CH1_END) { currentChapter = 1; canvas.style.background = "linear-gradient(to bottom, #444, #222)"; chapterEl.innerText = "CHAPTER 1: THE WAKE"; chapterEl.style.color = "#888"; } 
+        else if (dist < CH2_END) { currentChapter = 2; canvas.style.background = "linear-gradient(to bottom, #113311, #001100)"; chapterEl.innerText = "CHAPTER 2: THE UNDERBELLY"; chapterEl.style.color = "#00ff00"; } 
+        else if (dist < CH3_END) { currentChapter = 3; canvas.style.background = "linear-gradient(to bottom, #331111, #110000)"; chapterEl.innerText = "CHAPTER 3: THE CITY"; chapterEl.style.color = "#ff4444"; } 
+        else { currentChapter = 4; canvas.style.background = "linear-gradient(to bottom, #112244, #001122)"; chapterEl.innerText = "CHAPTER 4: THE TOWER"; chapterEl.style.color = "#4488ff"; }
+        if (gameState === "WON") canvas.style.background = "linear-gradient(to bottom, #87CEEB, #E0F7FA)"; 
+    }
+
+    function generateTerrain() {
+        let worldDist = WIN_DIST * 6;
+        if(nextPlatformX > worldDist + 1000) return; 
+        
+        while (nextPlatformX < camX + canvas.width + 1000) {
+            
+            if (nextPlatformX > worldDist && !finalCore) {
+                let bridgeX = nextPlatformX;
+                platforms.push({ x: bridgeX, y: 350, w: 1000, h: 600 }); 
+                
+                let arenaX = bridgeX + 1000;
+                platforms.push({ x: arenaX, y: 350, w: 1200, h: 600 });
+                
+                boss = new Boss(arenaX + 800, 150);
+                
+                finalCore = { x: arenaX + 1300, y: 0, active: false }; 
+                nextPlatformX += 3000;
+                return;
+            }
+
+            let w = 400 + Math.random() * 400; 
+            if(Math.random() > 0.5) currentHeight -= 60; else if(Math.random() > 0.5) currentHeight += 60;
+            if(currentHeight < 150) currentHeight = 150; if(currentHeight > 450) currentHeight = 450;
+            
+            let plat = { x: nextPlatformX, y: currentHeight, w: w, h: 600 };
+            platforms.push(plat);
+            
+            if (currentChapter >= 2) {
+                let numEnemies = Math.floor(plat.w / 300); 
+                for(let j=0; j<numEnemies; j++) {
+                    if(Math.random() < 0.6) enemies.push(new Scrapper(plat.x + (j * 300) + 50, plat.y - 20, plat));
+                }
+            }
+            if (currentChapter >= 3) {
+               if(Math.random() < 0.6) enemies.push(new Drone(plat.x + Math.random()*w, plat.y - 150));
+            }
+            
+            if (currentChapter >= 3 && Math.random() < 0.3 && w > 500) gates.push(new Gate(plat.x + w/2 + 100, plat.y));
+            let gapSize = 100 + Math.random() * 100;
+            if (currentChapter >= 3 && Math.random() < 0.5) {
+                let ghostW = 150; let ghostX = nextPlatformX + w + (gapSize/2); let ghostY = currentHeight - 20; 
+                ghosts.push(new GhostPlatform(ghostX, ghostY, ghostW)); gapSize += ghostW + 50; 
+            }
+            nextPlatformX += w + gapSize;
+        }
+        if (platforms.length > 0 && platforms[0].x + platforms[0].w < camX - 400 && platforms[0].x < worldDist) {
+            let p = platforms.shift();
+            enemies = enemies.filter(e => {
+                if(e instanceof Scrapper && e.platform === p) return false;
+                if(e.x < camX - 400) return false;
+                return true;
+            });
+            gates = gates.filter(g => g.x > camX - 400); ghosts = ghosts.filter(g => g.x > camX - 400);
+        }
+    }
+
+    const player = new Player();
+    let pulses = []; let splashes = []; const raindrops = []; for(let i=0; i<180; i++) raindrops.push(new Rain());
+
+    function loop() {
+        let displayDist = Math.floor(Math.max(0, (distanceTraveled - 100) / 6));
+        scoreEl.innerText = displayDist + "m / " + WIN_DIST + "m";
+        updateChapter();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        generateTerrain();
+
+        if(currentChapter > 1 && gameState !== "WON" && Math.random() < 0.005) lightnings.push(new Lightning());
+
+        if (gameState !== "WON") {
+            ctx.fillStyle = "rgba(100, 110, 120, 0.2)";
+            bgShapes.forEach(bg => {
+                let parallaxX = (bg.x - (camX * 0.5)) % 3000; if(parallaxX < -500) parallaxX += 3000;
+                ctx.fillRect(parallaxX, bg.y - camY * 0.2, bg.w, bg.h);
+            });
+            ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; ctx.fillRect(0,0,canvas.width, canvas.height);
+            if(flashAlpha > 0) { ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`; ctx.fillRect(0,0,canvas.width, canvas.height); flashAlpha -= 0.05; }
+        }
+
+        ctx.save(); ctx.translate(canvas.width/2, canvas.height/2); ctx.scale(camZoom, camZoom); ctx.translate(-canvas.width/2, -canvas.height/2);
+        ctx.fillStyle = "#000000"; for(let plat of platforms) ctx.fillRect(plat.x - camX, plat.y - camY, plat.w, plat.h);
+        gates.forEach(g => { g.update(); g.draw(); });
+        enemies.forEach(e => { e.update(); e.draw(); });
+        ghosts.forEach(g => { g.update(); g.draw(); });
+        debris.forEach((d,i) => { d.update(); d.draw(); if(d.life<=0) debris.splice(i,1); });
+        lightnings.forEach((l,i) => { l.draw(); if(l.life<=0) lightnings.splice(i,1); });
+        
+        if(boss) {
+            boss.update(); 
+            boss.draw();
+        }
+
+        ctx.fillStyle = "cyan";
+        for(let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            b.x += b.vx; b.life--; 
+            ctx.fillRect(b.x - camX, b.y - camY, 15, 4);
+            if(b.life <= 0) bullets.splice(i, 1);
+        }
+
+        ctx.fillStyle = "#ff5555";
+        ctx.shadowBlur = 10; ctx.shadowColor = "red";
+        for(let i = bossBullets.length - 1; i >= 0; i--) {
+            let b = bossBullets[i];
+            b.x += b.vx; b.y += b.vy; b.life--; 
+            ctx.beginPath(); ctx.arc(b.x - camX, b.y - camY, 8, 0, Math.PI * 2); ctx.fill();
+            
+            let dx = b.x - (player.x + 10);
+            let dy = b.y - (player.y + 15);
+            if (Math.sqrt(dx*dx + dy*dy) < 20) {
+                 die();
+            }
+
+            if(b.life <= 0) bossBullets.splice(i, 1);
+        }
+        ctx.shadowBlur = 0;
+
+        player.update(); player.draw();
+        pulses.forEach((p, index) => { p.update(); p.draw(); if(!p.active) pulses.splice(index, 1); });
+        splashes.forEach((s, index) => { s.update(); s.draw(); if(!s.active) splashes.splice(index, 1); });
+        ctx.restore();
+        if(gameState !== "WON") {
+            raindrops.forEach(r => { r.update(); r.draw(); });
+            const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width/2.5, canvas.width/2, canvas.height/2, canvas.width);
+            gradient.addColorStop(0, "rgba(0,0,0,0)"); gradient.addColorStop(1, "rgba(0,0,0,0.4)");
+            ctx.fillStyle = gradient; ctx.fillRect(0,0,canvas.width, canvas.height);
+        }
+        if(whiteOutAlpha > 0) { ctx.fillStyle = `rgba(255, 255, 255, ${whiteOutAlpha})`; ctx.fillRect(0,0,canvas.width, canvas.height); whiteOutAlpha -= 0.01; }
+        frame++; requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+</body>
+</html>
