@@ -228,7 +228,7 @@ window.markAttendance = async (id) => {
     }
 };
 
-// --- FITNESS / BMI LOGIC (Updated for Workout Plans) ---
+// --- FITNESS / BMI LOGIC (Updated for Workout Plans & No Height Update) ---
 
 window.calculateQuickBMI = () => {
     const w = parseFloat(document.getElementById('calc-weight').value);
@@ -254,9 +254,10 @@ function renderFitnessList() {
         const photoUrl = m.photo || placeholder;
         
         let bmiDisplay = "No Data";
-        if(m.fitnessStats && m.fitnessStats.currentWeight && m.fitnessStats.currentHeight) {
+        // Calculate BMI based on stored stats
+        if(m.fitnessStats && m.fitnessStats.currentWeight && m.fitnessStats.startHeight) {
             const w = m.fitnessStats.currentWeight;
-            const h = m.fitnessStats.currentHeight / 100;
+            const h = m.fitnessStats.startHeight / 100; // Use startHeight as constant height
             bmiDisplay = "BMI: " + (w / (h*h)).toFixed(1);
         }
 
@@ -287,9 +288,9 @@ window.openFitnessModal = (id) => {
     document.getElementById('fit-start-w').value = stats.startWeight || "";
     document.getElementById('fit-start-h').value = stats.startHeight || "";
     document.getElementById('fit-curr-w').value = stats.currentWeight || "";
-    document.getElementById('fit-curr-h').value = stats.currentHeight || "";
+    // Note: 'fit-curr-h' is no longer needed/updated, we rely on startHeight
 
-    // LOAD WORKOUT PLAN (New Feature)
+    // LOAD WORKOUT PLAN
     const workoutInput = document.getElementById('fit-workout');
     if(workoutInput) {
         workoutInput.value = m.workoutPlan || ""; 
@@ -306,10 +307,10 @@ window.closeFitnessModal = () => {
 window.saveFitnessData = async () => {
     if(!selectedFitnessMember) return;
     
+    // BIOLOGY CHECK: We only track weight changes. Height is static.
     const sw = parseFloat(document.getElementById('fit-start-w').value);
-    const sh = parseFloat(document.getElementById('fit-start-h').value);
+    const sh = parseFloat(document.getElementById('fit-start-h').value); // Acts as the constant height
     const cw = parseFloat(document.getElementById('fit-curr-w').value);
-    const ch = parseFloat(document.getElementById('fit-curr-h').value);
 
     // SAVE WORKOUT PLAN
     const workoutInput = document.getElementById('fit-workout');
@@ -317,16 +318,16 @@ window.saveFitnessData = async () => {
 
     const newStats = {
         startWeight: sw || null,
-        startHeight: sh || null,
+        startHeight: sh || null, // Height remains constant
         currentWeight: cw || null,
-        currentHeight: ch || null,
+        currentHeight: sh || null, // Keep current height same as start height
         lastUpdated: new Date()
     };
 
     try {
         await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, selectedFitnessMember.id), {
             fitnessStats: newStats,
-            workoutPlan: workoutPlan // Saving to Firestore
+            workoutPlan: workoutPlan
         });
         alert("Fitness profile & Workout plan updated!");
         window.closeFitnessModal();
@@ -338,16 +339,16 @@ window.saveFitnessData = async () => {
 
 window.calculateFitnessDiff = () => {
     const sw = parseFloat(document.getElementById('fit-start-w').value);
-    const sh = parseFloat(document.getElementById('fit-start-h').value);
+    const sh = parseFloat(document.getElementById('fit-start-h').value); // Constant Height
     const cw = parseFloat(document.getElementById('fit-curr-w').value);
-    const ch = parseFloat(document.getElementById('fit-curr-h').value);
 
     let startBMI = "--";
     if(sw && sh) startBMI = (sw / ((sh/100)**2)).toFixed(1);
     document.getElementById('fit-start-bmi').innerText = `BMI: ${startBMI}`;
 
     let currBMI = "--";
-    if(cw && ch) currBMI = (cw / ((ch/100)**2)).toFixed(1);
+    // Use Start Height for Current BMI too (since adults don't grow taller)
+    if(cw && sh) currBMI = (cw / ((sh/100)**2)).toFixed(1);
     document.getElementById('fit-curr-bmi').innerText = `BMI: ${currBMI}`;
 
     const resDiv = document.getElementById('fit-diff');
@@ -431,7 +432,8 @@ window.exportData = (type) => {
             JoinDate: m.joinDate,
             ExpiryDate: m.expiryDate,
             LastPaid: m.lastPaidAmount,
-            Status: new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired'
+            Status: new Date(m.expiryDate) > new Date() ? 'Active' : 'Expired',
+            Attendance: m.attendance ? m.attendance.length : 0
         }));
         filename = 'Gym_Members.csv';
     } else if (type === 'finance') {
@@ -537,7 +539,7 @@ window.importMembers = () => {
                         memberId: memberId,
                         createdAt: new Date(),
                         photo: null,
-                        attendance: [] // Init empty attendance
+                        attendance: [] 
                     });
 
                     if(amount > 0) {
@@ -1225,7 +1227,8 @@ function renderMembersList() {
 
         // Check Attendance
         const isPresent = m.attendance && m.attendance.includes(todayStr);
-        const attendColor = isPresent ? '#22c55e' : '#ccc';
+        // Darker grey #666 for better visibility when not present
+        const attendColor = isPresent ? '#22c55e' : '#666'; 
         const attendText = isPresent ? 'Present' : 'Mark In';
 
         list.innerHTML += `
@@ -1245,7 +1248,7 @@ function renderMembersList() {
             </div>
             <div><span class="status-badge ${statusClass}">${statusText}</span></div>
             <div class="row-actions" id="actions-${m.id}">
-                <div class="icon-btn" onclick="markAttendance('${m.id}')" title="${attendText}" style="color:${attendColor}"><i class="fa-solid fa-clipboard-check"></i></div>
+                <div class="icon-btn" onclick="markAttendance('${m.id}')" title="${attendText}" style="color:${attendColor}; font-weight:bold; font-size:1.1rem;"><i class="fa-solid fa-clipboard-check"></i></div>
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
                 <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
                 <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
