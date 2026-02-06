@@ -202,29 +202,31 @@ window.sendWhatsApp = (phone, name, type, extraData) => {
     window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-// 2. Attendance Logic
+// 2. Attendance Logic (Updated: Toggle/Revoke)
 window.markAttendance = async (id) => {
     const m = members.find(x => x.id === id);
     if(!m) return;
     
     const today = new Date().toISOString().split('T')[0];
     let currentAttendance = m.attendance || [];
-    
-    if(currentAttendance.includes(today)) {
-        return alert("Attendance already marked for today.");
-    }
 
-    // Since we don't have arrayUnion in imports, we push locally and update
-    currentAttendance.push(today);
+    // TOGGLE LOGIC:
+    if(currentAttendance.includes(today)) {
+        // Revoke (Remove)
+        currentAttendance = currentAttendance.filter(d => d !== today);
+    } else {
+        // Mark (Add)
+        currentAttendance.push(today);
+    }
 
     try {
         await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, id), {
             attendance: currentAttendance
         });
-        // UI will update automatically via listener
+        // Feedback is handled by UI update
     } catch(e) {
         console.error("Attendance failed", e);
-        alert("Failed to mark attendance");
+        alert("Failed to update attendance");
     }
 };
 
@@ -973,13 +975,35 @@ window.confirmRenewal = async () => {
     alert(`Membership Renewed! New Expiry: ${newExpiry}`);
 };
 
+// --- UPDATED HISTORY LOGIC (DATES + PAYMENTS) ---
 window.toggleHistory = async (id) => {
     const panel = document.getElementById(`history-${id}`);
     if(panel.style.display === 'block') { panel.style.display = 'none'; return; }
 
     panel.style.display = 'block';
-    panel.innerHTML = '<div style="color:#888; font-size:0.8rem;">Loading...</div>';
+    
+    // 1. GET ATTENDANCE DATA
+    const m = members.find(x => x.id === id);
+    const attendanceList = m.attendance || [];
+    // Sort dates (newest first)
+    attendanceList.sort((a, b) => new Date(b) - new Date(a));
 
+    let attendanceHTML = "";
+    if(attendanceList.length > 0) {
+        attendanceHTML = `
+            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                <h4 style="color:#fff; margin:0 0 5px 0; font-size:0.9rem;">Attendance Log (${attendanceList.length} Days)</h4>
+                <div style="max-height:100px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:5px;">
+                    ${attendanceList.map(date => `<span style="background:#333; color:#ccc; padding:2px 6px; border-radius:4px; font-size:0.75rem;">${date}</span>`).join('')}
+                </div>
+            </div>`;
+    } else {
+        attendanceHTML = `<div style="margin-bottom:15px; color:#666; font-size:0.8rem;">No attendance records found.</div>`;
+    }
+
+    panel.innerHTML = attendanceHTML + '<div style="color:#888; font-size:0.8rem;">Loading Payments...</div>';
+
+    // 2. GET PAYMENT DATA
     const q = query(
         collection(db, `gyms/${currentUser.uid}/transactions`),
         where("memberId", "==", id),
@@ -988,45 +1012,45 @@ window.toggleHistory = async (id) => {
 
     try {
         const snap = await getDocs(q);
+        
+        let paymentHTML = "";
         if(snap.empty) {
-            panel.innerHTML = '<div style="color:#888; font-size:0.8rem;">No payment history found.</div>';
-            return;
-        }
-
-        let html = `
-            <table class="history-table">
-                <thead><tr><th>Date</th><th>Time</th><th>Category</th><th>Mode</th><th>Amount</th><th>Action</th></tr></thead>
-                <tbody>
-        `;
-        
-        snap.forEach(doc => {
-            const t = doc.data();
-            const safePlan = t.snapshotPlan || '';
-            const safeExpiry = t.snapshotExpiry || '';
+            paymentHTML = '<div style="color:#888; font-size:0.8rem;">No payment history found.</div>';
+        } else {
+            paymentHTML = `
+                <h4 style="color:#fff; margin:0 0 5px 0; font-size:0.9rem;">Payment History</h4>
+                <table class="history-table">
+                    <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Action</th></tr></thead>
+                    <tbody>
+            `;
             
-            let timeStr = "-";
-            if(t.createdAt && t.createdAt.seconds) {
-                const dateObj = new Date(t.createdAt.seconds * 1000);
-                timeStr = dateObj.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-            }
+            snap.forEach(doc => {
+                const t = doc.data();
+                const safePlan = t.snapshotPlan || '';
+                const safeExpiry = t.snapshotExpiry || '';
+                
+                let timeStr = "-";
+                if(t.createdAt && t.createdAt.seconds) {
+                    const dateObj = new Date(t.createdAt.seconds * 1000);
+                    timeStr = dateObj.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+                }
 
-            html += `
-                <tr>
-                    <td>${t.date}</td>
-                    <td style="color:#888; font-size:0.75rem;">${timeStr}</td>
-                    <td>${t.category}</td>
-                    <td>${t.mode || '-'}</td>
-                    <td style="color:${t.type==='income'?'#22c55e':'#ef4444'}">${t.amount}</td>
-                    <td><i class="fa-solid fa-print" style="cursor:pointer; color:#888;" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}', '${safePlan}', '${safeExpiry}', '${timeStr}')"></i></td>
-                </tr>`;
-        });
+                paymentHTML += `
+                    <tr>
+                        <td>${t.date}</td>
+                        <td>${t.category}</td>
+                        <td style="color:${t.type==='income'?'#22c55e':'#ef4444'}">${t.amount}</td>
+                        <td><i class="fa-solid fa-print" style="cursor:pointer; color:#888;" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}', '${safePlan}', '${safeExpiry}', '${timeStr}')"></i></td>
+                    </tr>`;
+            });
+            paymentHTML += `</tbody></table>`;
+        }
         
-        html += `</tbody></table>`;
-        panel.innerHTML = html;
+        panel.innerHTML = attendanceHTML + paymentHTML;
 
     } catch (e) {
         console.error(e);
-        panel.innerHTML = '<div style="color:#ef4444; font-size:0.8rem;">Error loading history.</div>';
+        panel.innerHTML = attendanceHTML + '<div style="color:#ef4444; font-size:0.8rem;">Error loading payments.</div>';
     }
 };
 
@@ -1203,6 +1227,7 @@ window.editTransaction = (id) => {
 
 window.deleteTransaction = async (id) => { if(confirm("Delete transaction?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id)); };
 
+// --- RENDER MEMBERS (With Blue Badge & Revoke Logic) ---
 function renderMembersList() {
     const list = document.getElementById('members-list'); 
     if(!list) return;
@@ -1213,9 +1238,7 @@ function renderMembersList() {
     members.forEach(m => {
         const expDate = new Date(m.expiryDate);
         const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-        
-        let statusClass = 'status-paid'; 
-        let statusText = 'Paid';
+        let statusClass = 'status-paid'; let statusText = 'Paid';
         if (daysLeft < 0) { statusClass = 'status-due'; statusText = 'Expired'; }
         else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due: ${daysLeft} days`; }
 
@@ -1227,19 +1250,17 @@ function renderMembersList() {
         if(m.gender === 'Male') genderIcon = '<i class="fa-solid fa-mars" style="color:#60a5fa; margin-left:5px;"></i>';
         else if(m.gender === 'Female') genderIcon = '<i class="fa-solid fa-venus" style="color:#f472b6; margin-left:5px;"></i>';
 
-        // --- ATTENDANCE LOGIC ---
+        // Check Attendance
         const attendanceList = m.attendance || [];
-        const totalDays = attendanceList.length; // COUNT THE DAYS
+        const totalDays = attendanceList.length;
         const isPresent = attendanceList.includes(todayStr);
-        
         const attendColor = isPresent ? '#22c55e' : '#666'; 
-        const attendText = isPresent ? 'Present Today' : 'Mark Present';
+        const attendText = isPresent ? 'Revoke Attendance' : 'Mark Present';
 
         list.innerHTML += `
         <div class="member-row">
             <i class="fa-solid fa-ellipsis-vertical mobile-kebab-btn" onclick="toggleRowAction('${m.id}')"></i>
             <div class="profile-img-container"><img src="${photoUrl}" class="profile-circle" onclick="editMember('${m.id}')"></div>
-            
             <div class="info-block">
                 <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
                 <div class="name-phone-row">
@@ -1247,16 +1268,15 @@ function renderMembersList() {
                     <span style="font-weight:400; font-size:0.8rem; color:#888; margin-left:8px;">${m.phone}</span>
                 </div>
             </div>
-
             <div class="info-block">
                 <div class="info-main" style="color:${daysLeft<0?'#ef4444':'inherit'}">Exp: ${m.expiryDate}</div>
                 <div class="info-sub">${planDisplay} Plan</div>
             </div>
-
-            <div style="display:flex; flex-direction:column; gap:5px;">
+            
+            <div style="display:flex; flex-direction:column; gap:6px;">
                 <span class="status-badge ${statusClass}">${statusText}</span>
-                <span style="font-size:0.7rem; color:#888; background:#222; padding:2px 6px; border-radius:4px; text-align:center;">
-                    <i class="fa-solid fa-dumbbell" style="margin-right:4px;"></i> ${totalDays} Days
+                <span style="font-size:0.75rem; color:#fff; background:#3b82f6; padding:3px 8px; border-radius:6px; text-align:center; font-weight:600; display:inline-block;">
+                    <i class="fa-solid fa-dumbbell"></i> ${totalDays} Days
                 </span>
             </div>
 
@@ -1264,7 +1284,6 @@ function renderMembersList() {
                 <div class="icon-btn" onclick="markAttendance('${m.id}')" title="${attendText}" style="color:${attendColor}; font-weight:bold; font-size:1.1rem;">
                     <i class="fa-solid fa-clipboard-check"></i>
                 </div>
-                
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
                 <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
                 <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
