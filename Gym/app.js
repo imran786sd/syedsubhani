@@ -12,7 +12,7 @@ let ageCategoryChartInstance = null;
 let ageStatusChartInstance = null;
 let memberFilterState = 'active';
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
-let selectedFitnessMember = null; // New for fitness modal
+let selectedFitnessMember = null; 
 
 // --- HELPER FUNCTIONS ---
 const compressImage = (file) => {
@@ -168,7 +168,7 @@ function setupListeners() {
         renderOverview(); 
         renderMembersList();
         renderAgeCharts();
-        renderFitnessList(); // <-- NEW FUNCTION CALL
+        renderFitnessList();
     });
     const txRef = collection(db, `gyms/${currentUser.uid}/transactions`);
     onSnapshot(query(txRef, orderBy("date", "desc")), (snap) => {
@@ -179,25 +179,71 @@ function setupListeners() {
     });
 }
 
-// --- FITNESS / BMI LOGIC (NEW) ---
+// --- NEW FEATURES IMPLEMENTATION ---
 
-// 1. Quick Calculator (Standalone)
+// 1. WhatsApp Logic (Enhanced)
+window.sendWhatsApp = (phone, name, type, extraData) => {
+    let p = phone ? phone.replace(/\D/g,'') : ''; 
+    if(p.length===10) p="91"+p;
+    if(!p) return alert("Invalid phone number");
+
+    let msg = "";
+    if (type === 'welcome') {
+        msg = `Hi ${name}, Welcome to The Ultimate Gym! We are thrilled to have you. Let's start your fitness journey! 💪`;
+    } else if (type === 'reminder') {
+        msg = `Hello ${name}, your gym membership is expiring in ${extraData} days. Please renew to continue your workouts! 🏋️‍♂️`;
+    } else if (type === 'expired') {
+        msg = `Hi ${name}, your membership expired on ${extraData}. Please renew it to reactivate access.`;
+    } else {
+        // Default / Fallback
+        msg = `Hello ${name}, your membership expiry is ${extraData}.`;
+    }
+
+    window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// 2. Attendance Logic
+window.markAttendance = async (id) => {
+    const m = members.find(x => x.id === id);
+    if(!m) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    let currentAttendance = m.attendance || [];
+    
+    if(currentAttendance.includes(today)) {
+        return alert("Attendance already marked for today.");
+    }
+
+    // Since we don't have arrayUnion in imports, we push locally and update
+    currentAttendance.push(today);
+
+    try {
+        await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, id), {
+            attendance: currentAttendance
+        });
+        // UI will update automatically via listener
+    } catch(e) {
+        console.error("Attendance failed", e);
+        alert("Failed to mark attendance");
+    }
+};
+
+// --- FITNESS / BMI LOGIC (Updated for Workout Plans) ---
+
 window.calculateQuickBMI = () => {
     const w = parseFloat(document.getElementById('calc-weight').value);
     const h = parseFloat(document.getElementById('calc-height').value);
     if(!w || !h) return alert("Please enter weight (kg) and height (cm)");
     
     const bmi = (w / ((h/100) * (h/100))).toFixed(1);
-    document.getElementById('quick-bmi-result').innerText = `Result: ${bmi}`;
-    
-    // Optional: Color code result
     const el = document.getElementById('quick-bmi-result');
-    if(bmi < 18.5) el.style.color = "#facc15"; // Yellow (Under)
-    else if(bmi < 25) el.style.color = "#22c55e"; // Green (Normal)
-    else el.style.color = "#ef4444"; // Red (Over)
+    el.innerText = `Result: ${bmi}`;
+    
+    if(bmi < 18.5) el.style.color = "#facc15"; 
+    else if(bmi < 25) el.style.color = "#22c55e"; 
+    else el.style.color = "#ef4444"; 
 }
 
-// 2. Render Grid of Members for Fitness Tab
 function renderFitnessList() {
     const list = document.getElementById('fitness-list-grid');
     if(!list) return;
@@ -207,7 +253,6 @@ function renderFitnessList() {
         const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
         const photoUrl = m.photo || placeholder;
         
-        // Calculate current BMI if data exists
         let bmiDisplay = "No Data";
         if(m.fitnessStats && m.fitnessStats.currentWeight && m.fitnessStats.currentHeight) {
             const w = m.fitnessStats.currentWeight;
@@ -226,7 +271,6 @@ function renderFitnessList() {
     });
 }
 
-// 3. Open Modal & Load Data
 window.openFitnessModal = (id) => {
     const m = members.find(x => x.id === id);
     if(!m) return;
@@ -239,16 +283,19 @@ window.openFitnessModal = (id) => {
     const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
     document.getElementById('fit-img').src = m.photo || placeholder;
 
-    // Load Existing Stats if any
     const stats = m.fitnessStats || {};
     document.getElementById('fit-start-w').value = stats.startWeight || "";
     document.getElementById('fit-start-h').value = stats.startHeight || "";
     document.getElementById('fit-curr-w').value = stats.currentWeight || "";
     document.getElementById('fit-curr-h').value = stats.currentHeight || "";
 
-    // Calculate & Show Comparison
-    calculateFitnessDiff();
+    // LOAD WORKOUT PLAN (New Feature)
+    const workoutInput = document.getElementById('fit-workout');
+    if(workoutInput) {
+        workoutInput.value = m.workoutPlan || ""; 
+    }
 
+    calculateFitnessDiff();
     document.getElementById('modal-fitness').style.display = 'flex';
 };
 
@@ -264,6 +311,10 @@ window.saveFitnessData = async () => {
     const cw = parseFloat(document.getElementById('fit-curr-w').value);
     const ch = parseFloat(document.getElementById('fit-curr-h').value);
 
+    // SAVE WORKOUT PLAN
+    const workoutInput = document.getElementById('fit-workout');
+    const workoutPlan = workoutInput ? workoutInput.value : "";
+
     const newStats = {
         startWeight: sw || null,
         startHeight: sh || null,
@@ -274,9 +325,10 @@ window.saveFitnessData = async () => {
 
     try {
         await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, selectedFitnessMember.id), {
-            fitnessStats: newStats
+            fitnessStats: newStats,
+            workoutPlan: workoutPlan // Saving to Firestore
         });
-        alert("Fitness profile updated!");
+        alert("Fitness profile & Workout plan updated!");
         window.closeFitnessModal();
     } catch(e) {
         console.error("Error saving fitness", e);
@@ -284,30 +336,25 @@ window.saveFitnessData = async () => {
     }
 };
 
-// Helper to calc BMI and Diff on the fly inside modal
 window.calculateFitnessDiff = () => {
-    // We attach this to input 'change' events or call it on load
     const sw = parseFloat(document.getElementById('fit-start-w').value);
     const sh = parseFloat(document.getElementById('fit-start-h').value);
     const cw = parseFloat(document.getElementById('fit-curr-w').value);
     const ch = parseFloat(document.getElementById('fit-curr-h').value);
 
-    // Calc Start BMI
     let startBMI = "--";
     if(sw && sh) startBMI = (sw / ((sh/100)**2)).toFixed(1);
     document.getElementById('fit-start-bmi').innerText = `BMI: ${startBMI}`;
 
-    // Calc Current BMI
     let currBMI = "--";
     if(cw && ch) currBMI = (cw / ((ch/100)**2)).toFixed(1);
     document.getElementById('fit-curr-bmi').innerText = `BMI: ${currBMI}`;
 
-    // Compare
     const resDiv = document.getElementById('fit-diff');
     if(sw && cw) {
         const diff = (cw - sw).toFixed(1);
         const sign = diff > 0 ? "+" : "";
-        const color = diff > 0 ? "#ef4444" : "#22c55e"; // Red if gained, Green if lost (assuming weight loss goal)
+        const color = diff > 0 ? "#ef4444" : "#22c55e"; 
         resDiv.innerHTML = `Weight Change: <span style="color:${color}">${sign}${diff} kg</span>`;
     } else {
         resDiv.innerHTML = "";
@@ -463,11 +510,11 @@ window.importMembers = () => {
             const name = clean(cols[0]);
             const phone = clean(cols[1]);
             const gender = clean(cols[2]) || 'Male';
-            const dob = fixDate(clean(cols[3]));       
-            const joinDate = fixDate(clean(cols[4]));  
-            const plan = clean(cols[5]);               
+            const dob = fixDate(clean(cols[3]));        
+            const joinDate = fixDate(clean(cols[4]));   
+            const plan = clean(cols[5]);                
             const amount = clean(cols[6]) || 0;        
-            const payMode = clean(cols[7]) || 'Cash';  
+            const payMode = clean(cols[7]) || 'Cash';   
 
             if(name && phone && joinDate) {
                 try {
@@ -482,14 +529,15 @@ window.importMembers = () => {
 
                     const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), {
                         name, phone, gender, 
-                        dob: dob,           
+                        dob: dob,            
                         joinDate: joinDate, 
                         planDuration: plan,
                         expiryDate: expiryDate,
                         lastPaidAmount: amount,
                         memberId: memberId,
                         createdAt: new Date(),
-                        photo: null
+                        photo: null,
+                        attendance: [] // Init empty attendance
                     });
 
                     if(amount > 0) {
@@ -862,6 +910,7 @@ window.saveMember = async () => {
         } else {
             data.createdAt = new Date();
             data.memberId = window.generateMemberID(name, phone);
+            data.attendance = []; // New members get empty attendance
             const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
             await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate, docRef.id, planDuration, expiryDate);
             if(confirm("Generate Invoice?")) window.generateInvoice(data);
@@ -1152,18 +1201,12 @@ window.editTransaction = (id) => {
 
 window.deleteTransaction = async (id) => { if(confirm("Delete transaction?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id)); };
 
-window.sendWhatsApp = (phone, name, expiry) => {
-    let p = phone ? phone.replace(/\D/g,'') : ''; 
-    if(p.length===10) p="91"+p;
-    if(p) window.open(`https://wa.me/${p}?text=Hello ${name}, your gym membership expires on ${expiry}.`, '_blank');
-    else alert("Invalid phone number");
-}
-
 function renderMembersList() {
     const list = document.getElementById('members-list'); 
     if(!list) return;
     list.innerHTML = "";
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
     members.forEach(m => {
         const expDate = new Date(m.expiryDate);
@@ -1179,6 +1222,11 @@ function renderMembersList() {
         let genderIcon = '';
         if(m.gender === 'Male') genderIcon = '<i class="fa-solid fa-mars" style="color:#60a5fa; margin-left:5px;"></i>';
         else if(m.gender === 'Female') genderIcon = '<i class="fa-solid fa-venus" style="color:#f472b6; margin-left:5px;"></i>';
+
+        // Check Attendance
+        const isPresent = m.attendance && m.attendance.includes(todayStr);
+        const attendColor = isPresent ? '#22c55e' : '#ccc';
+        const attendText = isPresent ? 'Present' : 'Mark In';
 
         list.innerHTML += `
         <div class="member-row">
@@ -1197,10 +1245,11 @@ function renderMembersList() {
             </div>
             <div><span class="status-badge ${statusClass}">${statusText}</span></div>
             <div class="row-actions" id="actions-${m.id}">
+                <div class="icon-btn" onclick="markAttendance('${m.id}')" title="${attendText}" style="color:${attendColor}"><i class="fa-solid fa-clipboard-check"></i></div>
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
                 <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
                 <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${m.expiryDate}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
+                <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', 'reminder', '${daysLeft}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
                 <div class="icon-btn bill" onclick='generateInvoice(${JSON.stringify(m)})' title="Bill"><i class="fa-solid fa-file-invoice"></i></div>
                 <div class="icon-btn delete" onclick="deleteMember('${m.id}')" title="Delete"><i class="fa-solid fa-trash"></i></div>
             </div>
