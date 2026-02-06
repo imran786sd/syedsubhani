@@ -884,52 +884,39 @@ window.saveMember = async () => {
     
     if(!name || !amount || !dob || !joinDate || !phone) return alert("Please fill Name, Phone, Fees, Join Date and DOB");
 
-    // 1. Generate the Candidate ID
+    // 1. DUPLICATE CHECKS
     let finalMemberId = window.generateMemberID(name, phone);
 
-    // 2. SMART DUPLICATE CHECK (Only if adding new)
     if (!editingMemberId) {
-        // Step A: Check if this ID exists
         const qId = query(collection(db, `gyms/${currentUser.uid}/members`), where("memberId", "==", finalMemberId));
         const snapId = await getDocs(qId);
         
         if (!snapId.empty) {
-            // ID Collision Found! Now verify if it's actually the same person.
             let isExactDuplicate = false;
-            
             snapId.forEach(doc => {
                 const m = doc.data();
-                // Step B & C: Check Phone AND DOB
-                if (m.phone === phone && m.dob === dob) {
-                    isExactDuplicate = true;
-                }
+                if (m.phone === phone && m.dob === dob) isExactDuplicate = true;
             });
 
             if (isExactDuplicate) {
-                alert(`STOP: This member already exists!\n(Same Name, Phone, and DOB found)`);
-                return; // BLOCK SAVING
+                return alert(`STOP: This member already exists!\n(Same Name, Phone, and DOB found)`);
             } else {
-                // If ID matches but Phone/DOB is different, it's a "Collision" (Different person).
-                // We append a suffix to make the ID unique.
+                // ID Collision - fix automatically
                 finalMemberId = finalMemberId + "-" + Math.floor(Math.random() * 100);
             }
         }
         
-        // Extra Safety: Check if Phone exists globally (even if ID was different)
-        // This prevents re-adding someone if they changed their name slightly but kept phone.
         const qPhone = query(collection(db, `gyms/${currentUser.uid}/members`), where("phone", "==", phone));
         const snapPhone = await getDocs(qPhone);
         if (!snapPhone.empty) {
              const existing = snapPhone.docs[0].data();
-             // Only block if DOB also matches (Strict check)
              if (existing.dob === dob) {
-                 alert(`STOP: Phone number ${phone} is already registered to ${existing.name}!`);
-                 return;
+                 return alert(`STOP: Phone number ${phone} is already registered to ${existing.name}!`);
              }
         }
     }
 
-    // --- PROCEED TO SAVE ---
+    // 2. IMAGE PROCESSING
     let photoUrl = null;
     try {
         if (file) {
@@ -942,9 +929,9 @@ window.saveMember = async () => {
         }
     } catch (uploadError) {
         console.error("Compression failed", uploadError);
-        alert("Image processing failed.");
     }
 
+    // 3. PREPARE DATA
     const data = {
         name, gender, phone, dob, joinDate,
         expiryDate: expiryDate,
@@ -953,28 +940,46 @@ window.saveMember = async () => {
         photo: photoUrl 
     };
 
+    // 4. SAVE TO DATABASE
     try {
         if(editingMemberId) {
-            // Update Existing
             await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, editingMemberId), data);
             editingMemberId = null;
             alert("Member updated successfully!");
         } else {
-            // Add New
             data.createdAt = new Date();
-            data.memberId = finalMemberId; // Use the verified unique ID
+            data.memberId = finalMemberId;
             data.attendance = []; 
             
             const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
             
-            // Add Income Transaction
+            // --- CRITICAL FIX: Ensure Transaction is saved ---
+            // We await this explicitly to ensure the payment mode is recorded
             await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate, docRef.id, planDuration, expiryDate);
             
-            if(confirm("Member Added! Generate Invoice?")) window.generateInvoice(data);
+            // --- FIX: CLOSE MODAL NOW (Don't wait for invoice) ---
+            window.toggleMemberModal();
+            fileInput.value = ""; 
+
+            // 5. INVOICE GENERATION (Safety Block)
+            // If this crashes offline, it won't break the app because modal is already closed
+            if(confirm("Member Added! Generate Invoice?")) {
+                try {
+                    window.generateInvoice(data);
+                } catch(err) {
+                    console.error(err);
+                    alert("Could not generate PDF. You might be offline and the PDF library isn't cached.");
+                }
+            }
+            return; // Exit function
         }
+        
+        // Close modal for Edit case
         window.toggleMemberModal();
         fileInput.value = ""; 
+
     } catch (e) {
+        console.error(e);
         alert("Error saving member: " + e.message);
     }
 };
