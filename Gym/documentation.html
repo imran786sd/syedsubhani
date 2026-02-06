@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - The Ultimate Gym 2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg: #0f172a; --text: #f8fafc; --accent: #ef4444; --card: #1e293b; --border: #334155; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; }
+        
+        /* Sidebar */
+        nav { width: 250px; background: var(--card); height: 100vh; position: fixed; padding: 20px; border-right: 1px solid var(--border); overflow-y: auto; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: var(--accent); margin-bottom: 30px; display: block; text-decoration: none; }
+        .menu a { display: block; color: #94a3b8; text-decoration: none; padding: 10px; margin-bottom: 5px; border-radius: 6px; transition: 0.2s; }
+        .menu a:hover, .menu a.active { background: rgba(239, 68, 68, 0.1); color: var(--accent); }
+        .menu h4 { color: #fff; font-size: 0.8rem; text-transform: uppercase; margin-top: 20px; opacity: 0.6; }
+
+        /* Content */
+        main { margin-left: 250px; padding: 40px; max-width: 800px; line-height: 1.6; }
+        h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        h2 { margin-top: 40px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: #fff; }
+        h3 { color: var(--accent); margin-top: 25px; }
+        p, li { color: #cbd5e1; margin-bottom: 10px; }
+        code { background: #000; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #facc15; }
+        pre { background: #000; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+        pre code { background: transparent; padding: 0; color: #facc15; }
+        .note { background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent); padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        .step { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
+        .step-num { background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        
+        @media(max-width: 768px) {
+            body { flex-direction: column; }
+            nav { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
+            main { margin-left: 0; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="#" class="logo"><i class="fa-solid fa-dumbbell"></i> ULTIMATE GYM 2.0</a>
+        <div class="menu">
+            <h4>Getting Started</h4>
+            <a href="#intro" class="active">Introduction</a>
+            <a href="#firebase">Step 1: Firebase Setup</a>
+            <a href="#connect">Step 2: Connect App</a>
+            <a href="#domain">Step 3: Domain Whitelist</a>
+            
+            <h4>Features Guide</h4>
+            <a href="#members">Managing Members</a>
+            <a href="#attendance">Attendance & Logs</a>
+            <a href="#fitness">Fitness & Workouts</a>
+            <a href="#finance">Finance & Billing</a>
+            
+            <h4>Support</h4>
+            <a href="#faq">FAQ & Troubleshooting</a>
+        </div>
+    </nav>
+
+    <main>
+        <section id="intro">
+            <h1>Documentation</h1>
+            <p>Thank you for purchasing <strong>The Ultimate Gym 2.0</strong>! This guide will help you launch your own Gym Management SaaS in minutes.</p>
+            <div class="note">
+                <strong>✅ Serverless:</strong> This app runs entirely on Google Firebase (Free Tier). You do not need PHP, MySQL, or expensive hosting.
+            </div>
+        </section>
+
+        <section id="firebase">
+            <h2>Step 1: Firebase Setup</h2>
+            <p>We use Google Firebase to store data securely. Follow these steps to create your free database.</p>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div>
+                    <h3>Create Project</h3>
+                    <p>Go to the <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--accent)">Firebase Console</a> and click <strong>Add Project</strong>. Name it (e.g., "MyGymApp") and disable Google Analytics for a simpler setup.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div>
+                    <h3>Enable Authentication</h3>
+                    <p>On the left sidebar, go to <strong>Build > Authentication</strong>.</p>
+                    <ul>
+                        <li>Click <strong>Get Started</strong>.</li>
+                        <li>Select <strong>Google</strong> from the Sign-in providers list.</li>
+                        <li>Toggle the switch to <strong>Enable</strong>.</li>
+                        <li>Select your support email and click <strong>Save</strong>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">3</div>
+                <div>
+                    <h3>Create Database</h3>
+                    <p>On the left sidebar, go to <strong>Build > Firestore Database</strong>.</p>
+                    <ul>
+                        <li>Click <strong>Create Database</strong>.</li>
+                        <li>Choose <strong>Start in Production Mode</strong>.</li>
+                        <li>Select a location close to you (e.g., <code>asia-south1</code> for India) and click <strong>Enable</strong>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">4</div>
+                <div>
+                    <h3>Set Security Rules</h3>
+                    <p>Go to the <strong>Rules</strong> tab inside Firestore Database. Delete everything and paste this code. This ensures each gym owner can only see THEIR own data.</p>
+<pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Allow users to read/write only their own gym data
+    match /gyms/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+  }
+}</code></pre>
+                    <p>Click <strong>Publish</strong>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="connect">
+            <h2>Step 2: Connect the App</h2>
+            <p>Now link your code to the database you just created.</p>
+            <ol>
+                <li>In Firebase Console, click the <strong>Gear Icon ⚙️</strong> (Project Settings).</li>
+                <li>Scroll down to "Your Apps" and click the <strong>Web ( &lt;/&gt; )</strong> icon.</li>
+                <li>Register the app (enter any nickname).</li>
+                <li>You will see a <code>firebaseConfig</code> code block. Copy only the values inside the braces.</li>
+                <li>Open the file <code>firebase-init.js</code> in your source code folder.</li>
+                <li>Paste your keys into the configuration section.</li>
+            </ol>
+<pre><code>// firebase-init.js
+const firebaseConfig = {
+    apiKey: "AIzaSyD-Your-API-Key-Here",
+    authDomain: "your-project.firebaseapp.com",
+    projectId: "your-project-id",
+    storageBucket: "your-project.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abc..."
+};</code></pre>
+        </section>
+
+        <section id="domain">
+            <h2>Step 3: Domain Whitelist (CRITICAL) ⚠️</h2>
+            <div class="note">
+                <strong>STOP!</strong> If you skip this, Google Login will fail with an error: <code>auth/unauthorized-domain</code>.
+            </div>
+            <p>Google blocks sign-ins from unknown websites for security. You must authorize your website domain.</p>
+            <ol>
+                <li>Go to <strong>Firebase Console > Authentication > Settings</strong> tab.</li>
+                <li>Click on <strong>Authorized Domains</strong>.</li>
+                <li>Click <strong>Add Domain</strong>.</li>
+                <li>Enter your live website URL (e.g., <code>my-gym-app.netlify.app</code> or <code>syedsubhani.in</code>).</li>
+                <li>Click <strong>Add</strong>.</li>
+            </ol>
+            <p><em>(Note: <code>localhost</code> is allowed by default for testing).</em></p>
+        </section>
+
+        <section id="members">
+            <h2>Managing Members</h2>
+            <p>Click the <strong>+ New Member</strong> button on the dashboard to add clients.</p>
+            <ul>
+                <li><strong>Photo:</strong> Upload a photo for easier identification.</li>
+                <li><strong>Plan:</strong> Select duration (1 Month to 1 Year). Expiry is calculated automatically.</li>
+                <li><strong>Phone:</strong> Enter a valid 10-digit number for WhatsApp integration.</li>
+            </ul>
+        </section>
+
+        <section id="attendance">
+            <h2>Attendance System</h2>
+            <p>Track daily gym visits.</p>
+            <ul>
+                <li><strong>Mark In:</strong> Click the gray <i class="fa-solid fa-clipboard-check"></i> icon. It turns Green.</li>
+                <li><strong>Revoke:</strong> Click the green icon again to remove attendance for today (undo).</li>
+                <li><strong>History:</strong> Click the Clock icon <i class="fa-solid fa-clock-rotate-left"></i> to see the full list of dates attended.</li>
+            </ul>
+        </section>
+
+        <section id="fitness">
+            <h2>Fitness & Workouts</h2>
+            <p>Navigate to the <strong>Fitness / BMI</strong> tab.</p>
+            <ul>
+                <li><strong>BMI Tracking:</strong> Enter Weight (kg). Height is set once during registration. The system tracks weight loss/gain progress.</li>
+                <li><strong>Workout Plan:</strong> Use the text area to assign a weekly schedule (e.g., "Mon: Chest, Tue: Back"). This saves to the member's profile.</li>
+            </ul>
+        </section>
+
+        <section id="finance">
+            <h2>Finance & Billing</h2>
+            <p>The app automatically tracks income when you add members or renew plans.</p>
+            <ul>
+                <li><strong>Manual Entry:</strong> Use "Add Entry" for expenses like Rent or Electricity.</li>
+                <li><strong>Invoices:</strong> Click the <i class="fa-solid fa-file-invoice"></i> icon to generate a PDF receipt.</li>
+                <li><strong>Export:</strong> Use the <strong>Data IO</strong> tab to download CSV reports for Excel.</li>
+            </ul>
+        </section>
+
+        <section id="faq">
+            <h2>FAQ & Troubleshooting</h2>
+            
+            <h3>Is my data safe?</h3>
+            <p>Yes. Data is stored in Google Cloud. Only the logged-in owner can access their specific gym's data due to the Security Rules we set up in Step 1.</p>
+
+            <h3>How do I reset the app?</h3>
+            <p>To clear local cache, simply log out and log back in. To delete data permanently, go to your Firebase Console > Firestore and delete the `gyms` collection.</p>
+
+            <h3>Can I use this offline?</h3>
+            <p>This is a cloud-based app. You need an internet connection to load and save data securely.</p>
+        </section>
+
+        <footer style="margin-top: 50px; border-top: 1px solid var(--border); padding-top: 20px; font-size: 0.9rem; color: #666;">
+            &copy; 2026 Syed Subhani. All rights reserved.
+        </footer>
+    </main>
+
+</body>
+</html>
