@@ -27,6 +27,8 @@
         pre { background: #000; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
         pre code { background: transparent; padding: 0; color: #facc15; }
         .note { background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent); padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge-new { background: #22c55e; color: #000; }
         .step { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
         .step-num { background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
         
@@ -44,52 +46,48 @@
         <div class="menu">
             <h4>Getting Started</h4>
             <a href="#intro" class="active">Introduction</a>
-            <a href="#firebase">Step 1: Firebase Setup</a>
-            <a href="#connect">Step 2: Connect App</a>
-            <a href="#domain">Step 3: Domain Whitelist</a>
+            <a href="#setup">Setup Guide</a>
+            <a href="#demo">Demo Mode</a>
             
-            <h4>Features Guide</h4>
+            <h4>Features</h4>
+            <a href="#offline">Offline Mode (PWA)</a>
             <a href="#members">Managing Members</a>
-            <a href="#attendance">Attendance & Logs</a>
-            <a href="#fitness">Fitness & Workouts</a>
+            <a href="#attendance">Attendance System</a>
             <a href="#finance">Finance & Billing</a>
             
             <h4>Support</h4>
-            <a href="#faq">FAQ & Troubleshooting</a>
+            <a href="#faq">FAQ & Errors</a>
         </div>
     </nav>
 
     <main>
         <section id="intro">
             <h1>Documentation</h1>
-            <p>Thank you for purchasing <strong>The Ultimate Gym 2.0</strong>! This guide will help you launch your own Gym Management SaaS in minutes.</p>
+            <p>Welcome to <strong>The Ultimate Gym 2.0</strong>. A complete, offline-capable Gym Management System powered by Google Firebase.</p>
             <div class="note">
-                <strong>✅ Serverless:</strong> This app runs entirely on Google Firebase (Free Tier). You do not need PHP, MySQL, or expensive hosting.
+                <strong>New in v2.0:</strong> Offline Support, Attendance History, Duplicate Protection, and Demo Mode.
             </div>
         </section>
 
-        <section id="firebase">
-            <h2>Step 1: Firebase Setup</h2>
-            <p>We use Google Firebase to store data securely. Follow these steps to create your free database.</p>
+        <section id="setup">
+            <h2>Firebase Setup Guide</h2>
+            <p>Follow these steps to connect your own database.</p>
 
             <div class="step">
                 <div class="step-num">1</div>
                 <div>
                     <h3>Create Project</h3>
-                    <p>Go to the <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--accent)">Firebase Console</a> and click <strong>Add Project</strong>. Name it (e.g., "MyGymApp") and disable Google Analytics for a simpler setup.</p>
+                    <p>Go to <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--accent)">Firebase Console</a> > <strong>Add Project</strong>. Disable Analytics for faster setup.</p>
                 </div>
             </div>
 
             <div class="step">
                 <div class="step-num">2</div>
                 <div>
-                    <h3>Enable Authentication</h3>
-                    <p>On the left sidebar, go to <strong>Build > Authentication</strong>.</p>
+                    <h3>Enable Auth & Database</h3>
                     <ul>
-                        <li>Click <strong>Get Started</strong>.</li>
-                        <li>Select <strong>Google</strong> from the Sign-in providers list.</li>
-                        <li>Toggle the switch to <strong>Enable</strong>.</li>
-                        <li>Select your support email and click <strong>Save</strong>.</li>
+                        <li><strong>Authentication:</strong> Enable "Google" Sign-in provider.</li>
+                        <li><strong>Firestore Database:</strong> Create database in "Production Mode".</li>
                     </ul>
                 </div>
             </div>
@@ -97,125 +95,92 @@
             <div class="step">
                 <div class="step-num">3</div>
                 <div>
-                    <h3>Create Database</h3>
-                    <p>On the left sidebar, go to <strong>Build > Firestore Database</strong>.</p>
-                    <ul>
-                        <li>Click <strong>Create Database</strong>.</li>
-                        <li>Choose <strong>Start in Production Mode</strong>.</li>
-                        <li>Select a location close to you (e.g., <code>asia-south1</code> for India) and click <strong>Enable</strong>.</li>
-                    </ul>
+                    <h3>Set Security Rules</h3>
+                    <p>Copy these rules into Firestore > Rules tab to keep data private per owner:</p>
+<pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /gyms/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}</code></pre>
                 </div>
             </div>
 
             <div class="step">
                 <div class="step-num">4</div>
                 <div>
-                    <h3>Set Security Rules</h3>
-                    <p>Go to the <strong>Rules</strong> tab inside Firestore Database. Delete everything and paste this code. This ensures each gym owner can only see THEIR own data.</p>
-<pre><code>rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    
-    // Allow users to read/write only their own gym data
-    match /gyms/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-  }
-}</code></pre>
-                    <p>Click <strong>Publish</strong>.</p>
+                    <h3>Connect Code</h3>
+                    <p>Go to Project Settings > General > Your Apps > Web (&lt;/&gt;). Copy the `firebaseConfig` keys and paste them into <code>firebase-init.js</code>.</p>
                 </div>
             </div>
         </section>
 
-        <section id="connect">
-            <h2>Step 2: Connect the App</h2>
-            <p>Now link your code to the database you just created.</p>
-            <ol>
-                <li>In Firebase Console, click the <strong>Gear Icon ⚙️</strong> (Project Settings).</li>
-                <li>Scroll down to "Your Apps" and click the <strong>Web ( &lt;/&gt; )</strong> icon.</li>
-                <li>Register the app (enter any nickname).</li>
-                <li>You will see a <code>firebaseConfig</code> code block. Copy only the values inside the braces.</li>
-                <li>Open the file <code>firebase-init.js</code> in your source code folder.</li>
-                <li>Paste your keys into the configuration section.</li>
-            </ol>
-<pre><code>// firebase-init.js
-const firebaseConfig = {
-    apiKey: "AIzaSyD-Your-API-Key-Here",
-    authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abc..."
-};</code></pre>
+        <section id="demo">
+            <h2>Demo Mode <span class="badge badge-new">New</span></h2>
+            <p>You can verify the app features without logging in or setting up a database.</p>
+            <ul>
+                <li>Click the <strong><i class="fa-solid fa-gamepad"></i> Try Demo Mode</strong> button on the login screen.</li>
+                <li>The app loads with sample members and transactions.</li>
+                <li><strong>Note:</strong> Data changes in Demo Mode are temporary and will vanish on refresh.</li>
+            </ul>
         </section>
 
-        <section id="domain">
-            <h2>Step 3: Domain Whitelist (CRITICAL) ⚠️</h2>
+        <section id="offline">
+            <h2>Offline Mode & PWA <span class="badge badge-new">New</span></h2>
+            <p>This app works even without an internet connection.</p>
+            <ul>
+                <li><strong>Adding Members:</strong> You can add members offline. They will sync to the cloud automatically when you reconnect.</li>
+                <li><strong>Attendance:</strong> Mark attendance offline. The data is stored locally.</li>
+                <li><strong>Installation:</strong> You can install this app on your phone/desktop. Look for the "Install App" or "Add to Home Screen" option in your browser menu.</li>
+            </ul>
             <div class="note">
-                <strong>STOP!</strong> If you skip this, Google Login will fail with an error: <code>auth/unauthorized-domain</code>.
+                <strong>Limitation:</strong> You cannot generate PDF Invoices while offline. The button will be disabled to prevent errors.
             </div>
-            <p>Google blocks sign-ins from unknown websites for security. You must authorize your website domain.</p>
-            <ol>
-                <li>Go to <strong>Firebase Console > Authentication > Settings</strong> tab.</li>
-                <li>Click on <strong>Authorized Domains</strong>.</li>
-                <li>Click <strong>Add Domain</strong>.</li>
-                <li>Enter your live website URL (e.g., <code>my-gym-app.netlify.app</code> or <code>syedsubhani.in</code>).</li>
-                <li>Click <strong>Add</strong>.</li>
-            </ol>
-            <p><em>(Note: <code>localhost</code> is allowed by default for testing).</em></p>
         </section>
 
         <section id="members">
             <h2>Managing Members</h2>
-            <p>Click the <strong>+ New Member</strong> button on the dashboard to add clients.</p>
-            <ul>
-                <li><strong>Photo:</strong> Upload a photo for easier identification.</li>
-                <li><strong>Plan:</strong> Select duration (1 Month to 1 Year). Expiry is calculated automatically.</li>
-                <li><strong>Phone:</strong> Enter a valid 10-digit number for WhatsApp integration.</li>
-            </ul>
+            <h3>Duplicate Protection</h3>
+            <p>The system prevents you from adding the same person twice. It checks:</p>
+            <ol>
+                <li><strong>Member ID:</strong> If <code>GYMRAMU1234</code> exists.</li>
+                <li><strong>Phone Number:</strong> If the phone number is already registered to another name.</li>
+            </ol>
+            <p>If a collision happens (two people with same name & phone end digits), the system automatically adds a unique suffix.</p>
         </section>
 
         <section id="attendance">
             <h2>Attendance System</h2>
-            <p>Track daily gym visits.</p>
+            <p>A smart toggle system to track visits.</p>
             <ul>
-                <li><strong>Mark In:</strong> Click the gray <i class="fa-solid fa-clipboard-check"></i> icon. It turns Green.</li>
-                <li><strong>Revoke:</strong> Click the green icon again to remove attendance for today (undo).</li>
-                <li><strong>History:</strong> Click the Clock icon <i class="fa-solid fa-clock-rotate-left"></i> to see the full list of dates attended.</li>
-            </ul>
-        </section>
-
-        <section id="fitness">
-            <h2>Fitness & Workouts</h2>
-            <p>Navigate to the <strong>Fitness / BMI</strong> tab.</p>
-            <ul>
-                <li><strong>BMI Tracking:</strong> Enter Weight (kg). Height is set once during registration. The system tracks weight loss/gain progress.</li>
-                <li><strong>Workout Plan:</strong> Use the text area to assign a weekly schedule (e.g., "Mon: Chest, Tue: Back"). This saves to the member's profile.</li>
+                <li><strong>Mark Present:</strong> Click the gray <i class="fa-solid fa-clipboard-check"></i> icon. It turns Green.</li>
+                <li><strong>Revoke (Undo):</strong> Click the green icon again to remove attendance for today.</li>
+                <li><strong>History Log:</strong> Click the Clock icon <i class="fa-solid fa-clock-rotate-left"></i>. A panel will slide down showing every date the member was present.</li>
             </ul>
         </section>
 
         <section id="finance">
             <h2>Finance & Billing</h2>
-            <p>The app automatically tracks income when you add members or renew plans.</p>
             <ul>
-                <li><strong>Manual Entry:</strong> Use "Add Entry" for expenses like Rent or Electricity.</li>
-                <li><strong>Invoices:</strong> Click the <i class="fa-solid fa-file-invoice"></i> icon to generate a PDF receipt.</li>
-                <li><strong>Export:</strong> Use the <strong>Data IO</strong> tab to download CSV reports for Excel.</li>
+                <li><strong>Automatic Recording:</strong> Income is recorded automatically when you add a member or renew a plan.</li>
+                <li><strong>Safe Invoice:</strong> Clicking the <i class="fa-solid fa-file-invoice"></i> icon generates a PDF receipt.</li>
+                <li><strong>History:</strong> View past payments in the History Panel (Clock Icon).</li>
             </ul>
         </section>
 
         <section id="faq">
             <h2>FAQ & Troubleshooting</h2>
             
-            <h3>Is my data safe?</h3>
-            <p>Yes. Data is stored in Google Cloud. Only the logged-in owner can access their specific gym's data due to the Security Rules we set up in Step 1.</p>
+            <h3>Error: "Domain not authorized"</h3>
+            <p>Go to Firebase Console > Authentication > Settings > Authorized Domains. Add your website URL (e.g., <code>syedsubhani.in</code>).</p>
 
-            <h3>How do I reset the app?</h3>
-            <p>To clear local cache, simply log out and log back in. To delete data permanently, go to your Firebase Console > Firestore and delete the `gyms` collection.</p>
+            <h3>Why can't I generate invoices?</h3>
+            <p>If you are offline, the PDF generator cannot load. Connect to Wi-Fi and try again.</p>
 
-            <h3>Can I use this offline?</h3>
-            <p>This is a cloud-based app. You need an internet connection to load and save data securely.</p>
+            <h3>How do I backup my data?</h3>
+            <p>Go to the <strong>Data IO</strong> tab and click "Export Members". This downloads a CSV file you can open in Excel.</p>
         </section>
 
         <footer style="margin-top: 50px; border-top: 1px solid var(--border); padding-top: 20px; font-size: 0.9rem; color: #666;">
