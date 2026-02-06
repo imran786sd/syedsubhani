@@ -12,7 +12,40 @@ let ageCategoryChartInstance = null;
 let ageStatusChartInstance = null;
 let memberFilterState = 'active';
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
-let selectedFitnessMember = null; 
+let selectedFitnessMember = null;
+window.isDemoMode = false; // <--- NEW: Demo Flag
+
+// --- DEMO MODE LOGIC (Added Here) ---
+window.startDemoMode = () => {
+    window.isDemoMode = true;
+    currentUser = { uid: "demo-user", displayName: "Demo Gym Owner" };
+    
+    document.getElementById("auth-wrapper").style.display = "none";
+    document.getElementById("app-wrapper").style.display = "flex";
+    
+    // Inject Dummy Data
+    members = [
+        { id: '1', name: 'Rahul Sharma', phone: '9876543210', gender: 'Male', planDuration: '1y', joinDate: '2023-01-01', expiryDate: '2024-01-01', lastPaidAmount: 12000, memberId: 'GYMRAHU001', attendance: ['2023-10-25', '2023-10-26'], photo: null, fitnessStats: { currentWeight: 75, startHeight: 175 } },
+        { id: '2', name: 'Priya Singh', phone: '9988776655', gender: 'Female', planDuration: '3m', joinDate: '2023-09-01', expiryDate: '2023-10-01', lastPaidAmount: 4500, memberId: 'GYMPRIY002', attendance: [], photo: null, fitnessStats: { currentWeight: 60, startHeight: 165 } }
+    ];
+    
+    transactions = [
+        { id: 't1', type: 'income', category: 'Membership Fees', amount: 12000, date: '2023-01-01', mode: 'UPI' },
+        { id: 't2', type: 'expense', category: 'Rent', amount: 15000, date: '2023-10-01', mode: 'Cash' }
+    ];
+
+    initApp();
+    
+    // Manually render views since Firebase listeners are off
+    renderDashboard();
+    renderOverview(); 
+    renderMembersList();
+    renderAgeCharts();
+    renderFitnessList();
+    renderFinanceList();
+
+    alert("🔹 Demo Mode Active\nChanges here will NOT be saved to the database.");
+};
 
 // --- HELPER FUNCTIONS ---
 const compressImage = (file) => {
@@ -100,6 +133,8 @@ window.handleGoogleLogin = async () => { try { await signInWithPopup(auth, provi
 window.handleLogout = () => signOut(auth);
 
 onAuthStateChanged(auth, (user) => {
+    if (window.isDemoMode) return; // Ignore Firebase state in Demo Mode
+
     if (user) {
         currentUser = user;
         document.getElementById("auth-wrapper").style.display = "none";
@@ -161,6 +196,13 @@ window.setTheme = (color) => {
 }
 
 function setupListeners() {
+    // START FIX: Disable listeners in Demo Mode
+    if (window.isDemoMode) {
+        console.log("Demo Mode: Firebase listeners disabled.");
+        return; 
+    }
+    // END FIX
+
     const memRef = collection(db, `gyms/${currentUser.uid}/members`);
     onSnapshot(query(memRef, orderBy("joinDate", "desc")), (snap) => {
         members = snap.docs.map(d => ({id:d.id, ...d.data()}));
@@ -204,6 +246,8 @@ window.sendWhatsApp = (phone, name, type, extraData) => {
 
 // 2. Attendance Logic (Updated: Toggle/Revoke)
 window.markAttendance = async (id) => {
+    if (window.isDemoMode) return alert("Feature disabled in Demo Mode."); // Demo Check
+
     const m = members.find(x => x.id === id);
     if(!m) return;
     
@@ -308,6 +352,7 @@ window.closeFitnessModal = () => {
 
 window.saveFitnessData = async () => {
     if(!selectedFitnessMember) return;
+    if (window.isDemoMode) return alert("Saving disabled in Demo Mode.");
     
     // BIOLOGY CHECK: We only track weight changes. Height is static.
     const sw = parseFloat(document.getElementById('fit-start-w').value);
@@ -564,6 +609,7 @@ window.importMembers = () => {
 };
 
 async function addFinanceEntry(category, amount, mode, date, memberId, plan, expiry) {
+    if (window.isDemoMode) return;
     try {
         await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
             type: 'income',
@@ -869,6 +915,9 @@ function renderAgeCharts() {
 }
 
 window.saveMember = async () => {
+    // --- DEMO MODE CHECK ---
+    if (window.isDemoMode) return alert("Saving is disabled in Demo Mode.");
+
     const name = document.getElementById('inp-name').value.trim();
     const gender = document.getElementById('inp-gender').value;
     const phone = document.getElementById('inp-phone').value.trim();
@@ -963,13 +1012,17 @@ window.saveMember = async () => {
 
             // 5. INVOICE GENERATION (Safety Block)
             // If this crashes offline, it won't break the app because modal is already closed
-            if(confirm("Member Added! Generate Invoice?")) {
-                try {
-                    window.generateInvoice(data);
-                } catch(err) {
-                    console.error(err);
-                    alert("Could not generate PDF. You might be offline and the PDF library isn't cached.");
+            if (window.jspdf) {
+                if(confirm("Member Added! Generate Invoice?")) {
+                    try {
+                        window.generateInvoice(data);
+                    } catch(err) {
+                        console.error(err);
+                        alert("Could not generate PDF. You might be offline and the PDF library isn't cached.");
+                    }
                 }
+            } else {
+                alert("Member added! (Invoice skipped - Offline mode)");
             }
             return; // Exit function
         }
@@ -998,6 +1051,8 @@ window.closeRenewModal = () => {
 };
 
 window.confirmRenewal = async () => {
+    if (window.isDemoMode) return alert("Disabled in Demo Mode.");
+
     const id = document.getElementById('renew-id').value;
     const plan = document.getElementById('renew-plan').value;
     const amount = document.getElementById('renew-amount').value;
@@ -1057,6 +1112,11 @@ window.toggleHistory = async (id) => {
             </div>`;
     } else {
         attendanceHTML = `<div style="margin-bottom:15px; color:#666; font-size:0.8rem;">No attendance records found.</div>`;
+    }
+
+    if (window.isDemoMode) {
+        panel.innerHTML = attendanceHTML + '<div style="color:#888; font-size:0.8rem;">Transactions hidden in demo.</div>';
+        return;
     }
 
     panel.innerHTML = attendanceHTML + '<div style="color:#888; font-size:0.8rem;">Loading Payments...</div>';
@@ -1261,9 +1321,13 @@ window.editMember = (id) => {
     document.getElementById('modal-member').style.display = 'flex';
 };
 
-window.deleteMember = async (id) => { if(confirm("Delete member?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/members`, id)); };
+window.deleteMember = async (id) => { 
+    if(window.isDemoMode) return alert("Deleting is disabled in Demo Mode.");
+    if(confirm("Delete member?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/members`, id)); 
+};
 
 window.saveTransaction = async () => {
+    if(window.isDemoMode) return alert("Saving is disabled in Demo Mode.");
     const type = document.getElementById('tx-type').value; 
     const cat = document.getElementById('tx-category').value; 
     const mode = document.getElementById('tx-paymode').value;
@@ -1283,7 +1347,10 @@ window.editTransaction = (id) => {
     document.getElementById('modal-transaction').style.display = 'flex';
 };
 
-window.deleteTransaction = async (id) => { if(confirm("Delete transaction?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id)); };
+window.deleteTransaction = async (id) => { 
+    if(window.isDemoMode) return alert("Deleting is disabled in Demo Mode.");
+    if(confirm("Delete transaction?")) await deleteDoc(doc(db, `gyms/${currentUser.uid}/transactions`, id)); 
+};
 
 // --- RENDER MEMBERS (With Blue Badge & Revoke Logic) ---
 function renderMembersList() {
