@@ -8,7 +8,10 @@ const ASSETS = [
   "./firebase-init.js",
   "./documentation.html",
   "./logo.png",
-  // Add any other local images you use
+  // PDF Libraries (REQUIRED for Offline Invoices)
+  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js",
+  // Fonts
   "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css", 
   "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap"
 ];
