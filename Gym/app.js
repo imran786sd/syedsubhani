@@ -869,9 +869,9 @@ function renderAgeCharts() {
 }
 
 window.saveMember = async () => {
-    const name = document.getElementById('inp-name').value;
+    const name = document.getElementById('inp-name').value.trim();
     const gender = document.getElementById('inp-gender').value;
-    const phone = document.getElementById('inp-phone').value;
+    const phone = document.getElementById('inp-phone').value.trim();
     const amount = document.getElementById('inp-amount').value;
     const dob = document.getElementById('inp-dob').value;
     const joinDate = document.getElementById('inp-join').value;
@@ -882,7 +882,21 @@ window.saveMember = async () => {
     const fileInput = document.getElementById('inp-file');
     const file = fileInput.files ? fileInput.files[0] : null;
     
-    if(!name || !amount || !dob || !joinDate) return alert("Please fill Name, Fees, Join Date and DOB");
+    if(!name || !amount || !dob || !joinDate || !phone) return alert("Please fill Name, Phone, Fees, Join Date and DOB");
+
+    // 1. Generate ID Early to Check for Duplicates
+    const generatedMemberId = window.generateMemberID(name, phone);
+
+    // 2. CHECK FOR DUPLICATES (Only if adding new)
+    if (!editingMemberId) {
+        const q = query(collection(db, `gyms/${currentUser.uid}/members`), where("memberId", "==", generatedMemberId));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+            alert(`STOP: A member with ID "${generatedMemberId}" already exists! \nCheck the Member List for ${name} (${phone}).`);
+            return; // STOP HERE
+        }
+    }
 
     let photoUrl = null;
     try {
@@ -909,15 +923,22 @@ window.saveMember = async () => {
 
     try {
         if(editingMemberId) {
+            // Update Existing
             await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, editingMemberId), data);
             editingMemberId = null;
+            alert("Member updated successfully!");
         } else {
+            // Add New
             data.createdAt = new Date();
-            data.memberId = window.generateMemberID(name, phone);
-            data.attendance = []; // New members get empty attendance
+            data.memberId = generatedMemberId; // Use the checked ID
+            data.attendance = []; 
+            
             const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
+            
+            // Add Income Transaction
             await addFinanceEntry(`New Membership - ${data.name}`, amount, payMode, joinDate, docRef.id, planDuration, expiryDate);
-            if(confirm("Generate Invoice?")) window.generateInvoice(data);
+            
+            if(confirm("Member Added! Generate Invoice?")) window.generateInvoice(data);
         }
         window.toggleMemberModal();
         fileInput.value = ""; 
