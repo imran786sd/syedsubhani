@@ -1,5 +1,11 @@
-// firebase-init.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    signOut, 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { 
     getFirestore, 
     collection, 
@@ -11,40 +17,54 @@ import {
     deleteDoc, 
     updateDoc, 
     where, 
-    getDocs,
-    enableIndexedDbPersistence // <--- NEW IMPORT
+    getDocs, 
+    getDoc,
+    enableIndexedDbPersistence // <--- REQUIRED FOR OFFLINE MODE
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { 
-    getAuth, 
-    GoogleAuthProvider, 
-    signInWithPopup, 
-    signOut, 
-    onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// YOUR CONFIG HERE (Paste from your console)
+// --- YOUR CONFIGURATION (Hardcoded for stability) ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "123...",
-    appId: "1:123..."
+    apiKey: "AIzaSyDaR4pZPQ7fD68KHmjvH1oxwgseW83ncvA",
+    authDomain: "the-ultimate-gym-2.firebaseapp.com",
+    projectId: "the-ultimate-gym-2",
+    storageBucket: "the-ultimate-gym-2.firebasestorage.app",
+    messagingSenderId: "836314437510",
+    appId: "1:836314437510:web:aa0066307393e250b6be07"
 };
 
+// Initialize App
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// --- ENABLE OFFLINE PERSISTENCE (THE MAGIC LINE) ---
+// --- ENABLE OFFLINE PERSISTENCE ---
+// This allows the app to load data even without Wi-Fi
 enableIndexedDbPersistence(db)
   .catch((err) => {
       if (err.code == 'failed-precondition') {
-          console.log('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
+          console.log('Persistence failed: Multiple tabs open.');
       } else if (err.code == 'unimplemented') {
-          console.log('The current browser does not support all of the features required to enable persistence');
+          console.log('Persistence not supported by this browser.');
       }
   });
 
-export { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, query, onSnapshot, orderBy, doc, deleteDoc, updateDoc, where, getDocs };
+export { 
+    auth, 
+    db, 
+    provider, 
+    signInWithPopup, 
+    signOut, 
+    onAuthStateChanged, 
+    collection, 
+    addDoc, 
+    query, 
+    onSnapshot, 
+    orderBy, 
+    doc, 
+    deleteDoc, 
+    updateDoc, 
+    where, 
+    getDocs, 
+    getDoc 
+};
