@@ -1,11 +1,5 @@
+// firebase-init.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
-    getAuth, 
-    GoogleAuthProvider, 
-    signInWithPopup, 
-    signOut, 
-    onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { 
     getFirestore, 
     collection, 
@@ -16,37 +10,41 @@ import {
     doc, 
     deleteDoc, 
     updateDoc, 
-    where,     // <--- These were missing in your exports
-    getDocs,   // <--- These were missing in your exports
-    getDoc
+    where, 
+    getDocs,
+    enableIndexedDbPersistence // <--- NEW IMPORT
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// Check if config exists
-if (!window.firebaseConfig) {
-    console.error("CRITICAL ERROR: config.js is missing or not linked in index.html!");
-}
-
-const app = initializeApp(window.firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-
-export { 
-    auth, 
-    db, 
-    provider, 
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
     signInWithPopup, 
     signOut, 
-    onAuthStateChanged, 
-    collection, 
-    addDoc, 
-    query, 
-    onSnapshot, 
-    orderBy, 
-    doc, 
-    deleteDoc, 
-    updateDoc, 
-    where,    // Exporting these now
-    getDocs,  // Exporting these now
-    getDoc 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// YOUR CONFIG HERE (Paste from your console)
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "123...",
+    appId: "1:123..."
 };
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// --- ENABLE OFFLINE PERSISTENCE (THE MAGIC LINE) ---
+enableIndexedDbPersistence(db)
+  .catch((err) => {
+      if (err.code == 'failed-precondition') {
+          console.log('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
+      } else if (err.code == 'unimplemented') {
+          console.log('The current browser does not support all of the features required to enable persistence');
+      }
+  });
+
+export { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, query, onSnapshot, orderBy, doc, deleteDoc, updateDoc, where, getDocs };
