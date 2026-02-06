@@ -144,30 +144,3 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator { filter: 
 body.light-mode select option { background-color: #ffffff; color: #000000; }
 body.light-mode ::placeholder { color: #666 !important; opacity: 1; }
 body.light-mode label { color: #333 !important; font-weight: 600; }
-
-/* --- NEW FEATURE FIXES (APPENDED) --- */
-/* Fix Invisible Window (Scrollbar) */
-.modal-box { max-height: 90vh; overflow-y: auto; }
-
-/* Make Workout Plan Textarea Visible */
-#fit-workout {
-    width: 100%;
-    margin-top: 15px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--card-light); /* Use theme color */
-    color: var(--text);            /* Use theme text */
-    font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
-    resize: vertical;
-    min-height: 100px;
-    display: block !important;     /* Force visibility */
-}
-#fit-workout:focus { border-color: var(--accent); outline: none; }
-
-/* Ensure Attendance Icon is Visible */
-.icon-btn i.fa-clipboard-check {
-    font-size: 1.1rem;
-    /* Color is handled inline by JS, but this ensures size/alignment */
-}
