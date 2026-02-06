@@ -1213,7 +1213,9 @@ function renderMembersList() {
     members.forEach(m => {
         const expDate = new Date(m.expiryDate);
         const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-        let statusClass = 'status-paid'; let statusText = 'Paid';
+        
+        let statusClass = 'status-paid'; 
+        let statusText = 'Paid';
         if (daysLeft < 0) { statusClass = 'status-due'; statusText = 'Expired'; }
         else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due: ${daysLeft} days`; }
 
@@ -1225,16 +1227,19 @@ function renderMembersList() {
         if(m.gender === 'Male') genderIcon = '<i class="fa-solid fa-mars" style="color:#60a5fa; margin-left:5px;"></i>';
         else if(m.gender === 'Female') genderIcon = '<i class="fa-solid fa-venus" style="color:#f472b6; margin-left:5px;"></i>';
 
-        // Check Attendance
-        const isPresent = m.attendance && m.attendance.includes(todayStr);
-        // Darker grey #666 for better visibility when not present
+        // --- ATTENDANCE LOGIC ---
+        const attendanceList = m.attendance || [];
+        const totalDays = attendanceList.length; // COUNT THE DAYS
+        const isPresent = attendanceList.includes(todayStr);
+        
         const attendColor = isPresent ? '#22c55e' : '#666'; 
-        const attendText = isPresent ? 'Present' : 'Mark In';
+        const attendText = isPresent ? 'Present Today' : 'Mark Present';
 
         list.innerHTML += `
         <div class="member-row">
             <i class="fa-solid fa-ellipsis-vertical mobile-kebab-btn" onclick="toggleRowAction('${m.id}')"></i>
             <div class="profile-img-container"><img src="${photoUrl}" class="profile-circle" onclick="editMember('${m.id}')"></div>
+            
             <div class="info-block">
                 <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
                 <div class="name-phone-row">
@@ -1242,13 +1247,24 @@ function renderMembersList() {
                     <span style="font-weight:400; font-size:0.8rem; color:#888; margin-left:8px;">${m.phone}</span>
                 </div>
             </div>
+
             <div class="info-block">
                 <div class="info-main" style="color:${daysLeft<0?'#ef4444':'inherit'}">Exp: ${m.expiryDate}</div>
                 <div class="info-sub">${planDisplay} Plan</div>
             </div>
-            <div><span class="status-badge ${statusClass}">${statusText}</span></div>
+
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <span class="status-badge ${statusClass}">${statusText}</span>
+                <span style="font-size:0.7rem; color:#888; background:#222; padding:2px 6px; border-radius:4px; text-align:center;">
+                    <i class="fa-solid fa-dumbbell" style="margin-right:4px;"></i> ${totalDays} Days
+                </span>
+            </div>
+
             <div class="row-actions" id="actions-${m.id}">
-                <div class="icon-btn" onclick="markAttendance('${m.id}')" title="${attendText}" style="color:${attendColor}; font-weight:bold; font-size:1.1rem;"><i class="fa-solid fa-clipboard-check"></i></div>
+                <div class="icon-btn" onclick="markAttendance('${m.id}')" title="${attendText}" style="color:${attendColor}; font-weight:bold; font-size:1.1rem;">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
                 <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
                 <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
