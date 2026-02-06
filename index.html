@@ -44,7 +44,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 60px;
-            padding: 0 30px; /* Reduced padding because height is handled by flex */
+            padding: 0 30px;
             height: 80px;
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
@@ -79,7 +79,7 @@
         .dropdown-content {
             display: none;
             position: absolute;
-            top: 70px; /* Pushes it below the nav bar */
+            top: 70px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.9);
@@ -109,13 +109,9 @@
             color: var(--primary);
         }
 
-        /* Show Dropdown on Hover */
         .dropdown:hover .dropdown-content { display: block; }
-
-        /* Icon rotation on hover */
         .dropdown:hover .fa-angle-down { transform: rotate(180deg); }
         .fa-angle-down { transition: transform 0.2s; font-size: 0.8rem; margin-left: 5px; }
-
 
         /* --- PROFILE SECTION --- */
         .profile-card {
@@ -127,7 +123,7 @@
             text-align: center;
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
             margin-bottom: 50px;
-            position: relative; z-index: 1; /* Ensure it stays behind nav dropdown */
+            position: relative; z-index: 1;
         }
 
         .profile-img {
@@ -142,16 +138,25 @@
         /* --- PROJECTS GRID --- */
         .section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 30px; padding-left: 10px; border-left: 5px solid var(--primary); }
         .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        
         .project-card {
             text-decoration: none; color: inherit; background: rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 20px;
             overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column;
         }
         .project-card:hover { transform: translateY(-10px); background: rgba(255, 255, 255, 0.6); box-shadow: 0 15px 35px rgba(99, 102, 241, 0.25); }
+        
         .card-preview { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 4rem; color: white; }
+        
+        /* CARD BACKGROUNDS */
         .bg-sunburst { background: linear-gradient(45deg, #a18cd1 0%, #fbc2eb 100%); }
         .bg-donut { background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%); }
         .bg-pyramid { background: linear-gradient(to top, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); }
+        
+        /* NEW: Budget & Gym Backgrounds */
+        .bg-budget { background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%); }
+        .bg-gym { background: linear-gradient(120deg, #89f7fe 0%, #66a6ff 100%); }
+
         .card-info { padding: 25px; flex-grow: 1; display: flex; flex-direction: column; }
         .card-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
         .card-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; flex-grow: 1; }
@@ -165,26 +170,21 @@
             .nav-links { flex-direction: column; width: 100%; height: auto; gap: 5px; }
             .nav-links > a { margin: 0; padding: 10px; width: 100%; text-align: center; }
             
-            /* Mobile Dropdown Logic */
-            .dropdown { 
-                margin: 0; width: 100%; flex-direction: column; 
-            }
+            .dropdown { margin: 0; width: 100%; flex-direction: column; }
             .dropbtn { width: 100%; text-align: center; display: block; }
             
             .dropdown-content {
-                position: static; /* Stack naturally on mobile */
+                position: static; 
                 transform: none;
                 width: 100%;
                 min-width: 100%;
                 box-shadow: none;
-                background: rgba(255,255,255,0.1); /* Subtle highlight */
+                background: rgba(255,255,255,0.1);
                 margin-top: 5px;
                 border: none;
-                display: none; /* Keep hidden until hover/active */
+                display: none;
             }
             
-            /* On mobile, usually "hover" requires a tap. 
-               This keeps the menu accessible without JavaScript toggles. */
             .dropdown:hover .dropdown-content { display: block; }
             .dropdown-content a { text-align: center; padding: 10px; }
             
@@ -216,7 +216,8 @@
         </nav>
 
         <section class="profile-card">
-<img src="syed-profile.jpg" alt="Syed" class="profile-img">
+            <img src="syed-profile.jpg" alt="Syed Subhani" class="profile-img" onerror="this.src='https://via.placeholder.com/150?text=Profile+Pic'">
+            
             <h1 class="profile-name">Syed Subhani</h1>
             <p class="profile-role">Team Lead</p>
             <p class="profile-bio">
@@ -264,6 +265,32 @@
                         <h3 class="card-title">Pyramid & Funnel</h3>
                         <p class="card-desc">
                             Generate area-accurate Pyramids and Sales Funnels with customizable neck widths and layer spacing.
+                        </p>
+                        <span class="btn-launch">Open Tool <i class="fa-solid fa-arrow-right"></i></span>
+                    </div>
+                </a>
+
+                <a href="tracker/" class="project-card" target="_blank">
+                    <div class="card-preview bg-budget">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Budget Tracker</h3>
+                        <p class="card-desc">
+                            A smart financial dashboard to track income, manage expenses, and visualize your savings goals.
+                        </p>
+                        <span class="btn-launch">Open Tool <i class="fa-solid fa-arrow-right"></i></span>
+                    </div>
+                </a>
+
+                <a href="The_Ultimate_Gym_2.0/" class="project-card" target="_blank">
+                    <div class="card-preview bg-gym">
+                        <i class="fa-solid fa-dumbbell"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">The Ultimate Gym 2.0</h3>
+                        <p class="card-desc">
+                            Your personal fitness companion. Log workouts, track sets, and monitor your strength progression.
                         </p>
                         <span class="btn-launch">Open Tool <i class="fa-solid fa-arrow-right"></i></span>
                     </div>
