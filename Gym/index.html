@@ -489,5 +489,16 @@
 
     <script src="config.js"></script>
     <script type="module" src="app.js"></script>
+    <script>
+    // Register Service Worker for Offline Support
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker Registered!', reg.scope))
+                .catch(err => console.log('Service Worker Failed:', err));
+        });
+    }
+</script>
+</body>
 </body>
 </html>
