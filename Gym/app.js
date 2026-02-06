@@ -884,20 +884,52 @@ window.saveMember = async () => {
     
     if(!name || !amount || !dob || !joinDate || !phone) return alert("Please fill Name, Phone, Fees, Join Date and DOB");
 
-    // 1. Generate ID Early to Check for Duplicates
-    const generatedMemberId = window.generateMemberID(name, phone);
+    // 1. Generate the Candidate ID
+    let finalMemberId = window.generateMemberID(name, phone);
 
-    // 2. CHECK FOR DUPLICATES (Only if adding new)
+    // 2. SMART DUPLICATE CHECK (Only if adding new)
     if (!editingMemberId) {
-        const q = query(collection(db, `gyms/${currentUser.uid}/members`), where("memberId", "==", generatedMemberId));
-        const snapshot = await getDocs(q);
+        // Step A: Check if this ID exists
+        const qId = query(collection(db, `gyms/${currentUser.uid}/members`), where("memberId", "==", finalMemberId));
+        const snapId = await getDocs(qId);
         
-        if (!snapshot.empty) {
-            alert(`STOP: A member with ID "${generatedMemberId}" already exists! \nCheck the Member List for ${name} (${phone}).`);
-            return; // STOP HERE
+        if (!snapId.empty) {
+            // ID Collision Found! Now verify if it's actually the same person.
+            let isExactDuplicate = false;
+            
+            snapId.forEach(doc => {
+                const m = doc.data();
+                // Step B & C: Check Phone AND DOB
+                if (m.phone === phone && m.dob === dob) {
+                    isExactDuplicate = true;
+                }
+            });
+
+            if (isExactDuplicate) {
+                alert(`STOP: This member already exists!\n(Same Name, Phone, and DOB found)`);
+                return; // BLOCK SAVING
+            } else {
+                // If ID matches but Phone/DOB is different, it's a "Collision" (Different person).
+                // We append a suffix to make the ID unique.
+                finalMemberId = finalMemberId + "-" + Math.floor(Math.random() * 100);
+            }
+        }
+        
+        // Extra Safety: Check if Phone exists globally (even if ID was different)
+        // This prevents re-adding someone if they changed their name slightly but kept phone.
+        const qPhone = query(collection(db, `gyms/${currentUser.uid}/members`), where("phone", "==", phone));
+        const snapPhone = await getDocs(qPhone);
+        if (!snapPhone.empty) {
+             const existing = snapPhone.docs[0].data();
+             // Only block if DOB also matches (Strict check)
+             if (existing.dob === dob) {
+                 alert(`STOP: Phone number ${phone} is already registered to ${existing.name}!`);
+                 return;
+             }
         }
     }
 
+    // --- PROCEED TO SAVE ---
     let photoUrl = null;
     try {
         if (file) {
@@ -930,7 +962,7 @@ window.saveMember = async () => {
         } else {
             // Add New
             data.createdAt = new Date();
-            data.memberId = generatedMemberId; // Use the checked ID
+            data.memberId = finalMemberId; // Use the verified unique ID
             data.attendance = []; 
             
             const docRef = await addDoc(collection(db, `gyms/${currentUser.uid}/members`), data);
