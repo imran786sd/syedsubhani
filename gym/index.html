@@ -381,24 +381,41 @@
     <label style="font-size:0.8rem; color:#888;">Select Period</label>
     
     <style>
-        .custom-select {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            /* These 3 lines force the dropdown to match your theme */
-            background-color: var(--bg-card); 
-            color: var(--text-main);
-            color-scheme: light dark; 
+        #period-select {
+            /* 1. Strip default browser styling (Fixes the white background issue) */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+
+            /* 2. Force your theme colors */
+            background-color: var(--bg-card) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--border) !important;
+            
+            /* 3. Add Custom Arrow (since we removed the default one) */
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23888888%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px top 50%;
+            background-size: 10px auto;
+            padding-right: 30px; /* Space for arrow */
         }
-        /* Forces the options inside to be dark/light correctly */
-        .custom-select option {
-            background-color: var(--bg-card);
-            color: var(--text-main);
+
+        /* 4. Force Options to be readable in dropdown list */
+        #period-select option {
+            background-color: #1e293b; /* Dark Grey (Fallback) */
+            color: #ffffff;
+        }
+        
+        /* 5. Light Mode Support (If body has light class) */
+        @media (prefers-color-scheme: light) {
+            #period-select option {
+                background-color: #ffffff;
+                color: #000000;
+            }
         }
     </style>
 
-    <select id="period-select" onchange="applyRecordPeriod()" class="custom-select">
+    <select id="period-select" onchange="applyRecordPeriod()" style="width:100%; padding:10px; border-radius:8px; outline:none;">
         <option value="this_month">This Month</option> 
         <option value="all_time">All Time</option>
         <option value="week">This Week</option>
