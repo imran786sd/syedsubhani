@@ -1461,24 +1461,29 @@ window.renderMembersList = () => {
 
 window.renderFinanceList = () => { 
     const list = document.getElementById('finance-list'); 
-    if(!list) return; 
     
+    // Debugging: Check if the element exists
+    if(!list) {
+        console.error("ERROR: Could not find <div id='finance-list'> in your HTML.");
+        return; 
+    }
+    
+    console.log("Rendering Finance List with", window.transactions.length, "entries.");
+
     list.innerHTML = ""; 
 
-    // --- SORTING LOGIC: LATEST FIRST ---
-    // We create a copy using [...] to avoid messing up the original array
-    // Then we sort: (b - a) creates a Descending order (Newest to Oldest)
+    // 1. Sort by Date Descending (Latest First)
     const sortedData = [...window.transactions].sort((a, b) => {
         const dateA = new Date(a.date || 0);
         const dateB = new Date(b.date || 0);
         return dateB - dateA; 
     });
 
-    // Render List & Calculate Total
+    // 2. Render List
     let totalProfit = 0; 
     
     if (sortedData.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No transactions recorded yet.</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No transactions recorded.</div>`;
     } else {
         sortedData.forEach(t => { 
             // Calculate Profit
@@ -1508,7 +1513,7 @@ window.renderFinanceList = () => {
         });
     }
 
-    // Update Total Profit Display
+    // 3. Update Total
     const profitEl = document.getElementById('total-profit');
     if(profitEl) profitEl.innerText = "₹" + totalProfit.toLocaleString(); 
 };
