@@ -1085,10 +1085,25 @@ window.saveMember = async () => {
 window.renewMember = (id) => {
     const m = members.find(x => x.id === id);
     if(!m) return;
-    document.getElementById('renew-id').value = id;
-    document.getElementById('renew-name').innerText = m.name;
-    document.getElementById('renew-amount').value = ""; 
-    document.getElementById('modal-renew').style.display = 'flex';
+
+    // 1. Set ID
+    const idEl = document.getElementById('renew-id');
+    if(idEl) idEl.value = id;
+
+    // 2. Set Name
+    const nameEl = document.getElementById('renew-name');
+    if(nameEl) nameEl.innerText = m.name;
+
+    // 3. Clear Amount (This is where your error likely was)
+    const amountEl = document.getElementById('renew-amount');
+    if(amountEl) amountEl.value = ""; 
+
+    // 4. Show Modal
+    const modal = document.getElementById('modal-renew');
+    if(modal) modal.style.display = 'flex';
+    
+    // 5. Refresh Dropdown (To ensure plans are loaded)
+    if(window.updatePlanDropdowns) window.updatePlanDropdowns();
 };
 
 window.closeRenewModal = () => { 
