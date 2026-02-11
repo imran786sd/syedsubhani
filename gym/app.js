@@ -1576,15 +1576,16 @@ window.generateIDCard = (m) => {
         format: [85.6, 53.98] // Standard ID-1 Card Size
     });
 
-    // Colors
+    // --- COLORS ---
     const primaryColor = [20, 20, 20];   // Dark Background
-    const accentColor = [239, 68, 68];   // Red Accent
+    const accentColor = [249, 115, 22];  // ORANGE Accent (Changed from Red)
+    const textColor = [255, 255, 255];   // White Text
 
     // 2. Draw Background
     doc.setFillColor(...primaryColor);
     doc.rect(0, 0, 85.6, 53.98, 'F');
 
-    // 3. Draw Header Strip
+    // 3. Draw Header Strip (Orange)
     doc.setFillColor(...accentColor);
     doc.rect(0, 0, 85.6, 10, 'F');
 
@@ -1592,6 +1593,7 @@ window.generateIDCard = (m) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(255, 255, 255);
+    // Center the gym name
     doc.text(gymSettings.name.toUpperCase(), 42.8, 7, { align: "center" });
 
     // 5. Member Photo (Left Side)
@@ -1599,7 +1601,6 @@ window.generateIDCard = (m) => {
         try {
             doc.addImage(m.photo, 'JPEG', 5, 15, 25, 25);
         } catch (e) {
-            // Fallback Box
             doc.setFillColor(50, 50, 50);
             doc.rect(5, 15, 25, 25, 'F');
         }
@@ -1608,48 +1609,51 @@ window.generateIDCard = (m) => {
         doc.rect(5, 15, 25, 25, 'F');
     }
 
-    // 6. Member Details
+    // 6. Member Details (Right Side) - REORGANIZED FOR PHONE NUMBER
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-
-    // Name
-    doc.text("Name:", 35, 18);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(m.name.toUpperCase(), 35, 22);
+    const labelX = 35;
+    
+    // NAME
+    doc.setFontSize(7); doc.setFont("helvetica", "normal");
+    doc.text("Name:", labelX, 17);
+    doc.setFontSize(9); doc.setFont("helvetica", "bold");
+    doc.text(m.name.toUpperCase(), labelX, 21);
 
     // ID
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.text("Member ID:", 35, 28);
-    doc.setFont("helvetica", "bold");
-    doc.text(m.memberId, 35, 32);
+    doc.setFontSize(7); doc.setFont("helvetica", "normal");
+    doc.text("Member ID:", labelX, 26);
+    doc.setFontSize(9); doc.setFont("helvetica", "bold");
+    doc.text(m.memberId, labelX, 30);
 
-    // Expiry
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.text("Valid Until:", 35, 38);
-    doc.setTextColor(...accentColor); 
-    doc.setFont("helvetica", "bold");
-    doc.text(m.expiryDate, 35, 42);
+    // PHONE (New Added Field)
+    doc.setFontSize(7); doc.setFont("helvetica", "normal");
+    doc.text("Phone:", labelX, 35);
+    doc.setFontSize(9); doc.setFont("helvetica", "bold");
+    doc.text(m.phone || "", labelX, 39);
 
-    // 7. Footer
+    // EXPIRY (Orange Highlight)
+    doc.setFontSize(7); doc.setFont("helvetica", "normal");
+    doc.setTextColor(200, 200, 200); // Light gray label
+    doc.text("Valid Until:", labelX, 44);
+    
+    doc.setTextColor(...accentColor); // Orange Text
+    doc.setFontSize(10); doc.setFont("helvetica", "bold");
+    doc.text(m.expiryDate, labelX + 15, 44);
+
+    // 7. Footer line
     doc.setDrawColor(...accentColor);
     doc.setLineWidth(0.5);
-    doc.line(5, 45, 80, 45); 
+    doc.line(5, 47, 80, 47); 
 
+    // 8. Footer Sign (Gym Phone Removed)
     doc.setFontSize(6);
     doc.setTextColor(150, 150, 150);
-    doc.text("Authorized Signature", 75, 50, { align: "right" });
-    
-    // Dynamic Phone Number
-    doc.text(gymSettings.phone, 5, 50, { align: "left" });
+    doc.text("Authorized Signature", 75, 52, { align: "right" });
 
-    // 8. Add Signature to ID Card
+    // Add Signature Image
     if (gymSettings.signature && gymSettings.signature.length > 50) {
         try {
-            doc.addImage(gymSettings.signature, 'JPEG', 65, 45, 15, 5);
+            doc.addImage(gymSettings.signature, 'JPEG', 60, 47, 20, 6);
         } catch(e) {}
     }
 
