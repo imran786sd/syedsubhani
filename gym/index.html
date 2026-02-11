@@ -275,100 +275,105 @@
             </div>
 
             <div id="view-data" class="view-section" style="display:none;">
-                <div class="section-top">
-                    <h2>Data Management</h2>
-                </div>
+    <div class="section-top">
+        <h2>Data Management</h2>
+    </div>
 
-                <div class="layout-grid body-row">
-                    <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
-                        <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                            <i class="fa-solid fa-file-export accent-icon"></i> Export Data
-                        </h3>
-                        <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
-                            Download your data for backup or offline analysis.
-                        </p>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <button class="btn-sm" onclick="exportData('members')" style="background:#333;">
-                                <i class="fa-solid fa-users"></i> Export Members
-                            </button>
-                            <button class="btn-sm" onclick="exportData('finance')" style="background:#333;">
-                                <i class="fa-solid fa-coins"></i> Export Finance
-                            </button>
-                            
-                        </div>
-                    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding-bottom: 50px;">
+        
+        <div class="grid-item" style="background:var(--bg-card); padding:25px; border-radius:16px; border:1px solid var(--border); height:auto;">
+            <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <i class="fa-solid fa-file-export accent-icon"></i> Export Data
+            </h3>
+            <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
+                Download your data for backup or offline analysis.
+            </p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn-sm" onclick="exportData('members')" style="background:#333;">
+                    <i class="fa-solid fa-users"></i> Export Members
+                </button>
+                <button class="btn-sm" onclick="exportData('finance')" style="background:#333;">
+                    <i class="fa-solid fa-coins"></i> Export Finance
+                </button>
+            </div>
+        </div>
+        
+        <div class="grid-item" style="background:var(--bg-card); padding:25px; border-radius:16px; border:1px solid var(--border); height:auto;">
+            <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px; color:#facc15;">
+                <i class="fa-solid fa-database"></i> Full System Backup
+            </h3>
+            <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
+                Save a complete copy of your database (Members, Photos, History) to a single file. 
+                <br><small style="color:#ef4444;">Warning: Restoring will overwrite current data!</small>
+            </p>
+
+            <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center;">
+                <button class="btn-save" onclick="backupDatabase()" style="width:auto; background:#facc15; color:#000; font-size:0.9rem; padding:10px 15px; margin:0;">
+                    <i class="fa-solid fa-download"></i> Backup (.json)
+                </button>
+
+                <div style="border-left:1px solid #444; padding-left:15px; display:flex; gap:10px; align-items:center;">
+                    <label for="restore-file" style="cursor:pointer; background:#333; padding:8px 12px; border-radius:8px; font-size:0.85rem; color:#ccc;">
+                        <i class="fa-solid fa-folder-open"></i> Select File
+                    </label>
+                    <input type="file" id="restore-file" accept=".json" style="display:none;" onchange="alert('File Selected! Click Restore to continue.')">
                     
-                    <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border); margin-top:0px;">
-                        <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px; color:#facc15;">
-                            <i class="fa-solid fa-database"></i> Full System Backup
-                        </h3>
-                        <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
-                            Save a complete copy of your database (Members, Photos, History, Finance) to a single file. 
-                            <br><b style="color:#ef4444;">Warning:</b> Restoring a backup will overwrite current data!
-                        </p>
-
-                        <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center;">
-                            <button class="btn-save" onclick="backupDatabase()" style="width:auto; background:#facc15; color:#000;">
-                                <i class="fa-solid fa-download"></i> Download Backup (.json)
-                            </button>
-
-                            <div style="border-left:1px solid #444; padding-left:15px; display:flex; gap:10px; align-items:center;">
-                                <input type="file" id="restore-file" accept=".json" style="font-size:0.9rem; color:#888;">
-                                <button class="btn-sm" onclick="restoreDatabase()" style="background:#ef4444;">
-                                    <i class="fa-solid fa-rotate-left"></i> Restore System
-                                </button>
-                            </div>
-                        </div>
-                        <div id="restore-status" style="margin-top:10px; font-weight:bold;"></div>
-                    </div>
-
-                    <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
-                        <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                            <i class="fa-solid fa-file-import accent-icon"></i> Import Members
-                        </h3>
-                        <p style="color:#888; font-size:0.9rem; margin-bottom:10px;">
-                            Upload a <b>.CSV</b> file to bulk add members.
-                        </p>
-
-                        <div style="background:var(--bg-body); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border); overflow-x:auto;">
-                            <div style="font-size:0.8rem; font-weight:bold; margin-bottom:8px; color:var(--text-main);">Required CSV Format:</div>
-                            <table style="width:100%; border-collapse:collapse; font-size:0.75rem; color:#aaa; min-width:500px;">
-                                <tr style="border-bottom:1px solid var(--border); text-align:left;">
-                                    <th style="padding:4px;">Name</th>
-                                    <th style="padding:4px;">Phone</th>
-                                    <th style="padding:4px;">Gender</th>
-                                    <th style="padding:4px; color:var(--accent);">DOB</th>
-                                    <th style="padding:4px; color:var(--accent);">JoinDate</th>
-                                    <th style="padding:4px;">Plan</th>
-                                    <th style="padding:4px;">Amount</th>
-                                    <th style="padding:4px;">Mode</th>
-                                </tr>
-                                <tr>
-                                    <td style="padding:4px;">John Doe</td>
-                                    <td style="padding:4px;">9988776655</td>
-                                    <td style="padding:4px;">Male</td>
-                                    <td style="padding:4px;">1995-08-15</td>
-                                    <td style="padding:4px;">2024-01-01</td>
-                                    <td style="padding:4px;">1y</td>
-                                    <td style="padding:4px;">12000</td>
-                                    <td style="padding:4px;">UPI</td>
-                                </tr>
-                            </table>
-                            <div style="margin-top:10px; font-size:0.7rem; color:#666;">
-                                <b>Dates:</b> YYYY-MM-DD | <b>Mode:</b> Cash, UPI, Card
-                            </div>
-                        </div>
-                        
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <input type="file" id="import-file" accept=".csv" style="font-size:0.9rem; color:#888;">
-                            <button class="btn-sm" onclick="importMembers()">
-                                <i class="fa-solid fa-upload"></i> Upload CSV
-                            </button>
-                        </div>
-                        <div id="import-status" style="margin-top:10px; font-size:0.85rem;"></div>
-                    </div>
+                    <button class="btn-sm" onclick="restoreDatabase()" style="background:#ef4444;">
+                        <i class="fa-solid fa-rotate-left"></i> Restore
+                    </button>
                 </div>
             </div>
+            <div id="restore-status" style="margin-top:10px; font-weight:bold; font-size:0.9rem;"></div>
+        </div>
+
+        <div class="grid-item" style="grid-column: 1 / -1; background:var(--bg-card); padding:25px; border-radius:16px; border:1px solid var(--border); height:auto;">
+            <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <i class="fa-solid fa-file-import accent-icon"></i> Import Members (Bulk Upload)
+            </h3>
+            <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
+                Upload a <b>.CSV</b> file to bulk add members into the system.
+            </p>
+
+            <div style="background:var(--bg-body); padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--border); overflow-x:auto;">
+                <div style="font-size:0.85rem; font-weight:bold; margin-bottom:10px; color:var(--text-main);">Required CSV Format:</div>
+                <table style="width:100%; border-collapse:collapse; font-size:0.8rem; color:#aaa; min-width:600px;">
+                    <tr style="border-bottom:1px solid var(--border); text-align:left;">
+                        <th style="padding:6px; color:#fff;">Name</th>
+                        <th style="padding:6px; color:#fff;">Phone</th>
+                        <th style="padding:6px; color:#fff;">Gender</th>
+                        <th style="padding:6px; color:var(--accent);">DOB</th>
+                        <th style="padding:6px; color:var(--accent);">JoinDate</th>
+                        <th style="padding:6px; color:#fff;">Plan</th>
+                        <th style="padding:6px; color:#fff;">Amount</th>
+                        <th style="padding:6px; color:#fff;">Mode</th>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px;">John Doe</td>
+                        <td style="padding:6px;">9988776655</td>
+                        <td style="padding:6px;">Male</td>
+                        <td style="padding:6px;">1995-08-15</td>
+                        <td style="padding:6px;">2024-01-01</td>
+                        <td style="padding:6px;">1y</td>
+                        <td style="padding:6px;">12000</td>
+                        <td style="padding:6px;">UPI</td>
+                    </tr>
+                </table>
+                <div style="margin-top:12px; font-size:0.75rem; color:#666;">
+                    <b>Note:</b> Dates must be <b>YYYY-MM-DD</b>. Plan codes: 1m, 3m, 6m, 1y.
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:15px; align-items:center; background:var(--card-light); padding:15px; border-radius:10px; border:1px solid var(--border); width:fit-content;">
+                <input type="file" id="import-file" accept=".csv" style="font-size:0.9rem; color:#888;">
+                <button class="btn-sm" onclick="importMembers()" style="font-size:0.9rem;">
+                    <i class="fa-solid fa-upload"></i> Upload CSV Now
+                </button>
+            </div>
+            <div id="import-status" style="margin-top:15px; font-size:0.9rem; font-weight:bold;"></div>
+        </div>
+
+    </div>
+</div>
 
             <div id="view-records" class="view-section" style="display:none;">
                 <h2 class="section-title" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;">
