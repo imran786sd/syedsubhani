@@ -1451,7 +1451,8 @@ window.renderMembersList = () => {
         const photo = m.photo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==';
 
         list.innerHTML += `
-        <div class="member-row">
+        <div class="member-row" style="flex-wrap: wrap;">
+            
             <i class="fa-solid fa-ellipsis-vertical mobile-kebab-btn" onclick="toggleRowAction('${m.id}')"></i>
             
             <div class="profile-img-container">
@@ -1500,9 +1501,9 @@ window.renderMembersList = () => {
                     <i class="fa-solid fa-trash"></i>
                 </div>
             </div>
-        </div>
 
-        <div id="history-${m.id}" class="history-panel" style="display:none; width:100%; background:#1e293b; padding:20px; border-radius:10px; margin-top:15px; border:1px solid #333; border-left: 5px solid var(--accent); box-shadow: 0 4px 15px rgba(0,0,0,0.3);"></div>
+            <div id="history-${m.id}" class="history-panel" style="display:none; width:100%; flex-basis: 100%; background:#1e293b; padding:20px; border-radius:8px; margin-top:15px; border-top: 1px solid #333; border-left: 5px solid var(--accent); box-shadow: inset 0 0 10px rgba(0,0,0,0.2);"></div>
+        </div>
         `;
     });
 };
