@@ -230,15 +230,20 @@ window.sendWhatsApp = (phone, name, type, extraData) => {
     if(!p) return alert("Invalid phone number");
 
     let msg = "";
+    
     if (type === 'welcome') {
         msg = `Hi ${name}, Welcome to The Ultimate Gym! We are thrilled to have you. Let's start your fitness journey! 💪`;
-    } else if (type === 'reminder') {
+    } 
+    else if (type === 'reminder') {
+        // extraData is "Days Remaining" (e.g. 5)
         msg = `Hello ${name}, your gym membership is expiring in ${extraData} days. Please renew to continue your workouts! 🏋️‍♂️`;
-    } else if (type === 'expired') {
-        msg = `Hi ${name}, your membership expired on ${extraData}. Please renew it to reactivate access.`;
-    } else {
-        // Default / Fallback
-        msg = `Hello ${name}, your membership expiry is ${extraData}.`;
+    } 
+    else if (type === 'expired') {
+        // extraData is "Expiry Date" (e.g. 2023-12-01)
+        msg = `Hi ${name}, your gym membership expired on ${extraData}. Please renew it to reactivate your access.`;
+    } 
+    else {
+        msg = `Hello ${name}, regarding your gym membership.`;
     }
 
     window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -1353,19 +1358,36 @@ window.deleteTransaction = async (id) => {
 };
 
 // --- RENDER MEMBERS (With Blue Badge & Revoke Logic) ---
-function renderMembersList() {
+window.renderMembersList = () => {
     const list = document.getElementById('members-list'); 
     if(!list) return;
     list.innerHTML = "";
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
-    members.forEach(m => {
+    window.members.forEach(m => {
         const expDate = new Date(m.expiryDate);
         const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-        let statusClass = 'status-paid'; let statusText = 'Paid';
-        if (daysLeft < 0) { statusClass = 'status-due'; statusText = 'Expired'; }
-        else if (daysLeft < 5) { statusClass = 'status-pending'; statusText = `Due: ${daysLeft} days`; }
+        
+        let statusClass = 'status-paid'; 
+        let statusText = 'Paid';
+        
+        // --- WHATSAPP LOGIC FIX ---
+        let waType = 'reminder'; 
+        let waData = daysLeft; 
+
+        if (daysLeft < 0) { 
+            statusClass = 'status-due'; 
+            statusText = 'Expired'; 
+            
+            // If expired, switch type and send the actual DATE
+            waType = 'expired';
+            waData = m.expiryDate;
+        }
+        else if (daysLeft < 5) { 
+            statusClass = 'status-pending'; 
+            statusText = `Due: ${daysLeft} days`; 
+        }
 
         const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
         const photoUrl = m.photo || placeholder;
@@ -1375,7 +1397,6 @@ function renderMembersList() {
         if(m.gender === 'Male') genderIcon = '<i class="fa-solid fa-mars" style="color:#60a5fa; margin-left:5px;"></i>';
         else if(m.gender === 'Female') genderIcon = '<i class="fa-solid fa-venus" style="color:#f472b6; margin-left:5px;"></i>';
 
-        // Check Attendance
         const attendanceList = m.attendance || [];
         const totalDays = attendanceList.length;
         const isPresent = attendanceList.includes(todayStr);
@@ -1412,7 +1433,9 @@ function renderMembersList() {
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
                 <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
                 <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', 'reminder', '${daysLeft}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
+                
+                <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${waType}', '${waData}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
+                
                 <div class="icon-btn bill" onclick='generateInvoice(${JSON.stringify(m)})' title="Bill"><i class="fa-solid fa-file-invoice"></i></div>
                 <div class="icon-btn delete" onclick="deleteMember('${m.id}')" title="Delete"><i class="fa-solid fa-trash"></i></div>
             </div>
