@@ -67,9 +67,8 @@
                         <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
                         <span onclick="switchTab('members')" id="tab-members" class="nav-item">Members</span>
                         <span onclick="switchTab('fitness')" id="tab-fitness" class="nav-item">Fitness / BMI</span> 
-                        <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
-                        <span onclick="switchTab('data')" id="tab-data" class="nav-item">Data IO</span>
                         <span onclick="switchTab('records')" id="tab-records" class="nav-item">Records</span>
+                        <span onclick="switchTab('data')" id="tab-data" class="nav-item">Data IO</span>
                         <span onclick="switchTab('settings')" id="tab-settings" class="nav-item">Settings</span>                        
                         <span onclick="handleLogout()" class="nav-icon" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></span>
                     </div>
@@ -240,49 +239,6 @@
                 </div>
                 
                 <div id="fitness-list-grid" class="dashboard-grid"></div>
-            </div>
-
-            <div id="view-finance" class="view-section" style="display:none;">
-                <div class="section-top">
-                    <h2>Finance & Expenses</h2>
-                    <button class="btn-sm" onclick="window.toggleTxModal()">+ Add Entry</button>
-                </div>
-
-                <div style="background:#1e293b; padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #333;">
-                    <span style="color:#aaa;">Total Balance:</span>
-                    <span id="total-profit" style="font-size:1.5rem; font-weight:bold; color:var(--accent);">₹0</span>
-                </div>
-
-                <div class="finance-split-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-                    <div class="finance-col">
-                        <h4 style="color:#22c55e; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-                            <i class="fa-solid fa-arrow-trend-up"></i> Income
-                        </h4>
-                        <div id="finance-list-income" class="detailed-list" style="min-height:200px;"></div>
-                    </div>
-
-                    <div class="finance-col">
-                        <h4 style="color:#ef4444; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-                            <i class="fa-solid fa-arrow-trend-down"></i> Expenses
-                        </h4>
-                        <div id="finance-list-expense" class="detailed-list" style="min-height:200px;"></div>
-                    </div>
-                </div>
-                <style>
-                    @media (max-width: 768px) {
-                        .finance-split-container { grid-template-columns: 1fr !important; }
-                    }
-                </style>
-
-                <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
-                    <button class="btn-sm" onclick="changePage('finance', -1)" style="background:var(--bg-card); border:1px solid var(--border);">
-                        <i class="fa-solid fa-chevron-left"></i> Prev
-                    </button>
-                    <span id="page-indicator-finance" style="color: var(--text-muted); font-size: 0.9rem;">Page 1</span>
-                    <button class="btn-sm" onclick="changePage('finance', 1)" style="background:var(--bg-card); border:1px solid var(--border);">
-                        Next <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                </div>
             </div>
 
             <div id="view-records" class="view-section" style="display:none;">
@@ -585,10 +541,6 @@
         <div class="nav-btn" id="mob-fitness" onclick="switchTab('fitness')">
             <i class="fa-solid fa-heart-pulse"></i>
             <span>Fitness</span>
-        </div>
-        <div class="nav-btn" id="mob-finance" onclick="switchTab('finance')">
-            <i class="fa-solid fa-coins"></i>
-            <span>Finance</span>
         </div>
         <div class="nav-btn" id="mob-records" onclick="switchTab('records')">
             <i class="fa-solid fa-list"></i>
