@@ -386,10 +386,14 @@
     </div>
 </div>
 
-            <div id="view-records" class="view-section" style="display:none;">
-                <h2 class="section-title" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;">
-                    <i class="fa-solid fa-list"></i> Transaction Records
-                </h2>
+            <div class="section-top" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:15px; margin-bottom:20px;">
+    <h2 style="margin:0;">
+        <i class="fa-solid fa-list"></i> Transaction Records
+    </h2>
+    <button class="btn-sm" onclick="toggleTxModal()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">
+        <i class="fa-solid fa-plus"></i> Add Entry
+    </button>
+</div>
 
               <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:20px; align-items:end;">
     
@@ -777,5 +781,52 @@
             });
         }
     </script>
+    <div id="modal-transaction" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Add / Edit Entry</h3>
+            <i class="fa-solid fa-xmark close" onclick="toggleTxModal()"></i>
+        </div>
+        
+        <div class="modal-content">
+            <div class="split-inputs">
+                <div>
+                    <label>Type</label>
+                    <select id="tx-type" class="input-select">
+                        <option value="income">Income (+)</option>
+                        <option value="expense">Expense (-)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Category</label>
+                    <input type="text" id="tx-category" placeholder="Rent, Electricity, Sale...">
+                </div>
+            </div>
+
+            <div class="split-inputs">
+                <div>
+                    <label>Amount (₹)</label>
+                    <input type="number" id="tx-amount" placeholder="0">
+                </div>
+                <div>
+                    <label>Date</label>
+                    <input type="date" id="tx-date">
+                </div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <label>Payment Mode</label>
+                <select id="tx-paymode" class="input-select">
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI (GPay/PhonePe)</option>
+                    <option value="Card">Card</option>
+                    <option value="Bank">Bank Transfer</option>
+                </select>
+            </div>
+
+            <button class="btn-save" onclick="saveTransaction()">Save Entry</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
