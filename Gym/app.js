@@ -1462,18 +1462,19 @@ window.renderMembersList = () => {
 window.renderFinanceList = () => { 
     const list = document.getElementById('finance-list'); 
     
-    // Debugging: Check if the element exists
     if(!list) {
         console.error("ERROR: Could not find <div id='finance-list'> in your HTML.");
         return; 
     }
     
-    console.log("Rendering Finance List with", window.transactions.length, "entries.");
+    // FIX: Removed 'window.' so it uses the correct variable 'transactions'
+    console.log("Rendering Finance List with", transactions.length, "entries.");
 
     list.innerHTML = ""; 
 
     // 1. Sort by Date Descending (Latest First)
-    const sortedData = [...window.transactions].sort((a, b) => {
+    // FIX: Removed 'window.' here too
+    const sortedData = [...transactions].sort((a, b) => {
         const dateA = new Date(a.date || 0);
         const dateB = new Date(b.date || 0);
         return dateB - dateA; 
