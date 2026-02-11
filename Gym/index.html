@@ -222,16 +222,26 @@
                     </div>
             </div>
 
-            <div id="view-finance" class="view-section" style="display:none;">
-                <div class="section-top">
-                    <h2>Income & Expenses</h2>
-                    <button class="btn-sm" onclick="toggleTxModal()">+ Add Entry</button>
-                </div>
-                <div class="finance-summary-bar">
-                    <div>Your Profit: <span id="total-profit" class="accent">₹0</span></div>
-                </div>
-                <div id="finance-list" class="list-container"></div>
-            </div>
+            <div class="section-top">
+    <h2>Finance & Expenses</h2>
+    <button class="btn-sm" onclick="window.toggleTxModal()">+ Add Entry</button>
+</div>
+
+<div class="filter-toolbar" style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+    <input type="text" id="finance-search" placeholder="Search (Name, Category...)" onkeyup="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff; flex:1;">
+    
+    <input type="date" id="finance-start-date" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
+    <input type="date" id="finance-end-date" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
+    
+    <select id="finance-sort" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="high">Amount: High to Low</option>
+        <option value="low">Amount: Low to High</option>
+    </select>
+</div>
+
+<div id="finance-list" class="detailed-list"></div>
 
             <div id="view-data" class="view-section" style="display:none;">
                 <div class="section-top">
