@@ -524,15 +524,19 @@
                     <label style="font-size:0.8rem; color:#aaa;">Plan Name</label>
                     <input type="text" id="new-plan-name" placeholder="e.g. Gold Yearly" style="margin-bottom:0;">
                 </div>
-                <div>
-                    <label style="font-size:0.8rem; color:#aaa;">Duration</label>
-                    <select id="new-plan-dur" style="margin-bottom:0;">
-                        <option value="1m">1 Month</option>
-                        <option value="3m">3 Months</option>
-                        <option value="6m">6 Months</option>
-                        <option value="1y">1 Year</option>
-                    </select>
-                </div>
+               <div>
+    <label style="font-size:0.8rem; color:#aaa;">Duration</label>
+    <select id="new-plan-dur" class="input-select" style="margin-bottom:0;">
+        <option value="1d">1 Day</option>
+        <option value="7d">7 Days (1 Week)</option>
+        <option value="15d">15 Days</option>
+        <option value="1m">1 Month</option>
+        <option value="3m">3 Months</option>
+        <option value="6m">6 Months</option>
+        <option value="9m">9 Months</option>
+        <option value="1y">1 Year</option>
+    </select>
+</div>
                 <div>
                     <label style="font-size:0.8rem; color:#aaa;">Price (₹)</label>
                     <input type="number" id="new-plan-price" placeholder="5000" style="margin-bottom:0;">
@@ -602,6 +606,7 @@
                             <option value="1d">1 Day</option>
                             <option value="7d">7 Days</option>
                             <option value="15d">15 Days</option>
+                            <option value="45d">45 Days</option>
                             <option value="1m" selected>1 Month</option>
                             <option value="3m">3 Months</option>
                             <option value="6m">6 Months</option>
