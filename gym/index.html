@@ -452,84 +452,103 @@
             </div>
 
             <div id="view-settings" class="view-section" style="display:none;">
-                <div class="section-top">
-                    <h2>Gym Configuration</h2>
-                    <button class="btn-save" onclick="saveGymSettings()" style="width:auto;">Save Changes</button>
+    <div class="section-top">
+        <h2>Gym Configuration</h2>
+        <button class="btn-save" onclick="saveGymSettings()" style="width:auto;">Save Changes</button>
+    </div>
+
+    <div class="layout-grid body-row" style="grid-template-columns: 1fr; height: auto;">
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border); height:auto;">
+                <h3 style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                    <i class="fa-solid fa-building accent-icon"></i> Business Details
+                </h3>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div>
+                        <label style="display:block; margin-bottom:5px; color:#aaa;">Gym Name</label>
+                        <input type="text" id="set-gym-name" placeholder="E.g. The Ultimate Gym">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; color:#aaa;">Phone Number</label>
+                        <input type="text" id="set-gym-phone" placeholder="+91 99999 00000">
+                    </div>
                 </div>
 
-                <div class="layout-grid body-row">
-                    <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
-                        <h3 style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                            <i class="fa-solid fa-building accent-icon"></i> Business Details
-                        </h3>
-                        
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                            <div>
-                                <label style="display:block; margin-bottom:5px; color:#aaa;">Gym Name</label>
-                                <input type="text" id="set-gym-name" placeholder="E.g. The Ultimate Gym" style="width:100%; padding:10px; background:var(--bg-body); border:1px solid #333; color:white; border-radius:6px;">
-                            </div>
-                            <div>
-                                <label style="display:block; margin-bottom:5px; color:#aaa;">Phone Number</label>
-                                <input type="text" id="set-gym-phone" placeholder="+91 99999 00000" style="width:100%; padding:10px; background:var(--bg-body); border:1px solid #333; color:white; border-radius:6px;">
-                            </div>
-                        </div>
-
-                        <div style="margin-top:15px;">
-                            <label style="display:block; margin-bottom:5px; color:#aaa;">Address (For Invoice)</label>
-                            <textarea id="set-gym-address" rows="3" placeholder="Enter full address..." style="width:100%; padding:10px; background:var(--bg-body); border:1px solid #333; color:white; border-radius:6px;"></textarea>
-                        </div>
-                        
-                        <div style="margin-top:15px;">
-                            <label style="display:block; margin-bottom:5px; color:#aaa;">GST / Tax ID</label>
-                            <input type="text" id="set-gym-tax" placeholder="GSTIN..." style="width:100%; padding:10px; background:var(--bg-body); border:1px solid #333; color:white; border-radius:6px;">
-                        </div>
-                    </div>
-
-                    <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
-                        <h3 style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                            <i class="fa-solid fa-file-signature accent-icon"></i> Authorized Signature
-                        </h3>
-                        <p style="color:#888; font-size:0.9rem; margin-bottom:15px;">Upload a generic signature image to auto-sign all generated ID Cards and Invoices.</p>
-                        
-                        <div style="text-align:center; padding:20px; border:2px dashed #444; border-radius:8px;">
-                            <img id="set-sign-preview" src="Sign.jpeg" style="max-height:60px; margin-bottom:10px; display:block; margin:0 auto;">
-                            <input type="file" id="set-sign-file" accept="image/*" style="margin-top:10px; color:#888;" onchange="previewSignature(this)">
-                        </div>
-                    </div>
-
-                    <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border); margin-top:20px;">
-                        <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px; color:#22c55e;">
-                            <i class="fa-solid fa-list-check"></i> Manage Membership Plans
-                        </h3>
-                        <p style="color:#888; font-size:0.9rem; margin-bottom:15px;">Create standard plans to auto-fill details when adding members.</p>
-                        
-                        <div style="display:grid; grid-template-columns: 2fr 1fr 1fr auto; gap:10px; align-items:end; margin-bottom:15px;">
-                            <div>
-                                <label style="font-size:0.8rem; color:#aaa;">Plan Name</label>
-                                <input type="text" id="new-plan-name" placeholder="e.g. Gold Yearly" style="width:100%; padding:8px; background:var(--bg-body); border:1px solid #444; color:white; border-radius:4px;">
-                            </div>
-                            <div>
-                                <label style="font-size:0.8rem; color:#aaa;">Duration</label>
-                                <select id="new-plan-dur" style="width:100%; padding:8px; background:var(--bg-body); border:1px solid #444; color:white; border-radius:4px;">
-                                    <option value="1m">1 Month</option>
-                                    <option value="3m">3 Months</option>
-                                    <option value="6m">6 Months</option>
-                                    <option value="1y">1 Year</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="font-size:0.8rem; color:#aaa;">Price (₹)</label>
-                                <input type="number" id="new-plan-price" placeholder="5000" style="width:100%; padding:8px; background:var(--bg-body); border:1px solid #444; color:white; border-radius:4px;">
-                            </div>
-                            <button class="btn-sm" onclick="addPlan()" style="background:#22c55e; height:38px;">Add</button>
-                        </div>
-
-                        <div id="settings-plan-list" style="display:flex; flex-direction:column; gap:10px;"></div>
-                    </div>
+                <div style="margin-top:15px;">
+                    <label style="display:block; margin-bottom:5px; color:#aaa;">Address (For Invoice)</label>
+                    <textarea id="set-gym-address" rows="2" placeholder="Enter full address..."></textarea>
+                </div>
+                
+                <div style="margin-top:15px;">
+                    <label style="display:block; margin-bottom:5px; color:#aaa;">GST / Tax ID</label>
+                    <input type="text" id="set-gym-tax" placeholder="GSTIN...">
                 </div>
             </div>
-        </main>
+
+            <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border); height:auto;">
+                <h3 style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                    <i class="fa-solid fa-file-signature accent-icon"></i> Authorized Signature
+                </h3>
+                <p style="color:#888; font-size:0.9rem; margin-bottom:15px;">Upload a generic signature image to auto-sign all generated ID Cards and Invoices.</p>
+                
+                <div style="text-align:center; padding:20px; border:2px dashed #444; border-radius:8px;">
+                    <img id="set-sign-preview" src="Sign.jpeg" style="max-height:60px; margin-bottom:10px; display:block; margin:0 auto;">
+                    <input type="file" id="set-sign-file" accept="image/*" style="margin-top:10px; color:#888;" onchange="previewSignature(this)">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-item" style="background:var(--bg-card); padding:25px; border-radius:16px; border:1px solid var(--border); margin-top:20px; height:auto;">
+            <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px; color:#22c55e;">
+                <i class="fa-solid fa-list-check"></i> Manage Membership Plans
+            </h3>
+            <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
+                Create standard plans here. When you add a member, you can select these to auto-fill the price and duration.
+            </p>
+            
+            <div style="display:grid; grid-template-columns: 2fr 1fr 1fr auto; gap:10px; align-items:end; margin-bottom:20px; background:var(--bg-body); padding:15px; border-radius:10px; border:1px solid var(--border);">
+                <div>
+                    <label style="font-size:0.8rem; color:#aaa;">Plan Name</label>
+                    <input type="text" id="new-plan-name" placeholder="e.g. Gold Yearly" style="margin-bottom:0;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; color:#aaa;">Duration</label>
+                    <select id="new-plan-dur" style="margin-bottom:0;">
+                        <option value="1m">1 Month</option>
+                        <option value="3m">3 Months</option>
+                        <option value="6m">6 Months</option>
+                        <option value="1y">1 Year</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; color:#aaa;">Price (₹)</label>
+                    <input type="number" id="new-plan-price" placeholder="5000" style="margin-bottom:0;">
+                </div>
+                <button class="btn-sm" onclick="addPlan()" style="background:#22c55e; height:45px;">
+                    <i class="fa-solid fa-plus"></i> Add
+                </button>
+            </div>
+
+            <div style="background:var(--bg-body); border-radius:10px; border:1px solid var(--border); overflow:hidden;">
+                <table style="width:100%; border-collapse:collapse; text-align:left;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border); background:var(--card-light); color:var(--text-muted); font-size:0.85rem;">
+                            <th style="padding:12px;">Plan Name</th>
+                            <th style="padding:12px;">Duration</th>
+                            <th style="padding:12px;">Price</th>
+                            <th style="padding:12px; text-align:right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="settings-plan-list">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
+</div>
 
     <div id="modal-member" class="modal-overlay">
         <div class="modal-box">
