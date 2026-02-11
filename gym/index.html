@@ -379,7 +379,26 @@
                     
                     <div>
     <label style="font-size:0.8rem; color:#888;">Select Period</label>
-    <select id="period-select" onchange="applyRecordPeriod()" class="input-select">
+    
+    <style>
+        .custom-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            /* These 3 lines force the dropdown to match your theme */
+            background-color: var(--bg-card); 
+            color: var(--text-main);
+            color-scheme: light dark; 
+        }
+        /* Forces the options inside to be dark/light correctly */
+        .custom-select option {
+            background-color: var(--bg-card);
+            color: var(--text-main);
+        }
+    </style>
+
+    <select id="period-select" onchange="applyRecordPeriod()" class="custom-select">
         <option value="this_month">This Month</option> 
         <option value="all_time">All Time</option>
         <option value="week">This Week</option>
