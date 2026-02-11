@@ -2380,16 +2380,22 @@ window.applyQuickPlan = () => {
     if (amtEl) amtEl.value = data.price;
 };
 
+// Add this to app.js if missing
 window.applyRenewPlan = () => {
     const select = document.getElementById('renew-plan');
     const val = select.value;
+    
     if (!val) return; 
 
     try {
+        // The value is stored as a JSON string like: {"dur":"1m","price":3000}
         const data = JSON.parse(val); 
-        // Auto-fill Amount
+        
+        // Target the "Amount to Pay" input
         const amtEl = document.getElementById('renew-amount');
-        if (amtEl) amtEl.value = data.price;
+        if (amtEl) {
+            amtEl.value = data.price; // <--- Auto-fill happens here
+        }
     } catch(e) {
         console.error("Error parsing plan data", e);
     }
