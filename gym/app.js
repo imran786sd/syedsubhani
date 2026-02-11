@@ -1099,38 +1099,65 @@ window.confirmRenewal = async () => {
     if (window.isDemoMode) return alert("Disabled in Demo Mode.");
 
     const id = document.getElementById('renew-id').value;
-    const plan = document.getElementById('renew-plan').value;
+    const select = document.getElementById('renew-plan');
     const amount = document.getElementById('renew-amount').value;
     const mode = document.getElementById('renew-paymode').value;
     
     if(!amount) return alert("Please enter the paid amount.");
+    if(!select.value) return alert("Please select a plan.");
+
+    // Extract duration from the selected plan JSON
+    let duration = "1m"; // default
+    try {
+        const data = JSON.parse(select.value);
+        duration = data.dur;
+    } catch(e) { return alert("Invalid Plan Selected"); }
 
     const m = members.find(x => x.id === id);
     if(!m) return alert("Member not found.");
 
+    // --- DATE LOGIC START ---
     const today = new Date();
-    const currentExpiry = new Date(m.expiryDate);
+    // Normalize today to midnight to avoid time glitches
+    today.setHours(0,0,0,0);
+
+    let currentExpiry = new Date(m.expiryDate);
+    // Validate current expiry
+    if (isNaN(currentExpiry.getTime())) {
+        currentExpiry = new Date(); // Fallback if invalid
+        currentExpiry.setDate(currentExpiry.getDate() - 1); // Treat as expired
+    } else {
+        currentExpiry.setHours(0,0,0,0);
+    }
+
+    // Smart Start Date: If active, start after expiry. If expired, start today.
     const startDate = (currentExpiry > today) ? currentExpiry : today;
     
     const d = new Date(startDate);
-    const val = parseInt(plan);
-    if(plan.includes('d')) d.setDate(d.getDate() + val);
-    else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val);
+    const val = parseInt(duration);
+    
+    // Add Duration
+    if(duration.includes('d')) d.setDate(d.getDate() + val);
+    else if(duration.includes('y')) d.setFullYear(d.getFullYear() + val);
     else d.setMonth(d.getMonth() + val);
     
     const newExpiry = d.toISOString().split('T')[0];
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    // --- DATE LOGIC END ---
 
     await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, id), {
         expiryDate: newExpiry,
-        lastPaidAmount: amount,
-        planDuration: plan
+        lastPaidAmount: parseFloat(amount),
+        planDuration: duration // Store the code (e.g. '1m')
     });
 
-    await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr, id, plan, newExpiry);
+    await addFinanceEntry(`Renewal - ${m.name}`, amount, mode, todayStr, id, duration, newExpiry);
 
     window.closeRenewModal();
-    alert(`Membership Renewed! New Expiry: ${newExpiry}`);
+    alert(`Membership Renewed!\nOld Expiry: ${m.expiryDate}\nNew Expiry: ${newExpiry}`);
+    
+    // Refresh lists
+    window.renderMembersList();
 };
 
 // --- UPDATED HISTORY LOGIC (DATES + PAYMENTS) ---
@@ -2067,9 +2094,19 @@ window.renderRecordsTab = () => {
         return isAfterStart && isBeforeEnd && matchesSearch;
     });
 
-    // C. Sort (Newest First)
-    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-
+// C. Sort (Strict Newest First)
+    // We combine Date + CreatedAt logic if possible, otherwise simple Date Descending
+    filtered.sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        
+        // If dates are different, sort by date
+        if (dateB !== dateA) return dateB - dateA;
+        
+        // If dates are same (e.g. 5 entries today), assume array order or use ID as tiebreaker
+        // Ideally we'd use 'createdAt' but it might not be on all legacy records.
+        return 0; 
+    });
     // D. Calculate Totals
     let inc = 0, exp = 0;
     filtered.forEach(t => {
@@ -2297,18 +2334,23 @@ window.deletePlan = async (id) => {
 
 // 4. UPDATE DROPDOWN: Populates "Quick Select" in Member Modal
 window.updatePlanDropdowns = () => {
-    const select = document.getElementById('quick-plan-select');
-    if (!select) return;
-
-    // Keep the first default option
-    select.innerHTML = `<option value="">-- Select a Standard Plan --</option>`;
-
+    // 1. Target BOTH dropdowns
+    const targets = ['quick-plan-select', 'renew-plan'];
     const plans = gymSettings.plans || [];
-    plans.forEach(p => {
-        // We store all data in the 'value' as a JSON string for easy access
-        // This is a safe hack to pass data without extra lookups
-        const dataVal = JSON.stringify({ dur: p.duration, price: p.price });
-        select.innerHTML += `<option value='${dataVal}'>${p.name} - ₹${p.price}</option>`;
+
+    targets.forEach(id => {
+        const select = document.getElementById(id);
+        if (!select) return;
+
+        // Reset with default option
+        const defaultText = id === 'renew-plan' ? '-- Select Plan --' : '-- Quick Select (Optional) --';
+        select.innerHTML = `<option value="">${defaultText}</option>`;
+
+        plans.forEach(p => {
+            // We store data in value as JSON string for easy access
+            const dataVal = JSON.stringify({ dur: p.duration, price: p.price });
+            select.innerHTML += `<option value='${dataVal}'>${p.name} - ₹${p.price}</option>`;
+        });
     });
 };
 
@@ -2336,4 +2378,19 @@ window.applyQuickPlan = () => {
     // It does NOT link back to the plan settings.
     const amtEl = document.getElementById('inp-amount');
     if (amtEl) amtEl.value = data.price;
+};
+
+window.applyRenewPlan = () => {
+    const select = document.getElementById('renew-plan');
+    const val = select.value;
+    if (!val) return; 
+
+    try {
+        const data = JSON.parse(val); 
+        // Auto-fill Amount
+        const amtEl = document.getElementById('renew-amount');
+        if (amtEl) amtEl.value = data.price;
+    } catch(e) {
+        console.error("Error parsing plan data", e);
+    }
 };
