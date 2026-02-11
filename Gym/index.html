@@ -194,6 +194,15 @@
                 </div>
                 
                 <div id="members-list" class="detailed-list"></div>
+                <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+    <button class="btn-sm" onclick="changePage('members', -1)" style="background:var(--bg-card); border:1px solid var(--border);">
+        <i class="fa-solid fa-chevron-left"></i> Prev
+    </button>
+    <span id="page-indicator-members" style="color: var(--text-muted); font-size: 0.9rem;">Page 1</span>
+    <button class="btn-sm" onclick="changePage('members', 1)" style="background:var(--bg-card); border:1px solid var(--border);">
+        Next <i class="fa-solid fa-chevron-right"></i>
+    </button>
+</div>
             </div>
 
             <div id="view-fitness" class="view-section" style="display:none;">
@@ -234,6 +243,15 @@
                 </div>
 
                 <div id="finance-list" class="detailed-list"></div>
+                <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+    <button class="btn-sm" onclick="changePage('finance', -1)" style="background:var(--bg-card); border:1px solid var(--border);">
+        <i class="fa-solid fa-chevron-left"></i> Prev
+    </button>
+    <span id="page-indicator-finance" style="color: var(--text-muted); font-size: 0.9rem;">Page 1</span>
+    <button class="btn-sm" onclick="changePage('finance', 1)" style="background:var(--bg-card); border:1px solid var(--border);">
+        Next <i class="fa-solid fa-chevron-right"></i>
+    </button>
+</div>
             </div>
 
             <div id="view-data" class="view-section" style="display:none;">
