@@ -1941,3 +1941,117 @@ setTimeout(window.loadGymSettings, 500);
 // --- INITIALIZE SETTINGS ON LOAD ---
 // This ensures settings are loaded as soon as the script runs
 setTimeout(window.loadGymSettings, 500);
+
+// ======================================================
+// 13. RECORDS TAB (Detailed History)
+// ======================================================
+
+// Initialize Dates on Load (Default to Current Month)
+window.initRecordsDates = () => {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1); // 1st of month
+    
+    // Set inputs if they exist
+    const fromEl = document.getElementById('rec-date-from');
+    const toEl = document.getElementById('rec-date-to');
+    
+    if(fromEl && toEl) {
+        fromEl.value = firstDay.toISOString().split('T')[0];
+        toEl.value = today.toISOString().split('T')[0];
+    }
+};
+
+window.renderRecordsTab = () => {
+    const list = document.getElementById('records-list-container');
+    if(!list) return;
+    list.innerHTML = "";
+
+    // 1. Get Filters
+    const fromDate = document.getElementById('rec-date-from').value;
+    const toDate = document.getElementById('rec-date-to').value;
+    const searchQ = document.getElementById('rec-search').value.toLowerCase();
+
+    // 2. Filter Logic
+    let filtered = transactions.filter(t => {
+        // Date Check
+        const tDate = t.date; // YYYY-MM-DD string
+        const isDateInRange = (!fromDate || tDate >= fromDate) && (!toDate || tDate <= toDate);
+        
+        // Search Check
+        const matchesSearch = 
+            t.category.toLowerCase().includes(searchQ) || 
+            t.amount.toString().includes(searchQ) ||
+            (t.mode && t.mode.toLowerCase().includes(searchQ));
+
+        return isDateInRange && matchesSearch;
+    });
+
+    // 3. Sort by Date Descending
+    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // 4. Calculate Totals
+    let inc = 0, exp = 0;
+    filtered.forEach(t => {
+        if(t.type === 'income') inc += t.amount;
+        else exp += t.amount;
+    });
+
+    // Update Summary UI
+    document.getElementById('rec-total-inc').innerText = `₹${inc.toLocaleString()}`;
+    document.getElementById('rec-total-exp').innerText = `₹${exp.toLocaleString()}`;
+    const bal = inc - exp;
+    const balEl = document.getElementById('rec-total-bal');
+    balEl.innerText = `₹${bal.toLocaleString()}`;
+    balEl.style.color = bal >= 0 ? '#22c55e' : '#ef4444';
+
+    // 5. Render List
+    if(filtered.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No records found for this period.</div>`;
+        return;
+    }
+
+    // Group by Date for that "Tracker" look
+    let currentDate = "";
+    
+    filtered.forEach(t => {
+        // Add Date Header if it changes
+        if(t.date !== currentDate) {
+            currentDate = t.date;
+            // Format date nicely (e.g., "Fri, 27 Oct 2023")
+            const dateObj = new Date(t.date);
+            const dateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+            
+            list.innerHTML += `
+                <div style="background:var(--bg-body); color:#888; font-size:0.75rem; padding:5px 10px; margin-top:15px; border-radius:4px; width:fit-content;">
+                    ${dateStr}
+                </div>
+            `;
+        }
+
+        // Render Row
+        const isInc = t.type === 'income';
+        const color = isInc ? '#22c55e' : '#ef4444';
+        const sign = isInc ? '+' : '-';
+        const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; color:#ccc; padding:2px 6px; border-radius:4px;">${t.mode}</span>` : '';
+
+        list.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #333; background:var(--bg-card);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:8px; height:8px; border-radius:50%; background:${color};"></div>
+                    <div>
+                        <div style="font-size:0.95rem; color:var(--text-main);">${t.category}</div>
+                        <div style="font-size:0.8rem; color:#666; margin-top:2px;">${modeBadge}</div>
+                    </div>
+                </div>
+                <div style="font-weight:bold; color:${color}; font-size:1rem;">
+                    ${sign} ₹${t.amount}
+                </div>
+            </div>
+        `;
+    });
+};
+
+// Auto-Run Init
+setTimeout(() => {
+    window.initRecordsDates();
+}, 1000);
