@@ -619,32 +619,44 @@
     </div>
 
     <div id="modal-renew" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-head"><h3>Renew Membership</h3><i class="fa-solid fa-xmark close" onclick="closeRenewModal()"></i></div>
-            <div class="modal-content">
-                <input type="hidden" id="renew-id">
-                <div style="margin-bottom:15px; color:#888;">Renewing for: <b id="renew-name" style="color:white;"></b></div>
-                
-                <div class="split-inputs">
-                    <div>
-    <label>Select New Plan</label>
-    <select id="renew-plan" onchange="applyRenewPlan()" class="input-select">
-        <option value="">-- Select Plan --</option>
-        </select>
-</div>
-                    </div>
-                
-                <div class="split-inputs">
-                    <select id="renew-paymode">
-                        <option value="Cash">Cash</option>
-                        <option value="UPI">UPI (GPay/PhonePe)</option>
-                        <option value="Card">Card</option>
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Renew Membership</h3>
+            <i class="fa-solid fa-xmark close" onclick="closeRenewModal()"></i>
+        </div>
+        
+        <div class="modal-content">
+            <input type="hidden" id="renew-id">
+            
+            <div style="margin-bottom:15px; color:#888;">
+                Renewing for: <b id="renew-name" style="color:white;"></b>
+            </div>
+            
+            <div class="split-inputs">
+                <div>
+                    <label>Select New Plan</label>
+                    <select id="renew-plan" onchange="applyRenewPlan()" class="input-select">
+                        <option value="">-- Select Plan --</option>
                     </select>
                 </div>
-                <button class="btn-save" onclick="confirmRenewal()">Confirm Renewal</button>
+                <div>
+                    <label>Amount to Pay</label>
+                    <input type="number" id="renew-amount" placeholder="₹">
+                </div>
             </div>
+            
+            <div class="split-inputs">
+                <select id="renew-paymode" class="input-select">
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI (GPay/PhonePe)</option>
+                    <option value="Card">Card</option>
+                </select>
+            </div>
+            
+            <button class="btn-save" onclick="confirmRenewal()">Confirm Renewal</button>
         </div>
     </div>
+</div>
 
     <div id="modal-transaction" class="modal-overlay">
         <div class="modal-box">
