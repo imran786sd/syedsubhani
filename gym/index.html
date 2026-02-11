@@ -295,7 +295,21 @@
                         <label style="font-size:0.8rem; color:#888;">To</label>
                         <input type="date" id="rec-date-to" onchange="renderRecordsTab()" style="width:100%; padding:10px; background:var(--bg-card); border:1px solid var(--border); color:var(--text-main); border-radius:8px; color-scheme: light dark;">
                     </div>
+<div>
+    <label style="font-size:0.8rem; color:#888;">To</label>
+    <input type="date" id="rec-date-to" onchange="renderRecordsTab()" style="width:100%; padding:10px; background:var(--bg-card); border:1px solid var(--border); color:var(--text-main); border-radius:8px; color-scheme: light dark;">
+</div>
 
+<div>
+    <label style="font-size:0.8rem; color:#888;">Type</label>
+    <select id="rec-type-filter" onchange="renderRecordsTab()" class="input-select">
+        <option value="all">All Records</option>
+        <option value="income">Income Only (+)</option>
+        <option value="expense">Expense Only (-)</option>
+    </select>
+</div>
+
+<div style="grid-column: 1 / -1;">
                     <div style="grid-column: 1 / -1;"> 
                         <div style="position:relative;">
                             <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:12px; color:#888;"></i>
