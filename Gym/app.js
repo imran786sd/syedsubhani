@@ -13,6 +13,10 @@ let ageStatusChartInstance = null;
 let memberFilterState = 'active';
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 let selectedFitnessMember = null;
+// Pagination State
+let memberPage = 1;
+let financePage = 1;
+const itemsPerPage = 10; // Number of rows per page
 window.isDemoMode = false; // <--- NEW: Demo Flag
 
 // --- DEMO MODE LOGIC ---
@@ -1377,120 +1381,105 @@ window.deleteTransaction = async (id) => {
 // --- RENDER MEMBERS (With Blue Badge & Revoke Logic) ---
 window.renderMembersList = () => {
     const list = document.getElementById('members-list'); 
-    if(!list) return;
+    if(!list) return; 
     list.innerHTML = "";
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
 
-    members.forEach(m => {
+    const searchQ = document.getElementById('member-search') ? document.getElementById('member-search').value.toLowerCase() : "";
+    const today = new Date().toISOString().split('T')[0];
+
+    // 1. Filter first
+    let filteredMembers = members.filter(m => 
+        m.name.toLowerCase().includes(searchQ) || 
+        (m.memberId && m.memberId.toLowerCase().includes(searchQ)) || 
+        m.phone.includes(searchQ)
+    );
+
+    // 2. Pagination Logic
+    const totalPages = Math.ceil(filteredMembers.length / itemsPerPage) || 1;
+    
+    // Ensure current page is valid
+    if (memberPage > totalPages) memberPage = totalPages;
+    if (memberPage < 1) memberPage = 1;
+
+    // Update Indicator Text
+    const indicator = document.getElementById('page-indicator-members');
+    if(indicator) indicator.innerText = `Page ${memberPage} of ${totalPages}`;
+
+    // Slice Data for current page
+    const start = (memberPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginatedData = filteredMembers.slice(start, end);
+
+    if (paginatedData.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:20px; color:#666;">No members found.</div>`;
+        return;
+    }
+
+    // 3. Render
+    paginatedData.forEach(m => {
         const expDate = new Date(m.expiryDate);
-        const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-        let statusClass = 'status-paid'; let statusText = 'Paid';
+        const daysLeft = Math.ceil((expDate - new Date()) / (1000 * 60 * 60 * 24));
+        let statusClass = daysLeft < 0 ? 'status-due' : (daysLeft < 5 ? 'status-pending' : 'status-paid');
+        let statusText = daysLeft < 0 ? 'Expired' : (daysLeft < 5 ? `Due: ${daysLeft}` : 'Paid');
+        let waType = daysLeft < 0 ? 'expired' : 'reminder';
+        let waData = daysLeft < 0 ? m.expiryDate : daysLeft;
         
-        // --- WHATSAPP LOGIC FIX ---
-        let waType = 'reminder'; 
-        let waData = daysLeft; 
-
-        if (daysLeft < 0) { 
-            statusClass = 'status-due'; 
-            statusText = 'Expired'; 
-            
-            // If expired, switch type and send the actual DATE
-            waType = 'expired';
-            waData = m.expiryDate;
-        }
-        else if (daysLeft < 5) { 
-            statusClass = 'status-pending'; 
-            statusText = `Due: ${daysLeft} days`; 
-        }
-
-        const placeholder = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==";
-        const photoUrl = m.photo || placeholder;
-        const planDisplay = window.formatPlanDisplay(m.planDuration);
-        
-        let genderIcon = '';
-        if(m.gender === 'Male') genderIcon = '<i class="fa-solid fa-mars" style="color:#60a5fa; margin-left:5px;"></i>';
-        else if(m.gender === 'Female') genderIcon = '<i class="fa-solid fa-venus" style="color:#f472b6; margin-left:5px;"></i>';
-
-        const attendanceList = m.attendance || [];
-        const totalDays = attendanceList.length;
-        const isPresent = attendanceList.includes(todayStr);
-        const attendColor = isPresent ? '#22c55e' : '#666'; 
-        const attendText = isPresent ? 'Revoke Attendance' : 'Mark Present';
-
         list.innerHTML += `
         <div class="member-row">
             <i class="fa-solid fa-ellipsis-vertical mobile-kebab-btn" onclick="toggleRowAction('${m.id}')"></i>
-            <div class="profile-img-container"><img src="${photoUrl}" class="profile-circle" onclick="editMember('${m.id}')"></div>
-            <div class="info-block">
-                <div class="member-id-tag">${m.memberId || 'PENDING'}</div>
-                <div class="name-phone-row">
-                    <span class="info-main">${m.name}</span>${genderIcon}
-                    <span style="font-weight:400; font-size:0.8rem; color:#888; margin-left:8px;">${m.phone}</span>
-                </div>
-            </div>
-            <div class="info-block">
-                <div class="info-main" style="color:${daysLeft<0?'#ef4444':'inherit'}">Exp: ${m.expiryDate}</div>
-                <div class="info-sub">${planDisplay} Plan</div>
-            </div>
-            
-            <div style="display:flex; flex-direction:column; gap:6px;">
-                <span class="status-badge ${statusClass}">${statusText}</span>
-                <span style="font-size:0.75rem; color:#fff; background:#3b82f6; padding:3px 8px; border-radius:6px; text-align:center; font-weight:600; display:inline-block;">
-                    <i class="fa-solid fa-dumbbell"></i> ${totalDays} Days
-                </span>
-            </div>
-
+            <div class="profile-img-container"><img src="${m.photo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg=='}" class="profile-circle" onclick="editMember('${m.id}')"></div>
+            <div class="info-block"><div class="member-id-tag">${m.memberId}</div><div class="name-phone-row"><span class="info-main">${m.name}</span></div></div>
+            <div class="info-block"><div class="info-main" style="color:${daysLeft<0?'#ef4444':'inherit'}">Exp: ${m.expiryDate}</div></div>
+            <div style="display:flex;flex-direction:column;gap:5px;"><span class="status-badge ${statusClass}">${statusText}</span><span style="font-size:0.75rem;color:#fff;background:#3b82f6;padding:2px 6px;border-radius:4px;text-align:center;">${(m.attendance||[]).length} Days</span></div>
             <div class="row-actions" id="actions-${m.id}">
-                <div class="icon-btn" onclick="markAttendance('${m.id}')" title="${attendText}" style="color:${attendColor}; font-weight:bold; font-size:1.1rem;">
-                    <i class="fa-solid fa-clipboard-check"></i>
-                </div>
-                <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew"><i class="fa-solid fa-arrows-rotate"></i></div>
-                <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit"><i class="fa-solid fa-pen"></i></div>
-                <div class="icon-btn history" onclick="toggleHistory('${m.id}')" title="History"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                
-                <div class="icon-btn whatsapp" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${waType}', '${waData}')" title="Chat"><i class="fa-brands fa-whatsapp"></i></div>
-                
-                <div class="icon-btn bill" onclick='generateInvoice(${JSON.stringify(m)})' title="Bill"><i class="fa-solid fa-file-invoice"></i></div>
-                <div class="icon-btn delete" onclick="deleteMember('${m.id}')" title="Delete"><i class="fa-solid fa-trash"></i></div>
+                <div class="icon-btn" onclick="markAttendance('${m.id}')"><i class="fa-solid fa-clipboard-check"></i></div>
+                <div class="icon-btn" onclick="renewMember('${m.id}')"><i class="fa-solid fa-arrows-rotate"></i></div>
+                <div class="icon-btn" onclick="editMember('${m.id}')"><i class="fa-solid fa-pen"></i></div>
+                <div class="icon-btn" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${waType}', '${waData}')"><i class="fa-brands fa-whatsapp"></i></div>
+                <div class="icon-btn" onclick='generateInvoice(${JSON.stringify(m)})'><i class="fa-solid fa-file-invoice"></i></div>
+                <div class="icon-btn" onclick="deleteMember('${m.id}')"><i class="fa-solid fa-trash"></i></div>
             </div>
-            <div id="history-${m.id}" class="history-panel"></div>
         </div>`;
     });
-}
+};
 
 window.renderFinanceList = () => { 
     const list = document.getElementById('finance-list'); 
+    if(!list) return; 
     
-    if(!list) {
-        console.error("ERROR: Could not find <div id='finance-list'> in your HTML.");
-        return; 
-    }
-    
-    // FIX: Removed 'window.' so it uses the correct variable 'transactions'
-    console.log("Rendering Finance List with", transactions.length, "entries.");
-
     list.innerHTML = ""; 
 
-    // 1. Sort by Date Descending (Latest First)
-    // FIX: Removed 'window.' here too
-    const sortedData = [...transactions].sort((a, b) => {
+    // 1. Sort & Prepare Data
+    const sortedData = [...window.transactions].sort((a, b) => {
         const dateA = new Date(a.date || 0);
         const dateB = new Date(b.date || 0);
         return dateB - dateA; 
     });
 
-    // 2. Render List
-    let totalProfit = 0; 
+    // 2. Pagination Logic
+    const totalPages = Math.ceil(sortedData.length / itemsPerPage) || 1;
     
-    if (sortedData.length === 0) {
+    if (financePage > totalPages) financePage = totalPages;
+    if (financePage < 1) financePage = 1;
+
+    // Update Indicator
+    const indicator = document.getElementById('page-indicator-finance');
+    if(indicator) indicator.innerText = `Page ${financePage} of ${totalPages}`;
+
+    // Slice Data
+    const start = (financePage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginatedData = sortedData.slice(start, end);
+
+    // Calculate Total Profit (On ALL data, not just current page)
+    let totalProfit = 0;
+    sortedData.forEach(t => { if(t.type === 'income') totalProfit += t.amount; else totalProfit -= t.amount; });
+
+    // 3. Render
+    if (paginatedData.length === 0) {
         list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No transactions recorded.</div>`;
     } else {
-        sortedData.forEach(t => { 
-            // Calculate Profit
-            if(t.type === 'income') totalProfit += t.amount; 
-            else totalProfit -= t.amount; 
-            
+        paginatedData.forEach(t => { 
             const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 6px; border-radius:4px; margin-left:5px;">${t.mode}</span>` : '';
             
             list.innerHTML += `
@@ -1514,12 +1503,13 @@ window.renderFinanceList = () => {
         });
     }
 
-    // 3. Update Total
     const profitEl = document.getElementById('total-profit');
     if(profitEl) profitEl.innerText = "₹" + totalProfit.toLocaleString(); 
 };
-
-window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
+window.filterMembers = () => { 
+    memberPage = 1; // Reset to first page on search
+    renderMembersList(); 
+};
 window.toggleMemberModal = () => { 
     const el = document.getElementById('modal-member'); 
     if(el.style.display !== 'flex') {
@@ -1536,3 +1526,15 @@ window.toggleMemberModal = () => {
 };
 window.calcExpiry = () => { const j = document.getElementById('inp-join').value; const plan = document.getElementById('inp-plan').value; if(j && plan) { const d = new Date(j); const val = parseInt(plan); if(plan.includes('d')) d.setDate(d.getDate() + val); else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val); else d.setMonth(d.getMonth() + val); document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; } };
 window.toggleTxModal = () => { document.getElementById('modal-transaction').style.display = document.getElementById('modal-transaction').style.display==='flex'?'none':'flex'; };
+window.changePage = (type, direction) => {
+    if (type === 'members') {
+        memberPage += direction;
+        // Safety check: prevent going below page 1
+        if (memberPage < 1) memberPage = 1; 
+        renderMembersList();
+    } else if (type === 'finance') {
+        financePage += direction;
+        if (financePage < 1) financePage = 1;
+        renderFinanceList();
+    }
+};
