@@ -627,19 +627,12 @@
                 
                 <div class="split-inputs">
                     <div>
-                        <label>Select New Plan</label>
-                        <select id="renew-plan">
-                            <option value="1d">1 Day</option>
-                            <option value="7d">7 Days</option>
-                            <option value="15d">15 Days</option>
-                            <option value="1m" selected>1 Month</option>
-                            <option value="3m">3 Months</option>
-                            <option value="6m">6 Months</option>
-                            <option value="1y">1 Year</option>
-                        </select>
+    <label>Select New Plan</label>
+    <select id="renew-plan" onchange="applyRenewPlan()" class="input-select">
+        <option value="">-- Select Plan --</option>
+        </select>
+</div>
                     </div>
-                    <div><label>Amount to Pay</label><input type="number" id="renew-amount" placeholder="₹"></div>
-                </div>
                 
                 <div class="split-inputs">
                     <select id="renew-paymode">
