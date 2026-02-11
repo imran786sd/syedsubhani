@@ -1706,3 +1706,101 @@ window.previewSignature = (input) => {
 // --- AUTO-LOAD ON STARTUP ---
 // Add this line inside your existing initApp() function:
 // loadGymSettings();
+// ======================================================
+// 10. FULL SYSTEM BACKUP & RESTORE
+// ======================================================
+
+// 1. BACKUP FUNCTION
+window.backupDatabase = () => {
+    if(members.length === 0 && transactions.length === 0) return alert("Database is empty!");
+
+    // Create a single object with ALL data
+    const fullBackup = {
+        version: "2.0",
+        timestamp: new Date().toISOString(),
+        gymSettings: localStorage.getItem('gymConfig') ? JSON.parse(localStorage.getItem('gymConfig')) : {},
+        members: members,
+        transactions: transactions
+    };
+
+    // Convert to JSON string
+    const dataStr = JSON.stringify(fullBackup, null, 2); // Pretty print
+
+    // Download Logic
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    // Name the file with date (e.g., GymBackup_2023-10-27.json)
+    a.download = `GymBackup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    alert("Backup Downloaded! Keep this file safe.");
+};
+
+// 2. RESTORE FUNCTION
+window.restoreDatabase = () => {
+    const input = document.getElementById('restore-file');
+    const status = document.getElementById('restore-status');
+    
+    if (!input.files || !input.files[0]) return alert("Please select a .json backup file.");
+    
+    if(!confirm("⚠️ DANGER: This will DELETE all current data and replace it with the backup. Are you sure?")) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            status.innerText = "Reading file...";
+            const backup = JSON.parse(e.target.result);
+
+            // Validation: Check if it's a valid backup file
+            if(!backup.members || !backup.transactions) throw new Error("Invalid Backup File");
+
+            status.innerText = "Wiping current database...";
+            
+            // 1. WIPE CURRENT DATA (Use Batch or Loop)
+            // Note: In a real app, you might use a batch delete. 
+            // For this MVP, we will upload the backup data as NEW entries or Overwrite.
+            // Since Firestore IDs are unique, we can just write them back.
+            
+            // A. Restore Settings
+            if(backup.gymSettings) {
+                localStorage.setItem('gymConfig', JSON.stringify(backup.gymSettings));
+            }
+
+            // B. Restore Members
+            status.innerText = `Restoring ${backup.members.length} members...`;
+            let mCount = 0;
+            for (const m of backup.members) {
+                // We use setDoc to keep the original ID intact
+                await updateDoc(doc(db, `gyms/${currentUser.uid}/members`, m.id), m).catch(async () => {
+                    // If document doesn't exist (because we wiped it or new db), create it
+                    await setDoc(doc(db, `gyms/${currentUser.uid}/members`, m.id), m);
+                });
+                mCount++;
+            }
+
+            // C. Restore Transactions
+            status.innerText = `Restoring ${backup.transactions.length} transactions...`;
+            let tCount = 0;
+            for (const t of backup.transactions) {
+                await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, t.id), t).catch(async () => {
+                    await setDoc(doc(db, `gyms/${currentUser.uid}/transactions`, t.id), t);
+                });
+                tCount++;
+            }
+
+            status.innerHTML = `<span style="color:#22c55e">Success! Restored ${mCount} members & ${tCount} transactions. Reloading...</span>`;
+            
+            setTimeout(() => window.location.reload(), 2000);
+
+        } catch(err) {
+            console.error(err);
+            status.innerHTML = `<span style="color:#ef4444">Error: ${err.message}</span>`;
+        }
+    };
+    reader.readAsText(input.files[0]);
+};
