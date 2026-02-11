@@ -133,7 +133,8 @@ window.handleGoogleLogin = async () => { try { await signInWithPopup(auth, provi
 window.handleLogout = () => signOut(auth);
 
 onAuthStateChanged(auth, (user) => {
-    if (window.isDemoMode) return; // Ignore Firebase state in Demo Mode
+    // CRITICAL FIX: Ignore Firebase Auth updates if in Demo Mode
+    if (window.isDemoMode) return; 
 
     if (user) {
         currentUser = user;
@@ -1365,12 +1366,10 @@ window.renderMembersList = () => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
-    window.members.forEach(m => {
+    members.forEach(m => {
         const expDate = new Date(m.expiryDate);
         const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-        
-        let statusClass = 'status-paid'; 
-        let statusText = 'Paid';
+        let statusClass = 'status-paid'; let statusText = 'Paid';
         
         // --- WHATSAPP LOGIC FIX ---
         let waType = 'reminder'; 
