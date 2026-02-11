@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - The Ultimate Gym 2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg: #0f172a; --text: #f8fafc; --accent: #ef4444; --card: #1e293b; --border: #334155; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; }
+        
+        /* Sidebar */
+        nav { width: 250px; background: var(--card); height: 100vh; position: fixed; padding: 20px; border-right: 1px solid var(--border); overflow-y: auto; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: var(--accent); margin-bottom: 30px; display: block; text-decoration: none; }
+        .menu a { display: block; color: #94a3b8; text-decoration: none; padding: 10px; margin-bottom: 5px; border-radius: 6px; transition: 0.2s; }
+        .menu a:hover, .menu a.active { background: rgba(239, 68, 68, 0.1); color: var(--accent); }
+        .menu h4 { color: #fff; font-size: 0.8rem; text-transform: uppercase; margin-top: 20px; opacity: 0.6; }
+
+        /* Content */
+        main { margin-left: 250px; padding: 40px; max-width: 800px; line-height: 1.6; }
+        h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        h2 { margin-top: 40px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: #fff; }
+        h3 { color: var(--accent); margin-top: 25px; }
+        p, li { color: #cbd5e1; margin-bottom: 10px; }
+        code { background: #000; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #facc15; }
+        pre { background: #000; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+        pre code { background: transparent; padding: 0; color: #facc15; }
+        .note { background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent); padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge-new { background: #22c55e; color: #000; }
+        .step { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
+        .step-num { background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        
+        @media(max-width: 768px) {
+            body { flex-direction: column; }
+            nav { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
+            main { margin-left: 0; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="#" class="logo"><i class="fa-solid fa-dumbbell"></i> ULTIMATE GYM 2.0</a>
+        <div class="menu">
+            <h4>Getting Started</h4>
+            <a href="#intro" class="active">Introduction</a>
+            <a href="#setup">Setup Guide</a>
+            <a href="#demo">Demo Mode</a>
+            
+            <h4>Features</h4>
+            <a href="#offline">Offline Mode (PWA)</a>
+            <a href="#members">Managing Members</a>
+            <a href="#attendance">Attendance System</a>
+            <a href="#finance">Finance & Billing</a>
+            
+            <h4>Support</h4>
+            <a href="#faq">FAQ & Errors</a>
+        </div>
+    </nav>
+
+    <main>
+        <section id="intro">
+            <h1>Documentation</h1>
+            <p>Welcome to <strong>The Ultimate Gym 2.0</strong>. A complete, offline-capable Gym Management System powered by Google Firebase.</p>
+            <div class="note">
+                <strong>New in v2.0:</strong> Offline Support, Attendance History, Duplicate Protection, and Demo Mode.
+            </div>
+        </section>
+
+        <section id="setup">
+            <h2>Firebase Setup Guide</h2>
+            <p>Follow these steps to connect your own database.</p>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div>
+                    <h3>Create Project</h3>
+                    <p>Go to <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--accent)">Firebase Console</a> > <strong>Add Project</strong>. Disable Analytics for faster setup.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div>
+                    <h3>Enable Auth & Database</h3>
+                    <ul>
+                        <li><strong>Authentication:</strong> Enable "Google" Sign-in provider.</li>
+                        <li><strong>Firestore Database:</strong> Create database in "Production Mode".</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">3</div>
+                <div>
+                    <h3>Set Security Rules</h3>
+                    <p>Copy these rules into Firestore > Rules tab to keep data private per owner:</p>
+<pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /gyms/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">4</div>
+                <div>
+                    <h3>Connect Code</h3>
+                    <p>Go to Project Settings > General > Your Apps > Web (&lt;/&gt;). Copy the `firebaseConfig` keys and paste them into <code>firebase-init.js</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="demo">
+            <h2>Demo Mode <span class="badge badge-new">New</span></h2>
+            <p>You can verify the app features without logging in or setting up a database.</p>
+            <ul>
+                <li>Click the <strong><i class="fa-solid fa-gamepad"></i> Try Demo Mode</strong> button on the login screen.</li>
+                <li>The app loads with sample members and transactions.</li>
+                <li><strong>Note:</strong> Data changes in Demo Mode are temporary and will vanish on refresh.</li>
+            </ul>
+        </section>
+
+        <section id="offline">
+            <h2>Offline Mode & PWA <span class="badge badge-new">New</span></h2>
+            <p>This app works even without an internet connection.</p>
+            <ul>
+                <li><strong>Adding Members:</strong> You can add members offline. They will sync to the cloud automatically when you reconnect.</li>
+                <li><strong>Attendance:</strong> Mark attendance offline. The data is stored locally.</li>
+                <li><strong>Installation:</strong> You can install this app on your phone/desktop. Look for the "Install App" or "Add to Home Screen" option in your browser menu.</li>
+            </ul>
+            <div class="note">
+                <strong>Limitation:</strong> You cannot generate PDF Invoices while offline. The button will be disabled to prevent errors.
+            </div>
+        </section>
+
+        <section id="members">
+            <h2>Managing Members</h2>
+            <h3>Duplicate Protection</h3>
+            <p>The system prevents you from adding the same person twice. It checks:</p>
+            <ol>
+                <li><strong>Member ID:</strong> If <code>GYMRAMU1234</code> exists.</li>
+                <li><strong>Phone Number:</strong> If the phone number is already registered to another name.</li>
+            </ol>
+            <p>If a collision happens (two people with same name & phone end digits), the system automatically adds a unique suffix.</p>
+        </section>
+
+        <section id="attendance">
+            <h2>Attendance System</h2>
+            <p>A smart toggle system to track visits.</p>
+            <ul>
+                <li><strong>Mark Present:</strong> Click the gray <i class="fa-solid fa-clipboard-check"></i> icon. It turns Green.</li>
+                <li><strong>Revoke (Undo):</strong> Click the green icon again to remove attendance for today.</li>
+                <li><strong>History Log:</strong> Click the Clock icon <i class="fa-solid fa-clock-rotate-left"></i>. A panel will slide down showing every date the member was present.</li>
+            </ul>
+        </section>
+
+        <section id="finance">
+            <h2>Finance & Billing</h2>
+            <ul>
+                <li><strong>Automatic Recording:</strong> Income is recorded automatically when you add a member or renew a plan.</li>
+                <li><strong>Safe Invoice:</strong> Clicking the <i class="fa-solid fa-file-invoice"></i> icon generates a PDF receipt.</li>
+                <li><strong>History:</strong> View past payments in the History Panel (Clock Icon).</li>
+            </ul>
+        </section>
+
+        <section id="faq">
+            <h2>FAQ & Troubleshooting</h2>
+            
+            <h3>Error: "Domain not authorized"</h3>
+            <p>Go to Firebase Console > Authentication > Settings > Authorized Domains. Add your website URL (e.g., <code>syedsubhani.in</code>).</p>
+
+            <h3>Why can't I generate invoices?</h3>
+            <p>If you are offline, the PDF generator cannot load. Connect to Wi-Fi and try again.</p>
+
+            <h3>How do I backup my data?</h3>
+            <p>Go to the <strong>Data IO</strong> tab and click "Export Members". This downloads a CSV file you can open in Excel.</p>
+        </section>
+
+        <footer style="margin-top: 50px; border-top: 1px solid var(--border); padding-top: 20px; font-size: 0.9rem; color: #666;">
+            &copy; 2026 Syed Subhani. All rights reserved.
+        </footer>
+    </main>
+
+</body>
+</html>
