@@ -1659,14 +1659,7 @@ window.generateIDCard = (m) => {
 // 9. SETTINGS & CONFIGURATION
 // ======================================================
 
-// Default Settings
-let gymSettings = {
-    name: "THE ULTIMATE GYM 2.0",
-    phone: "+91 99485 92213",
-    address: "1-2-607/75/76, LIC Colony, Road, Hyderabad",
-    taxId: "36CYZPA903181Z1",
-    signature: "Sign.jpeg" // Default image path
-};
+
 
 // 1. Load Settings on Init
 async function loadGymSettings() {
