@@ -1131,28 +1131,29 @@ window.toggleHistory = async (id) => {
     // 1. GET ATTENDANCE DATA
     const m = members.find(x => x.id === id);
     const attendanceList = m.attendance || [];
-    // Sort dates (newest first)
     attendanceList.sort((a, b) => new Date(b) - new Date(a));
 
     let attendanceHTML = "";
     if(attendanceList.length > 0) {
         attendanceHTML = `
-            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-                <h4 style="color:#fff; margin:0 0 5px 0; font-size:0.9rem;">Attendance Log (${attendanceList.length} Days)</h4>
-                <div style="max-height:100px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:5px;">
-                    ${attendanceList.map(date => `<span style="background:#333; color:#ccc; padding:2px 6px; border-radius:4px; font-size:0.75rem;">${date}</span>`).join('')}
+            <div style="margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:15px;">
+                <h4 style="color:var(--accent); margin:0 0 10px 0; font-size:1rem; display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-calendar-check"></i> Attendance Log <span style="font-size:0.8rem; color:#888; font-weight:normal;">(${attendanceList.length} Days)</span>
+                </h4>
+                <div style="max-height:100px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:6px;">
+                    ${attendanceList.map(date => `<span style="background:rgba(255,255,255,0.1); color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; border:1px solid #444;">${date}</span>`).join('')}
                 </div>
             </div>`;
     } else {
-        attendanceHTML = `<div style="margin-bottom:15px; color:#666; font-size:0.8rem;">No attendance records found.</div>`;
+        attendanceHTML = `<div style="margin-bottom:15px; color:#666; font-size:0.9rem;">No attendance records found.</div>`;
     }
 
     if (window.isDemoMode) {
-        panel.innerHTML = attendanceHTML + '<div style="color:#888; font-size:0.8rem;">Transactions hidden in demo.</div>';
+        panel.innerHTML = attendanceHTML + '<div style="color:#888;">Transactions hidden in demo.</div>';
         return;
     }
 
-    panel.innerHTML = attendanceHTML + '<div style="color:#888; font-size:0.8rem;">Loading Payments...</div>';
+    panel.innerHTML = attendanceHTML + '<div style="color:#aaa; font-size:0.9rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Payments...</div>';
 
     // 2. GET PAYMENT DATA
     const q = query(
@@ -1166,12 +1167,16 @@ window.toggleHistory = async (id) => {
         
         let paymentHTML = "";
         if(snap.empty) {
-            paymentHTML = '<div style="color:#888; font-size:0.8rem;">No payment history found.</div>';
+            paymentHTML = '<div style="color:#888; font-size:0.9rem;">No payment history found.</div>';
         } else {
             paymentHTML = `
-                <h4 style="color:#fff; margin:0 0 5px 0; font-size:0.9rem;">Payment History</h4>
-                <table class="history-table">
-                    <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Action</th></tr></thead>
+                <h4 style="color:var(--accent); margin:0 0 10px 0; font-size:1rem; display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-money-bill-wave"></i> Payment History
+                </h4>
+                <table class="history-table" style="width:100%; text-align:left; font-size:0.9rem; border-collapse:collapse;">
+                    <thead style="background:rgba(255,255,255,0.05); color:#fff;">
+                        <tr><th style="padding:8px;">Date</th><th style="padding:8px;">Category</th><th style="padding:8px;">Amount</th><th style="padding:8px;">Print</th></tr>
+                    </thead>
                     <tbody>
             `;
             
@@ -1179,7 +1184,6 @@ window.toggleHistory = async (id) => {
                 const t = doc.data();
                 const safePlan = t.snapshotPlan || '';
                 const safeExpiry = t.snapshotExpiry || '';
-                
                 let timeStr = "-";
                 if(t.createdAt && t.createdAt.seconds) {
                     const dateObj = new Date(t.createdAt.seconds * 1000);
@@ -1187,11 +1191,11 @@ window.toggleHistory = async (id) => {
                 }
 
                 paymentHTML += `
-                    <tr>
-                        <td>${t.date}</td>
-                        <td>${t.category}</td>
-                        <td style="color:${t.type==='income'?'#22c55e':'#ef4444'}">${t.amount}</td>
-                        <td><i class="fa-solid fa-print" style="cursor:pointer; color:#888;" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}', '${safePlan}', '${safeExpiry}', '${timeStr}')"></i></td>
+                    <tr style="border-bottom:1px solid #333;">
+                        <td style="padding:8px; color:#ccc;">${t.date}</td>
+                        <td style="padding:8px; color:#ccc;">${t.category}</td>
+                        <td style="padding:8px; color:${t.type==='income'?'#22c55e':'#ef4444'}; font-weight:bold;">₹${t.amount}</td>
+                        <td style="padding:8px;"><i class="fa-solid fa-print" style="cursor:pointer; color:var(--accent);" onclick="printHistoryInvoice('${id}', '${t.amount}', '${t.date}', '${t.mode}', '${t.category}', '${safePlan}', '${safeExpiry}', '${timeStr}')"></i></td>
                     </tr>`;
             });
             paymentHTML += `</tbody></table>`;
@@ -1201,7 +1205,7 @@ window.toggleHistory = async (id) => {
 
     } catch (e) {
         console.error(e);
-        panel.innerHTML = attendanceHTML + '<div style="color:#ef4444; font-size:0.8rem;">Error loading payments.</div>';
+        panel.innerHTML = attendanceHTML + '<div style="color:#ef4444;">Error loading payments.</div>';
     }
 };
 
@@ -1431,22 +1435,19 @@ window.renderMembersList = () => {
 
     // 3. Render List
     paginatedData.forEach(m => {
-        // Calculate Status
         const expDate = new Date(m.expiryDate);
         const daysLeft = Math.ceil((expDate - new Date()) / (1000 * 60 * 60 * 24));
         
         let statusClass = daysLeft < 0 ? 'status-due' : (daysLeft < 5 ? 'status-pending' : 'status-paid');
         let statusText = daysLeft < 0 ? 'Expired' : (daysLeft < 5 ? `Due: ${daysLeft}` : 'Paid');
         
-        // WhatsApp Logic
         let waType = daysLeft < 0 ? 'expired' : 'reminder';
         let waData = daysLeft < 0 ? m.expiryDate : daysLeft;
 
-        // Check Attendance for TODAY (To color the button green)
+        // Check Attendance for TODAY
         const isPresentToday = m.attendance && m.attendance.includes(today);
-        const attendanceColor = isPresentToday ? '#22c55e' : 'inherit'; // Green if present
+        const attendanceColor = isPresentToday ? '#22c55e' : 'inherit'; 
         
-        // Profile Photo Fallback
         const photo = m.photo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==';
 
         list.innerHTML += `
@@ -1474,42 +1475,34 @@ window.renderMembersList = () => {
             </div>
 
             <div class="row-actions" id="actions-${m.id}">
-                
                 <div class="icon-btn" onclick="markAttendance('${m.id}')" title="Mark Attendance" style="color:${attendanceColor}">
                     <i class="fa-solid fa-clipboard-check"></i>
                 </div>
-
-                <div class="icon-btn" onclick="toggleHistory('${m.id}')" title="View History">
+                <div class="icon-btn" onclick="toggleHistory('${m.id}')" title="View History" style="color:var(--accent)">
                     <i class="fa-solid fa-clock-rotate-left"></i>
                 </div>
-
                 <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew Membership">
                     <i class="fa-solid fa-arrows-rotate"></i>
                 </div>
-
                 <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit Details">
                     <i class="fa-solid fa-pen"></i>
                 </div>
-
                 <div class="icon-btn" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${waType}', '${waData}')" title="Send WhatsApp">
                     <i class="fa-brands fa-whatsapp"></i>
                 </div>
-
                 <div class="icon-btn" onclick='generateIDCard(${JSON.stringify(m)})' title="Download ID Card" style="color:#facc15;">
                     <i class="fa-solid fa-id-card"></i>
                 </div>
-
                 <div class="icon-btn" onclick='generateInvoice(${JSON.stringify(m)})' title="Download Invoice">
                     <i class="fa-solid fa-file-invoice"></i>
                 </div>
-
                 <div class="icon-btn" onclick="deleteMember('${m.id}')" title="Delete Member" style="color:#ef4444;">
                     <i class="fa-solid fa-trash"></i>
                 </div>
             </div>
         </div>
 
-        <div id="history-${m.id}" class="history-panel" style="display:none; width:100%; background:#1e293b; padding:15px; border-radius:8px; margin-top:10px; border:1px solid #333;"></div>
+        <div id="history-${m.id}" class="history-panel" style="display:none; width:100%; background:#1e293b; padding:20px; border-radius:10px; margin-top:15px; border:1px solid #333; border-left: 5px solid var(--accent); box-shadow: 0 4px 15px rgba(0,0,0,0.3);"></div>
         `;
     });
 };
