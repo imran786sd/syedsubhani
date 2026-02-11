@@ -66,7 +66,8 @@
                     <div class="nav-links">
                         <span onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-item active">Home</span>
                         <span onclick="switchTab('members')" id="tab-members" class="nav-item">Members</span>
-                        <span onclick="switchTab('fitness')" id="tab-fitness" class="nav-item">Fitness / BMI</span> <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
+                        <span onclick="switchTab('fitness')" id="tab-fitness" class="nav-item">Fitness / BMI</span> 
+                        <span onclick="switchTab('finance')" id="tab-finance" class="nav-item">Finance</span>
                         <span onclick="switchTab('data')" id="tab-data" class="nav-item">Data IO</span>
                         
                         <div class="nav-icon" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></div>
@@ -219,29 +220,36 @@
                 </div>
                 
                 <div id="fitness-list-grid" class="dashboard-grid">
-                    </div>
+                </div>
             </div>
 
-            <div class="section-top">
-    <h2>Finance & Expenses</h2>
-    <button class="btn-sm" onclick="window.toggleTxModal()">+ Add Entry</button>
-</div>
+            <div id="view-finance" class="view-section" style="display:none;">
+                <div class="section-top">
+                    <h2>Finance & Expenses</h2>
+                    <button class="btn-sm" onclick="window.toggleTxModal()">+ Add Entry</button>
+                </div>
 
-<div class="filter-toolbar" style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-    <input type="text" id="finance-search" placeholder="Search (Name, Category...)" onkeyup="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff; flex:1;">
-    
-    <input type="date" id="finance-start-date" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
-    <input type="date" id="finance-end-date" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
-    
-    <select id="finance-sort" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
-        <option value="newest">Newest First</option>
-        <option value="oldest">Oldest First</option>
-        <option value="high">Amount: High to Low</option>
-        <option value="low">Amount: Low to High</option>
-    </select>
-</div>
+                <div class="filter-toolbar" style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                    <input type="text" id="finance-search" placeholder="Search (Name, Category...)" onkeyup="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff; flex:1;">
+                    
+                    <input type="date" id="finance-start-date" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
+                    <input type="date" id="finance-end-date" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
+                    
+                    <select id="finance-sort" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="high">Amount: High to Low</option>
+                        <option value="low">Amount: Low to High</option>
+                    </select>
+                </div>
 
-<div id="finance-list" class="detailed-list"></div>
+                <div style="background:var(--card); padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; border: 1px solid var(--border);">
+                    <span style="color:#aaa;">Total Balance (Filtered):</span>
+                    <span id="total-profit" style="font-size:1.5rem; font-weight:bold; color:var(--accent);">₹0</span>
+                </div>
+
+                <div id="finance-list" class="detailed-list"></div>
+            </div>
 
             <div id="view-data" class="view-section" style="display:none;">
                 <div class="section-top">
@@ -455,7 +463,7 @@
                     <h3 id="fit-name" style="margin:0;">Member Name</h3>
                     <small id="fit-plan" style="color:var(--text-muted);">Plan Duration</small>
                 </div>
-<textarea id="fit-workout" rows="5" placeholder="Enter workout plan here (e.g., Mon: Chest, Tue: Back)..." style="width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #ccc;"></textarea>
+                <textarea id="fit-workout" rows="5" placeholder="Enter workout plan here (e.g., Mon: Chest, Tue: Back)..." style="width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #ccc;"></textarea>
                 <div style="background:var(--card-light); padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:15px;">
                     <div style="font-size:0.8rem; font-weight:bold; color:var(--text-muted); margin-bottom:5px;">STARTING (JOIN DAY)</div>
                     <div class="split-inputs" style="margin-bottom:0;">
@@ -499,18 +507,18 @@
             <span>Finance</span>
         </div>
     </div>
-<script src="demo.js"></script> <script type="module" src="app.js"></script>
+
+    <script src="demo.js"></script>
     <script type="module" src="app.js"></script>
     <script>
-    // Register Service Worker for Offline Support
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('Service Worker Registered!', reg.scope))
-                .catch(err => console.log('Service Worker Failed:', err));
-        });
-    }
-</script>
-</body>
+        // Register Service Worker for Offline Support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker Registered!', reg.scope))
+                    .catch(err => console.log('Service Worker Failed:', err));
+            });
+        }
+    </script>
 </body>
 </html>
