@@ -1388,23 +1388,69 @@ window.deleteMember = async (id) => {
 
 window.saveTransaction = async () => {
     if(window.isDemoMode) return alert("Saving is disabled in Demo Mode.");
+
+    // 1. Get Values
     const type = document.getElementById('tx-type').value; 
     const cat = document.getElementById('tx-category').value; 
     const mode = document.getElementById('tx-paymode').value;
     const amt = parseFloat(document.getElementById('tx-amount').value); 
     const date = document.getElementById('tx-date').value; 
-    if(!cat || !amt) return alert("Fill details"); 
+
+    // 2. Validation
+    if(!cat || !amt || !date) return alert("Please fill all details"); 
+
     const data = { type, category: cat, amount: amt, date, mode }; 
-    if(editingTxId) { await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); editingTxId = null; } 
-    else { data.createdAt = new Date(); await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); } 
-    window.toggleTxModal(); 
+
+    try {
+        // 3. Check if Editing or New
+        if(editingTxId) { 
+            // UPDATE Existing
+            await updateDoc(doc(db, `gyms/${currentUser.uid}/transactions`, editingTxId), data); 
+            alert("Transaction Updated!");
+            editingTxId = null; // Reset ID after save
+        } else { 
+            // CREATE New
+            data.createdAt = new Date(); 
+            await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), data); 
+            alert("Transaction Saved!");
+        } 
+
+        // 4. Close Modal
+        window.toggleTxModal(); 
+        
+        // 5. REFRESH THE UI (Important!)
+        // If we are currently on the Records tab, reload it
+        if(document.getElementById('view-records').style.display === 'block') {
+            window.renderRecordsTab();
+        }
+
+    } catch(e) {
+        console.error("Save Error:", e);
+        alert("Error saving: " + e.message);
+    }
 };
 
 window.editTransaction = (id) => {
-    const t = transactions.find(x => x.id === id); if(!t) return;
-    editingTxId = id;
-    document.getElementById('tx-type').value = t.type; document.getElementById('tx-category').value = t.category; document.getElementById('tx-amount').value = t.amount; document.getElementById('tx-date').value = t.date;
-    document.getElementById('modal-transaction').style.display = 'flex';
+    // 1. Find the transaction in the list
+    const t = transactions.find(x => x.id === id); 
+    if(!t) return alert("Transaction not found!");
+
+    // 2. Set the global variable so saveTransaction knows what to update
+    editingTxId = id; 
+
+    // 3. Fill the Modal Inputs
+    document.getElementById('tx-type').value = t.type; 
+    document.getElementById('tx-category').value = t.category; 
+    document.getElementById('tx-amount').value = t.amount; 
+    document.getElementById('tx-date').value = t.date;
+    
+    // Fill Payment Mode (handle older data that might not have it)
+    const modeEl = document.getElementById('tx-paymode');
+    if(modeEl) modeEl.value = t.mode || 'Cash';
+
+    // 4. Open the Modal
+    const modal = document.getElementById('modal-transaction');
+    modal.style.display = 'flex';
 };
 
 window.deleteTransaction = async (id) => { 
@@ -1607,7 +1653,30 @@ window.toggleMemberModal = () => {
     el.style.display = el.style.display==='flex'?'none':'flex'; 
 };
 window.calcExpiry = () => { const j = document.getElementById('inp-join').value; const plan = document.getElementById('inp-plan').value; if(j && plan) { const d = new Date(j); const val = parseInt(plan); if(plan.includes('d')) d.setDate(d.getDate() + val); else if(plan.includes('y')) d.setFullYear(d.getFullYear() + val); else d.setMonth(d.getMonth() + val); document.getElementById('inp-expiry').value = d.toISOString().split('T')[0]; } };
-window.toggleTxModal = () => { document.getElementById('modal-transaction').style.display = document.getElementById('modal-transaction').style.display==='flex'?'none':'flex'; };
+
+window.toggleTxModal = () => { 
+    const el = document.getElementById('modal-transaction');
+    
+    // Check if we are opening or closing
+    if(el.style.display === 'flex') {
+        // CLOSING: Clear the editing ID and form
+        el.style.display = 'none';
+        editingTxId = null; // <--- CRITICAL FIX
+        
+        // Clear inputs
+        document.getElementById('tx-amount').value = "";
+        document.getElementById('tx-category').value = "";
+        document.getElementById('tx-date').value = "";
+    } else {
+        // OPENING
+        el.style.display = 'flex';
+        // Set default date to today if empty
+        if(!document.getElementById('tx-date').value) {
+            document.getElementById('tx-date').valueAsDate = new Date();
+        }
+    }
+};
+
 window.changePage = (type, direction) => {
     if (type === 'members') {
         memberPage += direction;
