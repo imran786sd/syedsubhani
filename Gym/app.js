@@ -1575,7 +1575,7 @@ window.generateIDCard = (m) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
-    doc.text("THE ULTIMATE GYM", 42.8, 7, { align: "center" });
+    doc.text(gymSettings.name.toUpperCase(), 42.8, 7, { align: "center" });
 
     // 5. Member Photo (Left Side)
     // We check if they have a photo, otherwise put a gray box
