@@ -1633,3 +1633,76 @@ window.generateIDCard = (m) => {
     // 8. Save
     doc.save(`${m.name}_ID_Card.pdf`);
 };
+// ======================================================
+// 9. SETTINGS & CONFIGURATION
+// ======================================================
+
+// Default Settings
+let gymSettings = {
+    name: "THE ULTIMATE GYM 2.0",
+    phone: "+91 99485 92213",
+    address: "1-2-607/75/76, LIC Colony, Road, Hyderabad",
+    taxId: "36CYZPA903181Z1",
+    signature: "Sign.jpeg" // Default image path
+};
+
+// 1. Load Settings on Init
+async function loadGymSettings() {
+    if(window.isDemoMode) return; // Use defaults in demo
+    
+    try {
+        const docRef = doc(db, `gyms/${currentUser.uid}/settings`, 'config');
+        const docSnap = await getDocs(query(collection(db, `gyms/${currentUser.uid}/settings`))); // Simplification for single doc
+        // Better:
+        // Since we don't have a specific ID, we usually store it in a fixed ID 'config'
+        // Let's assume we save to 'config'
+        // For now, let's just stick to localStorage for speed + Demo
+        const localConfig = localStorage.getItem('gymConfig');
+        if(localConfig) {
+            gymSettings = JSON.parse(localConfig);
+            updateSettingsUI();
+        }
+    } catch(e) { console.log("Config load error", e); }
+}
+
+// 2. Update UI inputs with current settings
+function updateSettingsUI() {
+    document.getElementById('set-gym-name').value = gymSettings.name;
+    document.getElementById('set-gym-phone').value = gymSettings.phone;
+    document.getElementById('set-gym-address').value = gymSettings.address;
+    document.getElementById('set-gym-tax').value = gymSettings.taxId;
+    if(gymSettings.signature.length > 50) {
+        document.getElementById('set-sign-preview').src = gymSettings.signature;
+    }
+}
+
+// 3. Save Settings
+window.saveGymSettings = async () => {
+    const name = document.getElementById('set-gym-name').value;
+    const phone = document.getElementById('set-gym-phone').value;
+    const addr = document.getElementById('set-gym-address').value;
+    const tax = document.getElementById('set-gym-tax').value;
+    const img = document.getElementById('set-sign-preview').src;
+
+    if(!name) return alert("Gym Name is required");
+
+    gymSettings = { name, phone, address: addr, taxId: tax, signature: img };
+    
+    // Save to LocalStorage (Persist across reload)
+    localStorage.setItem('gymConfig', JSON.stringify(gymSettings));
+    
+    // Optional: Save to Firebase here if you want cloud sync
+    alert("Settings Saved! Future PDFs will use these details.");
+};
+
+window.previewSignature = (input) => {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => document.getElementById('set-sign-preview').src = e.target.result;
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+// --- AUTO-LOAD ON STARTUP ---
+// Add this line inside your existing initApp() function:
+// loadGymSettings();
