@@ -614,21 +614,37 @@ window.importMembers = () => {
     reader.readAsText(file);
 };
 
+// --- REPLACE YOUR EXISTING addFinanceEntry FUNCTION WITH THIS ---
 async function addFinanceEntry(category, amount, mode, date, memberId, plan, expiry) {
     if (window.isDemoMode) return;
+
+    // 1. Validate Data
+    const safeAmount = parseFloat(amount);
+    if (isNaN(safeAmount) || safeAmount <= 0) {
+        console.warn("Skipping finance entry: Invalid amount", amount);
+        return; 
+    }
+
+    console.log("Saving Transaction:", { category, safeAmount, mode, date });
+
     try {
         await addDoc(collection(db, `gyms/${currentUser.uid}/transactions`), {
             type: 'income',
             category: category,
-            amount: parseFloat(amount),
+            amount: safeAmount,
             date: date,
-            mode: mode || 'Cash',
+            mode: mode || 'Cash', // Default to Cash if undefined
             memberId: memberId || null,
             snapshotPlan: plan || null,
             snapshotExpiry: expiry || null,
             createdAt: new Date()
         });
-    } catch(e) { console.error("Auto-finance failed", e); }
+        console.log("Transaction saved successfully.");
+    } catch(e) {
+        console.error("FINANCE SAVE FAILED:", e);
+        // This alert will tell you EXACTLY why it's not saving
+        alert("⚠️ Member Saved, but Finance Entry Failed!\n\nError: " + e.message);
+    }
 }
 
 function renderDashboard() {
