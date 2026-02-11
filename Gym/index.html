@@ -273,6 +273,29 @@
                             <button class="btn-sm" onclick="exportData('finance')" style="background:#333;">
                                 <i class="fa-solid fa-coins"></i> Export Finance
                             </button>
+                            <div class="grid-item" style="background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border); margin-top:20px;">
+    <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px; color:#facc15;">
+        <i class="fa-solid fa-database"></i> Full System Backup
+    </h3>
+    <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
+        Save a complete copy of your database (Members, Photos, History, Finance) to a single file. 
+        <br><b style="color:#ef4444;">Warning:</b> Restoring a backup will overwrite current data!
+    </p>
+
+    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center;">
+        <button class="btn-save" onclick="backupDatabase()" style="width:auto; background:#facc15; color:#000;">
+            <i class="fa-solid fa-download"></i> Download Backup (.json)
+        </button>
+
+        <div style="border-left:1px solid #444; padding-left:15px; display:flex; gap:10px; align-items:center;">
+            <input type="file" id="restore-file" accept=".json" style="font-size:0.9rem; color:#888;">
+            <button class="btn-sm" onclick="restoreDatabase()" style="background:#ef4444;">
+                <i class="fa-solid fa-rotate-left"></i> Restore System
+            </button>
+        </div>
+    </div>
+    <div id="restore-status" style="margin-top:10px; font-weight:bold;"></div>
+</div>
                         </div>
                     </div>
 
