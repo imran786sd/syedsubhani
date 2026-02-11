@@ -15,7 +15,7 @@ let currentTheme = localStorage.getItem('gymTheme') || 'red';
 let selectedFitnessMember = null;
 window.isDemoMode = false; // <--- NEW: Demo Flag
 
-// --- DEMO MODE LOGIC (Added Here) ---
+// --- DEMO MODE LOGIC ---
 window.startDemoMode = () => {
     window.isDemoMode = true;
     currentUser = { uid: "demo-user", displayName: "Demo Gym Owner" };
@@ -1460,7 +1460,7 @@ window.renderMembersList = () => {
 }
 
 function renderFinanceList() { 
-    const list = document.getElementById('finance-list'); list.innerHTML = ""; 
+    const list = document.getElementById('finance-list'); if(!list) return; list.innerHTML = ""; 
     let p=0; 
     transactions.forEach(t=>{ 
         if(t.type=='income') p+=t.amount; else p-=t.amount; 
