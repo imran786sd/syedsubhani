@@ -13,6 +13,13 @@ let ageStatusChartInstance = null;
 let memberFilterState = 'active';
 let currentTheme = localStorage.getItem('gymTheme') || 'red';
 let selectedFitnessMember = null;
+let gymSettings = {
+    name: "THE ULTIMATE GYM 2.0",
+    phone: "+91 99999 00000",
+    address: "Default Gym Address",
+    taxId: "GST-PENDING",
+    signature: "Sign.jpeg" 
+};
 // Pagination State
 let memberPage = 1;
 let financePage = 1;
@@ -1823,14 +1830,8 @@ window.restoreDatabase = () => {
 // 11. DYNAMIC SETTINGS ENGINE
 // ======================================================
 
-// Default Configuration
-let gymSettings = {
-    name: "THE ULTIMATE GYM 2.0",
-    phone: "+91 99999 00000",
-    address: "1-2-607/75/76, LIC Colony, Road, Hyderabad",
-    taxId: "GST-PENDING",
-    signature: "Sign.jpeg" 
-};
+// NOTE: 'gymSettings' variable must be defined at the TOP of app.js 
+// alongside 'currentUser' and 'members'. DO NOT redeclare it here.
 
 // 1. Load Settings Function
 window.loadGymSettings = () => {
@@ -1838,7 +1839,8 @@ window.loadGymSettings = () => {
     const saved = localStorage.getItem('gymConfig');
     if (saved) {
         try {
-            gymSettings = JSON.parse(saved);
+            // Update the global variable defined at the top
+            gymSettings = JSON.parse(saved); 
         } catch (e) {
             console.error("Error parsing settings", e);
         }
@@ -1891,6 +1893,9 @@ window.previewSignature = (input) => {
         reader.readAsDataURL(input.files[0]);
     }
 };
+
+// --- INITIALIZE SETTINGS ON LOAD ---
+setTimeout(window.loadGymSettings, 500);
 
 // --- INITIALIZE SETTINGS ON LOAD ---
 // This ensures settings are loaded as soon as the script runs
