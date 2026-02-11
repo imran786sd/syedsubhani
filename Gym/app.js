@@ -1459,25 +1459,59 @@ window.renderMembersList = () => {
     });
 }
 
-function renderFinanceList() { 
-    const list = document.getElementById('finance-list'); if(!list) return; list.innerHTML = ""; 
-    let p=0; 
-    transactions.forEach(t=>{ 
-        if(t.type=='income') p+=t.amount; else p-=t.amount; 
-        const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 5px; border-radius:4px; margin-right:5px;">${t.mode}</span>` : '';
-        list.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between; align-items:center;">
-            <div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date} ${modeBadge}</small></div>
-            <div style="display:flex; gap:15px; align-items:center;">
-                <span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span>
-                <div style="display:flex; gap:10px;">
-                    <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
-                    <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
+window.renderFinanceList = () => { 
+    const list = document.getElementById('finance-list'); 
+    if(!list) return; 
+    
+    list.innerHTML = ""; 
+
+    // --- SORTING LOGIC: LATEST FIRST ---
+    // We create a copy using [...] to avoid messing up the original array
+    // Then we sort: (b - a) creates a Descending order (Newest to Oldest)
+    const sortedData = [...window.transactions].sort((a, b) => {
+        const dateA = new Date(a.date || 0);
+        const dateB = new Date(b.date || 0);
+        return dateB - dateA; 
+    });
+
+    // Render List & Calculate Total
+    let totalProfit = 0; 
+    
+    if (sortedData.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No transactions recorded yet.</div>`;
+    } else {
+        sortedData.forEach(t => { 
+            // Calculate Profit
+            if(t.type === 'income') totalProfit += t.amount; 
+            else totalProfit -= t.amount; 
+            
+            const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 6px; border-radius:4px; margin-left:5px;">${t.mode}</span>` : '';
+            
+            list.innerHTML += `
+            <div class="member-card" style="display:flex; justify-content:space-between; align-items:center; border-left: 4px solid ${t.type === 'income' ? '#22c55e' : '#ef4444'}; margin-bottom:10px; padding:15px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border);">
+                <div>
+                    <span style="font-weight:600; display:block; font-size:1rem;">${t.category}</span>
+                    <small style="color:#888; display:flex; align-items:center; margin-top:4px;">
+                        <i class="fa-regular fa-calendar" style="margin-right:5px;"></i> ${t.date} ${modeBadge}
+                    </small>
                 </div>
-            </div>
-        </div>`; 
-    }); 
-    document.getElementById('total-profit').innerText="₹"+p; 
-}
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <span style="color:${t.type==='income'?'#22c55e':'#ef4444'}; font-weight:bold; font-size:1.1rem;">
+                        ${t.type==='income'?'+':'-'} ₹${t.amount}
+                    </span>
+                    <div style="display:flex; gap:10px;">
+                        <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
+                        <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
+                    </div>
+                </div>
+            </div>`; 
+        });
+    }
+
+    // Update Total Profit Display
+    const profitEl = document.getElementById('total-profit');
+    if(profitEl) profitEl.innerText = "₹" + totalProfit.toLocaleString(); 
+};
 
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
 window.toggleMemberModal = () => { 
