@@ -19,6 +19,7 @@ import {
     where, 
     getDocs, 
     getDoc,
+    setDoc,
     enableIndexedDbPersistence // <--- REQUIRED FOR OFFLINE MODE
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -66,5 +67,5 @@ export {
     updateDoc, 
     where, 
     getDocs, 
-    getDoc 
+    getDoc,setDoc
 };
