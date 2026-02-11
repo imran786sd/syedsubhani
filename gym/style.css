@@ -38,7 +38,6 @@ select {
     background-size: 10px;
     padding-right: 30px;
 }
-/* Force Options to have correct background */
 select option { background: var(--card-bg); color: var(--text); }
 
 
@@ -75,8 +74,18 @@ select option { background: var(--card-bg); color: var(--text); }
 .hero-stats-blocks { display: flex; flex-direction: column; gap: 15px; } .hero-block { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; display: flex; align-items: center; gap: 15px; border: 1px solid rgba(255,255,255,0.1); } .hero-block i { font-size: 1.8rem; } .hero-block h3 { margin: 0; font-size: 1.4rem; font-weight: 800; } .hero-block small { color: #ccc; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; }
 
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 0.95rem; } .card-header.compact { margin-bottom: 10px; }
+
+/* --- PLAN LIST & OVERALL MEMBERSHIP CARD RESTORED --- */
 .plan-list { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 6px; } 
 .plan-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-light); padding: 10px 15px; border-radius: 12px; border: 1px solid var(--border); }
+.plan-left { display: flex; align-items: center; gap: 15px; }
+.donut-svg-wrapper { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.plan-name { font-weight: 700; font-size: 0.85rem; color: var(--text); line-height: 1.2; }
+.stat-stack { display: flex; flex-direction: column; gap: 5px; }
+.stat-pill { background: #111; border: 1px solid var(--border); border-radius: 20px; padding: 3px 0; width: 70px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: white; }
+/* ---------------------------------------------------- */
+
+.chart-wrapper.compact { flex: 1; position: relative; min-height: 0; } .chart-wrapper-sm { flex: 1; position: relative; }
 .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 4px 0 10px; } .dot.white { background: #fff; }
 .toggle-pill { background: var(--card-light); border-radius: 8px; padding: 3px; display: flex; border: 1px solid var(--border); }
 .toggle-btn { background: transparent; border: none; color: var(--text-muted); padding: 6px 12px; font-size: 0.7rem; font-weight: 600; cursor: pointer; border-radius: 6px; flex: 1; } .toggle-btn.active { background: var(--accent); color: white; }
