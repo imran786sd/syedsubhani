@@ -1398,14 +1398,14 @@ window.deleteTransaction = async (id) => {
 
 // --- RENDER MEMBERS (With Blue Badge & Revoke Logic) ---
 window.renderMembersList = () => {
-    const list = document.getElementById('members-list'); 
-    if(!list) return; 
+    const list = document.getElementById('members-list');
+    if(!list) return;
     list.innerHTML = "";
 
     const searchQ = document.getElementById('member-search') ? document.getElementById('member-search').value.toLowerCase() : "";
     const today = new Date().toISOString().split('T')[0];
 
-    // 1. Filter first
+    // 1. Filter Logic
     let filteredMembers = members.filter(m => 
         m.name.toLowerCase().includes(searchQ) || 
         (m.memberId && m.memberId.toLowerCase().includes(searchQ)) || 
@@ -1414,16 +1414,12 @@ window.renderMembersList = () => {
 
     // 2. Pagination Logic
     const totalPages = Math.ceil(filteredMembers.length / itemsPerPage) || 1;
-    
-    // Ensure current page is valid
     if (memberPage > totalPages) memberPage = totalPages;
     if (memberPage < 1) memberPage = 1;
 
-    // Update Indicator Text
     const indicator = document.getElementById('page-indicator-members');
     if(indicator) indicator.innerText = `Page ${memberPage} of ${totalPages}`;
 
-    // Slice Data for current page
     const start = (memberPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const paginatedData = filteredMembers.slice(start, end);
@@ -1433,34 +1429,88 @@ window.renderMembersList = () => {
         return;
     }
 
-    // 3. Render
+    // 3. Render List
     paginatedData.forEach(m => {
+        // Calculate Status
         const expDate = new Date(m.expiryDate);
         const daysLeft = Math.ceil((expDate - new Date()) / (1000 * 60 * 60 * 24));
+        
         let statusClass = daysLeft < 0 ? 'status-due' : (daysLeft < 5 ? 'status-pending' : 'status-paid');
         let statusText = daysLeft < 0 ? 'Expired' : (daysLeft < 5 ? `Due: ${daysLeft}` : 'Paid');
+        
+        // WhatsApp Logic
         let waType = daysLeft < 0 ? 'expired' : 'reminder';
         let waData = daysLeft < 0 ? m.expiryDate : daysLeft;
+
+        // Check Attendance for TODAY (To color the button green)
+        const isPresentToday = m.attendance && m.attendance.includes(today);
+        const attendanceColor = isPresentToday ? '#22c55e' : 'inherit'; // Green if present
         
+        // Profile Photo Fallback
+        const photo = m.photo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==';
+
         list.innerHTML += `
         <div class="member-row">
             <i class="fa-solid fa-ellipsis-vertical mobile-kebab-btn" onclick="toggleRowAction('${m.id}')"></i>
-            <div class="profile-img-container"><img src="${m.photo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg=='}" class="profile-circle" onclick="editMember('${m.id}')"></div>
-            <div class="info-block"><div class="member-id-tag">${m.memberId}</div><div class="name-phone-row"><span class="info-main">${m.name}</span></div></div>
-            <div class="info-block"><div class="info-main" style="color:${daysLeft<0?'#ef4444':'inherit'}">Exp: ${m.expiryDate}</div></div>
-            <div style="display:flex;flex-direction:column;gap:5px;"><span class="status-badge ${statusClass}">${statusText}</span><span style="font-size:0.75rem;color:#fff;background:#3b82f6;padding:2px 6px;border-radius:4px;text-align:center;">${(m.attendance||[]).length} Days</span></div>
+            
+            <div class="profile-img-container">
+                <img src="${photo}" class="profile-circle" onclick="editMember('${m.id}')">
+            </div>
+            
+            <div class="info-block">
+                <div class="member-id-tag">${m.memberId}</div>
+                <div class="name-phone-row"><span class="info-main">${m.name}</span></div>
+            </div>
+            
+            <div class="info-block">
+                <div class="info-main" style="color:${daysLeft < 0 ? '#ef4444' : 'inherit'}">Exp: ${m.expiryDate}</div>
+            </div>
+            
+            <div style="display:flex;flex-direction:column;gap:5px;">
+                <span class="status-badge ${statusClass}">${statusText}</span>
+                <span style="font-size:0.75rem;color:#fff;background:#3b82f6;padding:2px 6px;border-radius:4px;text-align:center;">
+                    ${(m.attendance || []).length} Days
+                </span>
+            </div>
+
             <div class="row-actions" id="actions-${m.id}">
-                <div class="icon-btn" onclick="markAttendance('${m.id}')"><i class="fa-solid fa-clipboard-check"></i></div>
-                <div class="icon-btn" onclick="renewMember('${m.id}')"><i class="fa-solid fa-arrows-rotate"></i></div>
-                <div class="icon-btn" onclick="editMember('${m.id}')"><i class="fa-solid fa-pen"></i></div>
-                <div class="icon-btn" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${waType}', '${waData}')"><i class="fa-brands fa-whatsapp"></i></div>
-                <div class="icon-btn" onclick='generateInvoice(${JSON.stringify(m)})'><i class="fa-solid fa-file-invoice"></i></div>
+                
+                <div class="icon-btn" onclick="markAttendance('${m.id}')" title="Mark Attendance" style="color:${attendanceColor}">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+
+                <div class="icon-btn" onclick="toggleHistory('${m.id}')" title="View History">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+
+                <div class="icon-btn" onclick="renewMember('${m.id}')" title="Renew Membership">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </div>
+
+                <div class="icon-btn" onclick="editMember('${m.id}')" title="Edit Details">
+                    <i class="fa-solid fa-pen"></i>
+                </div>
+
+                <div class="icon-btn" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${waType}', '${waData}')" title="Send WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i>
+                </div>
+
                 <div class="icon-btn" onclick='generateIDCard(${JSON.stringify(m)})' title="Download ID Card" style="color:#facc15;">
                     <i class="fa-solid fa-id-card"></i>
                 </div>
-                <div class="icon-btn" onclick="deleteMember('${m.id}')"><i class="fa-solid fa-trash"></i></div>
+
+                <div class="icon-btn" onclick='generateInvoice(${JSON.stringify(m)})' title="Download Invoice">
+                    <i class="fa-solid fa-file-invoice"></i>
+                </div>
+
+                <div class="icon-btn" onclick="deleteMember('${m.id}')" title="Delete Member" style="color:#ef4444;">
+                    <i class="fa-solid fa-trash"></i>
+                </div>
             </div>
-        </div>`;
+        </div>
+
+        <div id="history-${m.id}" class="history-panel" style="display:none; width:100%; background:#1e293b; padding:15px; border-radius:8px; margin-top:10px; border:1px solid #333;"></div>
+        `;
     });
 };
 
