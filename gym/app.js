@@ -1506,17 +1506,58 @@ window.renderMembersList = () => {
     if(!list) return;
     list.innerHTML = "";
 
+    // 1. Get Search & Filter Values
     const searchQ = document.getElementById('member-search') ? document.getElementById('member-search').value.toLowerCase() : "";
-    const today = new Date().toISOString().split('T')[0];
+    const filterType = document.getElementById('member-filter-status') ? document.getElementById('member-filter-status').value : "all";
+    
+    // Date Helpers
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
 
-    // 1. Filter Logic
-    let filteredMembers = members.filter(m => 
-        m.name.toLowerCase().includes(searchQ) || 
-        (m.memberId && m.memberId.toLowerCase().includes(searchQ)) || 
-        m.phone.includes(searchQ)
-    );
+    // 2. FILTER LOGIC (The Core Magic)
+    let filteredMembers = members.filter(m => {
+        // A. Text Search Check
+        const matchesSearch = 
+            m.name.toLowerCase().includes(searchQ) || 
+            (m.memberId && m.memberId.toLowerCase().includes(searchQ)) || 
+            m.phone.includes(searchQ);
 
-    // 2. Pagination Logic
+        // B. Status Filter Check
+        let matchesStatus = true;
+        const expDate = new Date(m.expiryDate);
+        const joinDate = new Date(m.joinDate);
+        
+        // Reset hours for accurate date comparison
+        expDate.setHours(0,0,0,0);
+
+        if (filterType === 'active') {
+            matchesStatus = expDate >= today;
+        } 
+        else if (filterType === 'expired') {
+            matchesStatus = expDate < today;
+        } 
+        else if (filterType === 'new_month') {
+            // Joined in current Month & Year
+            matchesStatus = (joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear);
+        }
+        else if (filterType === 'exp_month') {
+            // Expires in current Month & Year
+            matchesStatus = (expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear);
+        }
+        else if (filterType === 'exp_soon') {
+            // Expires within next 7 days (including today)
+            const diffTime = expDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            matchesStatus = (diffDays >= 0 && diffDays <= 7);
+        }
+
+        // Return TRUE only if BOTH match
+        return matchesSearch && matchesStatus;
+    });
+
+    // 3. Pagination Logic
     const totalPages = Math.ceil(filteredMembers.length / itemsPerPage) || 1;
     if (memberPage > totalPages) memberPage = totalPages;
     if (memberPage < 1) memberPage = 1;
@@ -1529,23 +1570,29 @@ window.renderMembersList = () => {
     const paginatedData = filteredMembers.slice(start, end);
 
     if (paginatedData.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:20px; color:#666;">No members found.</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No members found matching filters.</div>`;
         return;
     }
 
-    // 3. Render List
+    // 4. Render List Rows
     paginatedData.forEach(m => {
         const expDate = new Date(m.expiryDate);
-        const daysLeft = Math.ceil((expDate - new Date()) / (1000 * 60 * 60 * 24));
+        const now = new Date();
+        now.setHours(0,0,0,0); // Normalize today
+        
+        const diffTime = expDate - now;
+        const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         let statusClass = daysLeft < 0 ? 'status-due' : (daysLeft < 5 ? 'status-pending' : 'status-paid');
         let statusText = daysLeft < 0 ? 'Expired' : (daysLeft < 5 ? `Due: ${daysLeft}` : 'Paid');
         
+        // Whatsapp Helper
         let waType = daysLeft < 0 ? 'expired' : 'reminder';
         let waData = daysLeft < 0 ? m.expiryDate : daysLeft;
 
-        // Check Attendance for TODAY
-        const isPresentToday = m.attendance && m.attendance.includes(today);
+        // Attendance Check
+        const todayStr = new Date().toISOString().split('T')[0];
+        const isPresentToday = m.attendance && m.attendance.includes(todayStr);
         const attendanceColor = isPresentToday ? '#22c55e' : 'inherit'; 
         
         const photo = m.photo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==';
