@@ -123,18 +123,30 @@ const dataLabelPlugin = {
 
 // --- NAVIGATION ---
 window.switchTab = (tab) => {
+    // 1. Hide all views
     document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
-    document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-    document.getElementById(`view-${tab}`).style.display = 'block';
     
-    // Desktop Nav
+    // 2. Remove 'active' class from all nav items (spans)
+    document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+    
+    // 3. Show the selected view
+    const viewEl = document.getElementById(`view-${tab}`);
+    if(viewEl) viewEl.style.display = 'block';
+    
+    // 4. Highlight the current nav item
     const dTab = document.getElementById(`tab-${tab}`);
     if(dTab) dTab.classList.add('active');
 
-    // Mobile Nav
+    // 5. MOBILE: If you have mobile buttons, highlight them too
     document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
     const mTab = document.getElementById(`mob-${tab}`);
     if(mTab) mTab.classList.add('active');
+
+    // --- IMPORTANT: TRIGGER THE RECORDS LOGIC ---
+    if(tab === 'records') {
+        if(window.renderRecordsTab) window.renderRecordsTab();
+        if(window.initRecordsDates) window.initRecordsDates();
+    }
 };
 
 window.toggleMobileMenu = () => { console.log("Mobile menu toggled"); };
