@@ -1459,25 +1459,86 @@ window.renderMembersList = () => {
     });
 }
 
-function renderFinanceList() { 
-    const list = document.getElementById('finance-list'); if(!list) return; list.innerHTML = ""; 
-    let p=0; 
-    transactions.forEach(t=>{ 
-        if(t.type=='income') p+=t.amount; else p-=t.amount; 
-        const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 5px; border-radius:4px; margin-right:5px;">${t.mode}</span>` : '';
-        list.innerHTML+=`<div class="member-card" style="display:flex;justify-content:space-between; align-items:center;">
-            <div><span style="font-weight:600; display:block;">${t.category}</span><small style="color:#888">${t.date} ${modeBadge}</small></div>
-            <div style="display:flex; gap:15px; align-items:center;">
-                <span style="color:${t.type=='income'?'#22c55e':'#ef4444'}; font-weight:bold;">${t.type=='income'?'+':'-'} ${t.amount}</span>
-                <div style="display:flex; gap:10px;">
-                    <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
-                    <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
+// --- REPLACE YOUR EXISTING renderFinanceList WITH THIS ---
+window.renderFinanceList = () => { 
+    const list = document.getElementById('finance-list'); 
+    if(!list) return; 
+    list.innerHTML = ""; 
+
+    // 1. GET FILTER VALUES
+    const searchQ = document.getElementById('finance-search') ? document.getElementById('finance-search').value.toLowerCase() : "";
+    const sortMode = document.getElementById('finance-sort') ? document.getElementById('finance-sort').value : "newest";
+    const startDate = document.getElementById('finance-start-date') ? document.getElementById('finance-start-date').value : "";
+    const endDate = document.getElementById('finance-end-date') ? document.getElementById('finance-end-date').value : "";
+
+    // 2. CREATE A COPY & FILTER
+    let filteredData = [...window.transactions];
+
+    // Filter by Search Query (Category or Date or Amount)
+    if (searchQ) {
+        filteredData = filteredData.filter(t => 
+            t.category.toLowerCase().includes(searchQ) || 
+            t.date.includes(searchQ) ||
+            t.amount.toString().includes(searchQ)
+        );
+    }
+
+    // Filter by Date Range
+    if (startDate) {
+        filteredData = filteredData.filter(t => new Date(t.date) >= new Date(startDate));
+    }
+    if (endDate) {
+        filteredData = filteredData.filter(t => new Date(t.date) <= new Date(endDate));
+    }
+
+    // 3. SORTING LOGIC
+    filteredData.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        
+        switch(sortMode) {
+            case 'newest': return dateB - dateA; // Descending Date
+            case 'oldest': return dateA - dateB; // Ascending Date
+            case 'high': return b.amount - a.amount; // High Amount First
+            case 'low': return a.amount - b.amount; // Low Amount First
+            default: return dateB - dateA;
+        }
+    });
+
+    // 4. RENDER & CALCULATE TOTAL
+    let p = 0; 
+    if (filteredData.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:20px; color:#666;">No transactions found.</div>`;
+    } else {
+        filteredData.forEach(t => { 
+            // Calculate Profit for filtered view
+            if(t.type === 'income') p += t.amount; else p -= t.amount; 
+            
+            const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 5px; border-radius:4px; margin-right:5px;">${t.mode}</span>` : '';
+            
+            list.innerHTML += `
+            <div class="member-card" style="display:flex; justify-content:space-between; align-items:center; border-left: 4px solid ${t.type === 'income' ? '#22c55e' : '#ef4444'};">
+                <div>
+                    <span style="font-weight:600; display:block;">${t.category}</span>
+                    <small style="color:#888">${t.date} ${modeBadge}</small>
                 </div>
-            </div>
-        </div>`; 
-    }); 
-    document.getElementById('total-profit').innerText="₹"+p; 
-}
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <span style="color:${t.type==='income'?'#22c55e':'#ef4444'}; font-weight:bold; font-size:1.1rem;">
+                        ${t.type==='income'?'+':'-'} ${t.amount}
+                    </span>
+                    <div style="display:flex; gap:10px;">
+                        <i class="fa-solid fa-pen" style="cursor:pointer; color:#888" onclick="editTransaction('${t.id}')"></i>
+                        <i class="fa-solid fa-trash" style="cursor:pointer; color:#ef4444" onclick="deleteTransaction('${t.id}')"></i>
+                    </div>
+                </div>
+            </div>`; 
+        });
+    }
+
+    // Update the total shown on screen based on FILTERED results
+    const profitEl = document.getElementById('total-profit');
+    if(profitEl) profitEl.innerText = "₹" + p; 
+};
 
 window.filterMembers = () => { const q = document.getElementById('member-search').value.toLowerCase(); document.querySelectorAll('.member-row').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? 'grid' : 'none'); };
 window.toggleMemberModal = () => { 
