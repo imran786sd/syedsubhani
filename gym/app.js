@@ -2029,17 +2029,12 @@ setTimeout(window.loadGymSettings, 500);
 
 // Initialize Dates on Load (Default to Current Month)
 window.initRecordsDates = () => {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1); // 1st of month
-    
-    // Set inputs if they exist
-    const fromEl = document.getElementById('rec-date-from');
-    const toEl = document.getElementById('rec-date-to');
-    
-    if(fromEl && toEl) {
-        fromEl.value = firstDay.toISOString().split('T')[0];
-        toEl.value = today.toISOString().split('T')[0];
-    }
+    // Select "This Month" in the dropdown
+    const dropdown = document.getElementById('period-select');
+    if(dropdown) dropdown.value = "this_month";
+
+    // Trigger the logic to set the dates
+    if(window.applyRecordPeriod) window.applyRecordPeriod();
 };
 
 window.renderRecordsTab = () => {
@@ -2134,3 +2129,82 @@ window.renderRecordsTab = () => {
 setTimeout(() => {
     window.initRecordsDates();
 }, 1000);
+// ======================================================
+// 14. PERIOD SELECTOR LOGIC
+// ======================================================
+
+window.applyRecordPeriod = () => {
+    const period = document.getElementById('period-select').value;
+    const fromEl = document.getElementById('rec-date-from');
+    const toEl = document.getElementById('rec-date-to');
+    
+    const today = new Date();
+    const year = today.getFullYear();
+    let start = null;
+    let end = null;
+
+    // Helper to format date as YYYY-MM-DD
+    const formatDate = (d) => d.toISOString().split('T')[0];
+
+    switch (period) {
+        case 'all_time':
+            fromEl.value = "";
+            toEl.value = "";
+            window.renderRecordsTab(); // Reload with no filter
+            return;
+
+        case 'this_month':
+            start = new Date(year, today.getMonth(), 1);
+            end = new Date(year, today.getMonth() + 1, 0); // Last day of month
+            break;
+
+        case 'week':
+            // Calculate start of week (Sunday)
+            start = new Date(today);
+            start.setDate(today.getDate() - today.getDay());
+            end = new Date(today); // Today is the end of the "current" view
+            break;
+
+        case 'q1': // Jan - Mar
+            start = new Date(year, 0, 1);
+            end = new Date(year, 3, 0);
+            break;
+        case 'q2': // Apr - Jun
+            start = new Date(year, 3, 1);
+            end = new Date(year, 6, 0);
+            break;
+        case 'q3': // Jul - Sep
+            start = new Date(year, 6, 1);
+            end = new Date(year, 9, 0);
+            break;
+        case 'q4': // Oct - Dec
+            start = new Date(year, 9, 1);
+            end = new Date(year, 12, 0);
+            break;
+
+        default:
+            // If it's a specific month number (0-11)
+            if (!isNaN(parseInt(period))) {
+                const month = parseInt(period);
+                start = new Date(year, month, 1);
+                end = new Date(year, month + 1, 0);
+            }
+            break;
+    }
+
+    if (start && end) {
+        // Fix for timezone offset issues when converting to ISO string
+        // We manually format YYYY-MM-DD to avoid getting the day before
+        const toLocalISO = (date) => {
+            const offset = date.getTimezoneOffset();
+            const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
+            return adjustedDate.toISOString().split('T')[0];
+        };
+
+        fromEl.value = toLocalISO(start);
+        toEl.value = toLocalISO(end);
+        
+        // Trigger the filter
+        window.renderRecordsTab();
+    }
+};
