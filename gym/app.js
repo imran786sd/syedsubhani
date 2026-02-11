@@ -1978,37 +1978,34 @@ window.renderRecordsTab = () => {
     if(!list) return;
     list.innerHTML = "";
 
-    // 1. Get Filters
+    // A. Get Input Values
     const fromDate = document.getElementById('rec-date-from').value;
     const toDate = document.getElementById('rec-date-to').value;
     const searchQ = document.getElementById('rec-search').value.toLowerCase();
 
-    // 2. Filter Logic
+    // B. Filter Logic
     let filtered = transactions.filter(t => {
-        // Date Check
-        const tDate = t.date; // YYYY-MM-DD string
-        const isDateInRange = (!fromDate || tDate >= fromDate) && (!toDate || tDate <= toDate);
-        
-        // Search Check
+        const tDate = t.date; 
+        const isAfterStart = !fromDate || tDate >= fromDate;
+        const isBeforeEnd = !toDate || tDate <= toDate;
         const matchesSearch = 
-            t.category.toLowerCase().includes(searchQ) || 
-            t.amount.toString().includes(searchQ) ||
+            (t.category && t.category.toLowerCase().includes(searchQ)) || 
+            (t.amount && t.amount.toString().includes(searchQ)) ||
             (t.mode && t.mode.toLowerCase().includes(searchQ));
-
-        return isDateInRange && matchesSearch;
+        return isAfterStart && isBeforeEnd && matchesSearch;
     });
 
-    // 3. Sort by Date Descending
+    // C. Sort (Newest First)
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // 4. Calculate Totals
+    // D. Calculate Totals
     let inc = 0, exp = 0;
     filtered.forEach(t => {
         if(t.type === 'income') inc += t.amount;
         else exp += t.amount;
     });
 
-    // Update Summary UI
+    // Update Top Cards
     document.getElementById('rec-total-inc').innerText = `₹${inc.toLocaleString()}`;
     document.getElementById('rec-total-exp').innerText = `₹${exp.toLocaleString()}`;
     const bal = inc - exp;
@@ -2016,48 +2013,49 @@ window.renderRecordsTab = () => {
     balEl.innerText = `₹${bal.toLocaleString()}`;
     balEl.style.color = bal >= 0 ? '#22c55e' : '#ef4444';
 
-    // 5. Render List
+    // E. Render List
     if(filtered.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No records found for this period.</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:40px; color:#666; font-style:italic;">No records found for this date range.</div>`;
         return;
     }
 
-    // Group by Date for that "Tracker" look
-    let currentDate = "";
-    
     filtered.forEach(t => {
-        // Add Date Header if it changes
-        if(t.date !== currentDate) {
-            currentDate = t.date;
-            // Format date nicely (e.g., "Fri, 27 Oct 2023")
-            const dateObj = new Date(t.date);
-            const dateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-            
-            list.innerHTML += `
-                <div style="background:var(--bg-body); color:#888; font-size:0.75rem; padding:5px 10px; margin-top:15px; border-radius:4px; width:fit-content;">
-                    ${dateStr}
-                </div>
-            `;
-        }
-
-        // Render Row
         const isInc = t.type === 'income';
         const color = isInc ? '#22c55e' : '#ef4444';
         const sign = isInc ? '+' : '-';
-        const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; color:#ccc; padding:2px 6px; border-radius:4px;">${t.mode}</span>` : '';
+        const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; color:#ccc; padding:2px 6px; border-radius:4px; margin-left:8px;">${t.mode}</span>` : '';
+        
+        const dateObj = new Date(t.date);
 
         list.innerHTML += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #333; background:var(--bg-card);">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="width:8px; height:8px; border-radius:50%; background:${color};"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; border-bottom:1px solid #333; background:var(--bg-card);">
+                
+                <div style="display:flex; align-items:center; gap:15px; flex:1;">
+                    <div style="background:var(--bg-body); border:1px solid var(--border); padding:5px 10px; border-radius:6px; text-align:center; min-width:50px;">
+                        <div style="font-size:0.7rem; color:#888; text-transform:uppercase;">${dateObj.toLocaleDateString('en-US', {weekday:'short'})}</div>
+                        <div style="font-size:0.9rem; font-weight:bold; color:var(--text-main);">${dateObj.getDate()}</div>
+                    </div>
+
                     <div>
-                        <div style="font-size:0.95rem; color:var(--text-main);">${t.category}</div>
-                        <div style="font-size:0.8rem; color:#666; margin-top:2px;">${modeBadge}</div>
+                        <div style="font-size:1rem; color:var(--text-main); font-weight:500;">
+                            ${t.category} ${modeBadge}
+                        </div>
+                        <div style="font-size:0.8rem; color:#666; margin-top:3px;">
+                            ${t.date}
+                        </div>
                     </div>
                 </div>
-                <div style="font-weight:bold; color:${color}; font-size:1rem;">
-                    ${sign} ₹${t.amount}
+
+                <div style="text-align:right;">
+                    <div style="font-weight:bold; color:${color}; font-size:1.1rem;">
+                        ${sign} ₹${t.amount}
+                    </div>
+                    <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:5px;">
+                        <i class="fa-solid fa-pen" style="font-size:0.8rem; color:#888; cursor:pointer;" onclick="editTransaction('${t.id}')"></i>
+                        <i class="fa-solid fa-trash" style="font-size:0.8rem; color:#ef4444; cursor:pointer;" onclick="deleteTransaction('${t.id}')"></i>
+                    </div>
                 </div>
+
             </div>
         `;
     });
