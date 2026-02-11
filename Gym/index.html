@@ -228,22 +228,8 @@
                     <button class="btn-sm" onclick="window.toggleTxModal()">+ Add Entry</button>
                 </div>
 
-                <div class="filter-toolbar" style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-                    <input type="text" id="finance-search" placeholder="Search (Name, Category...)" onkeyup="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff; flex:1;">
-                    
-                    <input type="date" id="finance-start-date" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
-                    <input type="date" id="finance-end-date" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
-                    
-                    <select id="finance-sort" onchange="window.renderFinanceList()" style="padding:8px; border-radius:6px; border:1px solid #333; background:#1e293b; color:#fff;">
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="high">Amount: High to Low</option>
-                        <option value="low">Amount: Low to High</option>
-                    </select>
-                </div>
-
                 <div style="background:#1e293b; padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #333;">
-                    <span style="color:#aaa;">Total Balance (Filtered):</span>
+                    <span style="color:#aaa;">Total Balance:</span>
                     <span id="total-profit" style="font-size:1.5rem; font-weight:bold; color:var(--accent);">₹0</span>
                 </div>
 
