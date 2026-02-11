@@ -1216,59 +1216,67 @@ window.printHistoryInvoice = (memberId, amount, date, mode, category, plan, expi
 };
 
 window.generateInvoice = async (m, specificTransaction = null) => {
+    if (!window.jspdf) return alert("PDF Library not loaded. Please wait or refresh.");
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
-    const themeColor = [0, 0, 0]; 
-    let finalY = 0;
 
+    // --- 1. PREPARE DATA ---
     const isHistory = !!specificTransaction;
     const amt = isHistory ? specificTransaction.amount : m.lastPaidAmount;
     const date = isHistory ? specificTransaction.date : new Date().toISOString().split('T')[0];
     const time = isHistory ? (specificTransaction.timeStr || '') : new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-    const mode = isHistory ? specificTransaction.mode : 'Cash'; 
+    const mode = isHistory ? specificTransaction.mode : 'Cash';
     const category = isHistory ? specificTransaction.category : 'Membership Fees';
     const rawPlan = (isHistory && specificTransaction.snapshotPlan) ? specificTransaction.snapshotPlan : m.planDuration;
     const rawExpiry = (isHistory && specificTransaction.snapshotExpiry) ? specificTransaction.snapshotExpiry : m.expiryDate;
+    
     const planText = window.formatPlanDisplay ? window.formatPlanDisplay(rawPlan) : rawPlan;
 
-    doc.setFillColor(...themeColor);
+    // --- 2. HEADER DESIGN ---
+    doc.setFillColor(20, 20, 20); // Dark Header
     doc.rect(0, 0, 210, 25, 'F');
     
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.text("THE ULTIMATE GYM 2.0", 14, 16);
+    // USE DYNAMIC GYM NAME
+    doc.text(gymSettings.name.toUpperCase(), 14, 16);
 
+    // Optional: Add Logo if it exists in directory
     try {
         const logoImg = new Image();
         logoImg.src = 'logo.png';
-        doc.addImage(logoImg, 'PNG', 175, 1.5, 22, 22); 
-    } catch(e) { console.log("Logo error", e); }
-    
+        doc.addImage(logoImg, 'PNG', 175, 1.5, 22, 22);
+    } catch(e) { /* Ignore if no logo */ }
+
+    // --- 3. RECEIPT INFO ---
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
     doc.text("Payment Receipt", 14, 35);
+    doc.setLineWidth(0.5);
     doc.line(14, 37, 196, 37);
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const receiptNo = `REC-${m.memberId}-${Math.floor(Math.random()*1000)}`;
     doc.text(`Receipt #: ${receiptNo}`, 14, 45);
-    doc.text(`Date: ${date}  ${time}`, 140, 45); 
+    doc.text(`Date: ${date}  ${time}`, 140, 45);
 
+    // --- 4. DYNAMIC ADDRESS BLOCK ---
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    const address = "1-2-607/75/76, LIC Colony, Road, behind NTR Stadium, Ambedkar Nagar, Gandhi Nagar, Hyderabad, Telangana 500080";
-    const splitAddress = doc.splitTextToSize(address, 180);
+    
+    // Auto-split long addresses
+    const splitAddress = doc.splitTextToSize(gymSettings.address, 120);
     doc.text(splitAddress, 14, 52);
     
-    let currentY = 52 + (splitAddress.length * 4); 
+    let currentY = 52 + (splitAddress.length * 4);
     
-    doc.text("Contact: +91 99485 92213 | +91 97052 73253", 14, currentY);
-    currentY += 5; 
-    doc.text("GST NO: 36CYZPA903181Z1", 14, currentY);
+    doc.text(`Contact: ${gymSettings.phone}`, 14, currentY);
+    currentY += 5;
+    doc.text(`GST/Tax ID: ${gymSettings.taxId}`, 14, currentY);
 
+    // --- 5. MEMBER TABLE ---
     doc.autoTable({
         startY: currentY + 10,
         theme: 'grid',
@@ -1276,7 +1284,7 @@ window.generateInvoice = async (m, specificTransaction = null) => {
         body: [
             ['Member ID', m.memberId || 'N/A', 'Name', m.name],
             ['Gender', m.gender || 'N/A', 'Phone', m.phone],
-            ['Duration', planText, 'Valid Until', rawExpiry], 
+            ['Plan', planText, 'Valid Until', rawExpiry],
             ['Payment Mode', mode, 'Amount Paid', `Rs. ${amt}`]
         ],
         styles: { fontSize: 10, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
@@ -1288,7 +1296,8 @@ window.generateInvoice = async (m, specificTransaction = null) => {
         }
     });
 
-    finalY = doc.lastAutoTable.finalY + 10;
+    // --- 6. TRANSACTION DETAILS ---
+    let finalY = doc.lastAutoTable.finalY + 10;
 
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
@@ -1296,29 +1305,31 @@ window.generateInvoice = async (m, specificTransaction = null) => {
     
     doc.autoTable({
         startY: finalY + 5,
-        head: [['Description', 'Date & Time', 'Mode', 'Amount']],
-        body: [[category, `${date} ${time}`, mode, `Rs. ${amt}`]],
+        head: [['Description', 'Date', 'Mode', 'Amount']],
+        body: [[category, `${date}`, mode, `Rs. ${amt}`]],
         theme: 'striped',
-        headStyles: { fillColor: themeColor },
+        headStyles: { fillColor: [20, 20, 20] },
         styles: { fontSize: 9, cellPadding: 3 }
     });
 
-    finalY = doc.lastAutoTable.finalY + 20;
+    finalY = doc.lastAutoTable.finalY + 25;
 
+    // --- 7. FOOTER & SIGNATURE ---
     doc.setFontSize(10);
     doc.text("Receiver Sign:", 14, finalY);
     doc.text("Authorized Signature", 150, finalY);
     
-    try {
-        const signImg = new Image();
-        signImg.src = 'Sign.jpeg'; 
-        doc.addImage(signImg, 'JPEG', 150, finalY - 5, 50, 25); 
-    } catch(e) { console.log("Sign error", e); }
+    // Add Dynamic Signature Image
+    if (gymSettings.signature && gymSettings.signature.length > 50) {
+        try {
+            doc.addImage(gymSettings.signature, 'JPEG', 150, finalY - 15, 40, 15);
+        } catch(e) { console.log("Sign render error", e); }
+    }
 
-    doc.line(14, finalY + 15, 60, finalY + 15);
-    doc.line(150, finalY + 15, 196, finalY + 15);
+    doc.line(14, finalY + 10, 60, finalY + 10);
+    doc.line(150, finalY + 10, 196, finalY + 10);
    
-    finalY += 30; 
+    finalY += 20;
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text("Note: Fees once paid are not refundable.", 14, finalY);
@@ -1558,10 +1569,9 @@ window.generateIDCard = (m) => {
         format: [85.6, 53.98] // Standard ID-1 Card Size
     });
 
-    // --- DESIGN SETTINGS ---
+    // Colors
     const primaryColor = [20, 20, 20];   // Dark Background
-    const accentColor = [239, 68, 68];   // Red Accent (Match your theme)
-    const textColor = [255, 255, 255];   // White Text
+    const accentColor = [239, 68, 68];   // Red Accent
 
     // 2. Draw Background
     doc.setFillColor(...primaryColor);
@@ -1571,30 +1581,27 @@ window.generateIDCard = (m) => {
     doc.setFillColor(...accentColor);
     doc.rect(0, 0, 85.6, 10, 'F');
 
-    // 4. Add Gym Name (Header)
+    // 4. Add Dynamic Gym Name
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.setTextColor(...textColor);
+    doc.setTextColor(255, 255, 255);
     doc.text(gymSettings.name.toUpperCase(), 42.8, 7, { align: "center" });
 
     // 5. Member Photo (Left Side)
-    // We check if they have a photo, otherwise put a gray box
     if (m.photo && m.photo.length > 100) {
         try {
-            doc.addImage(m.photo, 'JPEG', 5, 15, 25, 25); // x, y, w, h
+            doc.addImage(m.photo, 'JPEG', 5, 15, 25, 25);
         } catch (e) {
-            // Fallback if image is broken
+            // Fallback Box
             doc.setFillColor(50, 50, 50);
             doc.rect(5, 15, 25, 25, 'F');
-            doc.setFontSize(6);
-            doc.text("No Photo", 17.5, 27, { align: "center" });
         }
     } else {
         doc.setFillColor(50, 50, 50);
         doc.rect(5, 15, 25, 25, 'F');
     }
 
-    // 6. Member Details (Right Side)
+    // 6. Member Details
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
@@ -1616,21 +1623,29 @@ window.generateIDCard = (m) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.text("Valid Until:", 35, 38);
-    doc.setTextColor(...accentColor); // Make date red
+    doc.setTextColor(...accentColor); 
     doc.setFont("helvetica", "bold");
     doc.text(m.expiryDate, 35, 42);
 
-    // 7. Footer / Decorative Elements
+    // 7. Footer
     doc.setDrawColor(...accentColor);
     doc.setLineWidth(0.5);
-    doc.line(5, 45, 80, 45); // Bottom line
+    doc.line(5, 45, 80, 45); 
 
     doc.setFontSize(6);
     doc.setTextColor(150, 150, 150);
     doc.text("Authorized Signature", 75, 50, { align: "right" });
-    doc.text("+91 99485 92213", 5, 50, { align: "left" });
+    
+    // Dynamic Phone Number
+    doc.text(gymSettings.phone, 5, 50, { align: "left" });
 
-    // 8. Save
+    // 8. Add Signature to ID Card
+    if (gymSettings.signature && gymSettings.signature.length > 50) {
+        try {
+            doc.addImage(gymSettings.signature, 'JPEG', 65, 45, 15, 5);
+        } catch(e) {}
+    }
+
     doc.save(`${m.name}_ID_Card.pdf`);
 };
 // ======================================================
@@ -1804,3 +1819,79 @@ window.restoreDatabase = () => {
     };
     reader.readAsText(input.files[0]);
 };
+// ======================================================
+// 11. DYNAMIC SETTINGS ENGINE
+// ======================================================
+
+// Default Configuration
+let gymSettings = {
+    name: "THE ULTIMATE GYM 2.0",
+    phone: "+91 99999 00000",
+    address: "1-2-607/75/76, LIC Colony, Road, Hyderabad",
+    taxId: "GST-PENDING",
+    signature: "Sign.jpeg" 
+};
+
+// 1. Load Settings Function
+window.loadGymSettings = () => {
+    // Try to get from LocalStorage
+    const saved = localStorage.getItem('gymConfig');
+    if (saved) {
+        try {
+            gymSettings = JSON.parse(saved);
+        } catch (e) {
+            console.error("Error parsing settings", e);
+        }
+    }
+    
+    // Fill the inputs in the Settings Tab (if they exist in HTML)
+    const nameInput = document.getElementById('set-gym-name');
+    if (nameInput) {
+        nameInput.value = gymSettings.name || "";
+        document.getElementById('set-gym-phone').value = gymSettings.phone || "";
+        document.getElementById('set-gym-address').value = gymSettings.address || "";
+        document.getElementById('set-gym-tax').value = gymSettings.taxId || "";
+        
+        // Load Signature Image if available
+        if (gymSettings.signature && gymSettings.signature.length > 50) {
+            document.getElementById('set-sign-preview').src = gymSettings.signature;
+        }
+    }
+};
+
+// 2. Save Settings Function
+window.saveGymSettings = () => {
+    const name = document.getElementById('set-gym-name').value;
+    const phone = document.getElementById('set-gym-phone').value;
+    const address = document.getElementById('set-gym-address').value;
+    const tax = document.getElementById('set-gym-tax').value;
+    const signature = document.getElementById('set-sign-preview').src;
+
+    if (!name) return alert("Gym Name is required!");
+
+    // Update Global Variable
+    gymSettings = {
+        name,
+        phone,
+        address,
+        taxId: tax,
+        signature
+    };
+
+    // Save to Browser Memory
+    localStorage.setItem('gymConfig', JSON.stringify(gymSettings));
+    alert("✅ Settings Saved! Invoices & ID Cards will now use these details.");
+};
+
+// 3. Signature Upload Helper
+window.previewSignature = (input) => {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => document.getElementById('set-sign-preview').src = e.target.result;
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+// --- INITIALIZE SETTINGS ON LOAD ---
+// This ensures settings are loaded as soon as the script runs
+setTimeout(window.loadGymSettings, 500);
