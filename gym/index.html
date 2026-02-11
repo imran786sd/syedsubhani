@@ -180,10 +180,21 @@
                     </div>
                 </div>
 
-                <div class="search-box">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="member-search" placeholder="Search by ID, Name or Phone..." onkeyup="filterMembers()">
-                </div>
+               <div class="search-box" style="display:flex; gap:10px; align-items:center;">
+    <div style="position:relative; flex:1;">
+        <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#888;"></i>
+        <input type="text" id="member-search" placeholder="Search Name, ID or Phone..." onkeyup="renderMembersList()" style="width:100%; padding:12px 10px 12px 40px; margin-bottom:0; background:transparent; border:none; color:var(--text); outline:none;">
+    </div>
+
+    <select id="member-filter-status" onchange="renderMembersList()" style="width:180px; padding:10px; margin-bottom:0; background:var(--bg-body); border-left:1px solid var(--border); border-radius:0 12px 12px 0; color:var(--text); outline:none; cursor:pointer;">
+        <option value="all">Show All</option>
+        <option value="active">✅ Active Members</option>
+        <option value="expired">⚠️ Expired</option>
+        <option value="new_month">🆕 New This Month</option>
+        <option value="exp_month">📅 Expiring This Month</option>
+        <option value="exp_soon">🔥 Expiring Soon (7 Days)</option>
+    </select>
+</div>
                 
                 <div class="member-list-header">
                     <span>Profile</span>
