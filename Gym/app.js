@@ -1445,12 +1445,18 @@ window.renderMembersList = () => {
 
 window.renderFinanceList = () => { 
     const list = document.getElementById('finance-list'); 
-    if(!list) return; 
+    
+    // Safety Check
+    if (!list) {
+        console.warn("Cannot find 'finance-list' HTML element. Skipping render.");
+        return; 
+    }
     
     list.innerHTML = ""; 
 
-    // 1. Sort & Prepare Data
-    const sortedData = [...window.transactions].sort((a, b) => {
+    // 1. Sort by Date Descending (Latest First)
+    // We use a safe copy [...transactions]
+    const sortedData = [...transactions].sort((a, b) => {
         const dateA = new Date(a.date || 0);
         const dateB = new Date(b.date || 0);
         return dateB - dateA; 
@@ -1458,26 +1464,25 @@ window.renderFinanceList = () => {
 
     // 2. Pagination Logic
     const totalPages = Math.ceil(sortedData.length / itemsPerPage) || 1;
-    
     if (financePage > totalPages) financePage = totalPages;
     if (financePage < 1) financePage = 1;
 
     // Update Indicator
     const indicator = document.getElementById('page-indicator-finance');
-    if(indicator) indicator.innerText = `Page ${financePage} of ${totalPages}`;
+    if (indicator) indicator.innerText = `Page ${financePage} of ${totalPages}`;
 
     // Slice Data
     const start = (financePage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const paginatedData = sortedData.slice(start, end);
 
-    // Calculate Total Profit (On ALL data, not just current page)
+    // Calculate Total Profit (On ALL data)
     let totalProfit = 0;
     sortedData.forEach(t => { if(t.type === 'income') totalProfit += t.amount; else totalProfit -= t.amount; });
 
     // 3. Render
     if (paginatedData.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No transactions recorded.</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">No transactions found.</div>`;
     } else {
         paginatedData.forEach(t => { 
             const modeBadge = t.mode ? `<span style="font-size:0.7rem; background:#333; padding:2px 6px; border-radius:4px; margin-left:5px;">${t.mode}</span>` : '';
