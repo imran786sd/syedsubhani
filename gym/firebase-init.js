@@ -66,5 +66,6 @@ export {
     updateDoc, 
     where, 
     getDocs, 
-    getDoc 
+    getDoc,
+    setDoc
 };
