@@ -1791,23 +1791,7 @@ window.generateIDCard = (m) => {
 
 
 // 1. Load Settings on Init
-async function loadGymSettings() {
-    if(window.isDemoMode) return; // Use defaults in demo
-    
-    try {
-        const docRef = doc(db, `gyms/${currentUser.uid}/settings`, 'config');
-        const docSnap = await getDocs(query(collection(db, `gyms/${currentUser.uid}/settings`))); // Simplification for single doc
-        // Better:
-        // Since we don't have a specific ID, we usually store it in a fixed ID 'config'
-        // Let's assume we save to 'config'
-        // For now, let's just stick to localStorage for speed + Demo
-        const localConfig = localStorage.getItem('gymConfig');
-        if(localConfig) {
-            gymSettings = JSON.parse(localConfig);
-            updateSettingsUI();
-        }
-    } catch(e) { console.log("Config load error", e); }
-}
+
 
 // 2. Update UI inputs with current settings
 function updateSettingsUI() {
@@ -1955,20 +1939,38 @@ window.restoreDatabase = () => {
 // NOTE: 'gymSettings' variable must be defined at the TOP of app.js 
 // alongside 'currentUser' and 'members'. DO NOT redeclare it here.
 
-// 1. Load Settings Function
-window.loadGymSettings = () => {
-    // Try to get from LocalStorage
+// 1. Load Settings Function (Unified)
+window.loadGymSettings = async () => {
+    // A. Try LocalStorage First (Instant Load)
     const saved = localStorage.getItem('gymConfig');
     if (saved) {
         try {
-            // Update the global variable defined at the top
             gymSettings = JSON.parse(saved); 
         } catch (e) {
             console.error("Error parsing settings", e);
         }
     }
     
-    // Fill the inputs in the Settings Tab (if they exist in HTML)
+    // B. Try Firestore (Sync Latest)
+    if (!window.isDemoMode && currentUser) {
+        try {
+            const docRef = doc(db, `gyms/${currentUser.uid}/settings`, 'config');
+            const docSnap = await getDocs(query(collection(db, `gyms/${currentUser.uid}/settings`))); 
+            // In a real app, you'd use getDoc(docRef). Using collection query for safety as per your code structure.
+            if (!docSnap.empty) {
+                // Find the config doc or just take the first one
+                const data = docSnap.docs[0].data();
+                // Merge cloud data with defaults to ensure 'plans' array exists
+                gymSettings = { ...gymSettings, ...data };
+                // Update LocalStorage
+                localStorage.setItem('gymConfig', JSON.stringify(gymSettings));
+            }
+        } catch(e) {
+            console.warn("Cloud settings sync failed, using local.", e);
+        }
+    }
+
+    // C. Update UI Inputs (Settings Tab)
     const nameInput = document.getElementById('set-gym-name');
     if (nameInput) {
         nameInput.value = gymSettings.name || "";
@@ -1976,11 +1978,14 @@ window.loadGymSettings = () => {
         document.getElementById('set-gym-address').value = gymSettings.address || "";
         document.getElementById('set-gym-tax').value = gymSettings.taxId || "";
         
-        // Load Signature Image if available
         if (gymSettings.signature && gymSettings.signature.length > 50) {
             document.getElementById('set-sign-preview').src = gymSettings.signature;
         }
     }
+
+    // D. RENDER PLANS & DROPDOWNS (Crucial for your new features)
+    if (window.renderSettingsPlans) window.renderSettingsPlans();
+    if (window.updatePlanDropdowns) window.updatePlanDropdowns();
 };
 
 // 2. Save Settings Function
@@ -2212,4 +2217,123 @@ window.initYearDropdown = () => {
         if(y === currentYear) opt.selected = true; // Auto-select current year
         sel.appendChild(opt);
     }
+};
+
+// ======================================================
+// PLAN MANAGEMENT & SNAPSHOT LOGIC
+// ======================================================
+
+// 1. ADD PLAN: Saves to Firestore
+window.addPlan = async () => {
+    const name = document.getElementById('new-plan-name').value;
+    const dur = document.getElementById('new-plan-dur').value;
+    const price = document.getElementById('new-plan-price').value;
+
+    if (!name || !price) return alert("Please enter Plan Name and Price");
+
+    const newPlan = { id: Date.now().toString(), name, duration: dur, price: parseFloat(price) };
+
+    // Get current settings, add new plan, save back
+    if (!gymSettings.plans) gymSettings.plans = [];
+    gymSettings.plans.push(newPlan);
+
+    try {
+        await setDoc(doc(db, `gyms/${currentUser.uid}/settings`, 'config'), gymSettings);
+        
+        // Clear inputs
+        document.getElementById('new-plan-name').value = "";
+        document.getElementById('new-plan-price').value = "";
+        
+        // Refresh UI
+        window.renderSettingsPlans(); 
+        window.updatePlanDropdowns(); // Update the Member Modal list too
+        alert("Plan Added Successfully!");
+    } catch (e) {
+        console.error(e);
+        alert("Error saving plan");
+    }
+};
+
+// 2. RENDER PLANS: Shows them in Settings Table
+window.renderSettingsPlans = () => {
+    const list = document.getElementById('settings-plan-list');
+    if (!list) return;
+    list.innerHTML = "";
+
+    const plans = gymSettings.plans || [];
+
+    if (plans.length === 0) {
+        list.innerHTML = `<tr><td colspan="4" style="padding:20px; text-align:center; color:#666;">No plans added yet.</td></tr>`;
+        return;
+    }
+
+    plans.forEach(p => {
+        // Format duration text (e.g., "1m" -> "1 Month")
+        const durText = p.duration === '1m' ? '1 Month' : p.duration === '3m' ? '3 Months' : p.duration === '6m' ? '6 Months' : '1 Year';
+        
+        list.innerHTML += `
+            <tr style="border-bottom:1px solid #333;">
+                <td style="padding:12px; font-weight:bold;">${p.name}</td>
+                <td style="padding:12px; color:#aaa;">${durText}</td>
+                <td style="padding:12px; color:#22c55e;">₹${p.price}</td>
+                <td style="padding:12px; text-align:right;">
+                    <button onclick="deletePlan('${p.id}')" style="background:#ef4444; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+};
+
+// 3. DELETE PLAN
+window.deletePlan = async (id) => {
+    if (!confirm("Delete this plan?")) return;
+    gymSettings.plans = gymSettings.plans.filter(p => p.id !== id);
+    await setDoc(doc(db, `gyms/${currentUser.uid}/settings`, 'config'), gymSettings);
+    window.renderSettingsPlans();
+    window.updatePlanDropdowns();
+};
+
+// 4. UPDATE DROPDOWN: Populates "Quick Select" in Member Modal
+window.updatePlanDropdowns = () => {
+    const select = document.getElementById('quick-plan-select');
+    if (!select) return;
+
+    // Keep the first default option
+    select.innerHTML = `<option value="">-- Select a Standard Plan --</option>`;
+
+    const plans = gymSettings.plans || [];
+    plans.forEach(p => {
+        // We store all data in the 'value' as a JSON string for easy access
+        // This is a safe hack to pass data without extra lookups
+        const dataVal = JSON.stringify({ dur: p.duration, price: p.price });
+        select.innerHTML += `<option value='${dataVal}'>${p.name} - ₹${p.price}</option>`;
+    });
+};
+
+// 5. APPLY PLAN (THE SNAPSHOT LOGIC)
+// This runs when you select a plan in the Member Modal
+window.applyQuickPlan = () => {
+    const select = document.getElementById('quick-plan-select');
+    const val = select.value;
+
+    if (!val) return; // If they selected "Select Plan", do nothing
+
+    const data = JSON.parse(val); // Get {dur: "1m", price: 3000}
+
+    // A. Auto-fill Duration
+    const planEl = document.getElementById('inp-plan');
+    if (planEl) {
+        planEl.value = data.dur;
+        // Trigger calculation of expiry date
+        if (window.calcExpiry) window.calcExpiry(); 
+    }
+
+    // B. Auto-fill Price (CRITICAL STEP)
+    // We COPY the price value into the input field.
+    // When you click "Save Member", the system saves THIS number.
+    // It does NOT link back to the plan settings.
+    const amtEl = document.getElementById('inp-amount');
+    if (amtEl) amtEl.value = data.price;
 };
