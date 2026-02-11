@@ -2139,37 +2139,43 @@ window.renderRecordsTab = () => {
     if(!list) return;
     list.innerHTML = "";
 
-    // A. Get Input Values
+    // 1. Get Input Values (Including New Type Filter)
     const fromDate = document.getElementById('rec-date-from').value;
     const toDate = document.getElementById('rec-date-to').value;
     const searchQ = document.getElementById('rec-search').value.toLowerCase();
+    
+    // NEW: Get Type Filter Value ('all', 'income', 'expense')
+    const typeFilter = document.getElementById('rec-type-filter') ? document.getElementById('rec-type-filter').value : 'all';
 
-    // B. Filter Logic
+    // 2. Filter Logic
     let filtered = transactions.filter(t => {
         const tDate = t.date; 
+        
+        // Date Check
         const isAfterStart = !fromDate || tDate >= fromDate;
         const isBeforeEnd = !toDate || tDate <= toDate;
+        
+        // Search Check
         const matchesSearch = 
             (t.category && t.category.toLowerCase().includes(searchQ)) || 
             (t.amount && t.amount.toString().includes(searchQ)) ||
             (t.mode && t.mode.toLowerCase().includes(searchQ));
-        return isAfterStart && isBeforeEnd && matchesSearch;
+
+        // NEW: Type Check
+        const matchesType = (typeFilter === 'all') || (t.type === typeFilter);
+
+        // Return TRUE only if ALL conditions match
+        return isAfterStart && isBeforeEnd && matchesSearch && matchesType;
     });
 
-// C. Sort (Strict Newest First)
-    // We combine Date + CreatedAt logic if possible, otherwise simple Date Descending
+    // 3. Sort (Strict Newest First)
     filtered.sort((a, b) => {
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
-        
-        // If dates are different, sort by date
-        if (dateB !== dateA) return dateB - dateA;
-        
-        // If dates are same (e.g. 5 entries today), assume array order or use ID as tiebreaker
-        // Ideally we'd use 'createdAt' but it might not be on all legacy records.
-        return 0; 
+        return dateB - dateA; 
     });
-    // D. Calculate Totals
+
+    // 4. Calculate Totals (Based on filtered view)
     let inc = 0, exp = 0;
     filtered.forEach(t => {
         if(t.type === 'income') inc += t.amount;
@@ -2184,9 +2190,9 @@ window.renderRecordsTab = () => {
     balEl.innerText = `₹${bal.toLocaleString()}`;
     balEl.style.color = bal >= 0 ? '#22c55e' : '#ef4444';
 
-    // E. Render List
+    // 5. Render List
     if(filtered.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:40px; color:#666; font-style:italic;">No records found for this date range.</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:40px; color:#666; font-style:italic;">No records found.</div>`;
         return;
     }
 
