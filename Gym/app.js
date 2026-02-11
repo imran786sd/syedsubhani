@@ -1437,6 +1437,9 @@ window.renderMembersList = () => {
                 <div class="icon-btn" onclick="editMember('${m.id}')"><i class="fa-solid fa-pen"></i></div>
                 <div class="icon-btn" onclick="sendWhatsApp('${m.phone}', '${m.name}', '${waType}', '${waData}')"><i class="fa-brands fa-whatsapp"></i></div>
                 <div class="icon-btn" onclick='generateInvoice(${JSON.stringify(m)})'><i class="fa-solid fa-file-invoice"></i></div>
+                <div class="icon-btn" onclick='generateIDCard(${JSON.stringify(m)})' title="Download ID Card" style="color:#facc15;">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
                 <div class="icon-btn" onclick="deleteMember('${m.id}')"><i class="fa-solid fa-trash"></i></div>
             </div>
         </div>`;
@@ -1542,4 +1545,91 @@ window.changePage = (type, direction) => {
         if (financePage < 1) financePage = 1;
         renderFinanceList();
     }
+};
+// --- ID CARD GENERATOR ---
+window.generateIDCard = (m) => {
+    if (!window.jspdf) return alert("PDF Library not loaded.");
+    const { jsPDF } = window.jspdf;
+    
+    // 1. Create PDF with Credit Card Dimensions (Landscape)
+    const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [85.6, 53.98] // Standard ID-1 Card Size
+    });
+
+    // --- DESIGN SETTINGS ---
+    const primaryColor = [20, 20, 20];   // Dark Background
+    const accentColor = [239, 68, 68];   // Red Accent (Match your theme)
+    const textColor = [255, 255, 255];   // White Text
+
+    // 2. Draw Background
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, 85.6, 53.98, 'F');
+
+    // 3. Draw Header Strip
+    doc.setFillColor(...accentColor);
+    doc.rect(0, 0, 85.6, 10, 'F');
+
+    // 4. Add Gym Name (Header)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...textColor);
+    doc.text("THE ULTIMATE GYM", 42.8, 7, { align: "center" });
+
+    // 5. Member Photo (Left Side)
+    // We check if they have a photo, otherwise put a gray box
+    if (m.photo && m.photo.length > 100) {
+        try {
+            doc.addImage(m.photo, 'JPEG', 5, 15, 25, 25); // x, y, w, h
+        } catch (e) {
+            // Fallback if image is broken
+            doc.setFillColor(50, 50, 50);
+            doc.rect(5, 15, 25, 25, 'F');
+            doc.setFontSize(6);
+            doc.text("No Photo", 17.5, 27, { align: "center" });
+        }
+    } else {
+        doc.setFillColor(50, 50, 50);
+        doc.rect(5, 15, 25, 25, 'F');
+    }
+
+    // 6. Member Details (Right Side)
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+
+    // Name
+    doc.text("Name:", 35, 18);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(m.name.toUpperCase(), 35, 22);
+
+    // ID
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text("Member ID:", 35, 28);
+    doc.setFont("helvetica", "bold");
+    doc.text(m.memberId, 35, 32);
+
+    // Expiry
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text("Valid Until:", 35, 38);
+    doc.setTextColor(...accentColor); // Make date red
+    doc.setFont("helvetica", "bold");
+    doc.text(m.expiryDate, 35, 42);
+
+    // 7. Footer / Decorative Elements
+    doc.setDrawColor(...accentColor);
+    doc.setLineWidth(0.5);
+    doc.line(5, 45, 80, 45); // Bottom line
+
+    doc.setFontSize(6);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Authorized Signature", 75, 50, { align: "right" });
+    doc.text("+91 99485 92213", 5, 50, { align: "left" });
+
+    // 8. Save
+    doc.save(`${m.name}_ID_Card.pdf`);
 };
