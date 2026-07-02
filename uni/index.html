@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNO Virtual Table</title>
+    <title>UNO Multiplayer Table</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* === RADIAL TABLE & DARK THEME === */
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            /* Dark sleek table background resembling the reference image */
             background: radial-gradient(circle at center, #2c3e50 0%, #111820 100%);
             color: white; 
             margin: 0; 
             padding: 0;
-            overflow: hidden; /* Prevent scrolling, act like a game canvas */
+            overflow: hidden; 
             height: 100vh;
             width: 100vw;
         }
@@ -46,18 +45,14 @@
         #waiting-list li { background: rgba(0,0,0,0.3); margin: 5px; padding: 8px; border-radius: 5px; }
 
         /* === TABLE LAYOUT === */
-        #game-view {
-            position: relative; width: 100%; height: 100%;
-        }
+        #game-view { position: relative; width: 100%; height: 100%; }
 
-        /* Center Board (Draw & Discard) */
         #center-board {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             display: flex; gap: 30px; align-items: center; justify-content: center;
             width: 300px; height: 200px;
         }
 
-        /* Turn / Direction Info */
         #turn-status-container {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
             text-align: center; background: rgba(0,0,0,0.5); padding: 10px 30px;
@@ -83,7 +78,6 @@
             display: flex; justify-content: center; align-items: center;
             box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
-        /* Active Player Glow */
         .active-turn .opp-avatar { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
 
         /* My Hand (Bottom Center) */
@@ -105,12 +99,12 @@
         .card { 
             width: 75px; height: 110px; border-radius: 8px; border: 3px solid white;
             display: inline-flex; justify-content: center; align-items: center; 
-            font-weight: 900; font-size: 24px; margin-left: -15px; /* Overlap effect */
+            font-weight: 900; font-size: 24px; margin-left: -15px; 
             box-shadow: -4px 4px 10px rgba(0,0,0,0.4); user-select: none;
             position: relative; overflow: hidden; background-color: #333;
             transition: transform 0.2s, margin 0.2s; cursor: default;
         }
-        .card:first-child { margin-left: 0; } /* Remove overlap on first card */
+        .card:first-child { margin-left: 0; } 
         .card::before {
             content: ''; position: absolute; width: 85%; height: 95%;
             background-color: white; border-radius: 50% / 60%; 
@@ -121,7 +115,6 @@
         .playable { cursor: pointer; transform: translateY(-15px); box-shadow: 0 0 15px #fbbf24; z-index: 5; }
         .playable:hover { transform: translateY(-30px); margin-left: 5px; margin-right: 20px; }
 
-        /* Piles in center shouldn't overlap */
         #center-board .card { margin: 0; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         #top-card { transform: rotate(5deg); }
 
@@ -140,12 +133,56 @@
             width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; margin: 10px; cursor: pointer; transition: 0.1s;
         }
         .color-btn:hover { transform: scale(1.1); }
+
+        /* === CHAT & LOG SYSTEM === */
+        #notebook-btn {
+            position: absolute; bottom: 30px; right: 30px;
+            background: #1e293b; border: 2px solid #475569; border-radius: 50%;
+            width: 60px; height: 60px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: 0.2s; z-index: 100;
+        }
+        #notebook-btn:hover { transform: scale(1.1); background: #334155; }
+        #notebook-btn img { width: 30px; height: 30px; }
+
+        #side-panel {
+            position: absolute; top: 0; right: -350px; width: 300px; height: 100%;
+            background: rgba(15, 23, 42, 0.95); border-left: 2px solid #334155;
+            display: flex; flex-direction: column; transition: right 0.3s ease; z-index: 99;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+        #side-panel.open { right: 0; }
+        
+        #panel-header {
+            padding: 20px; background: #1e293b; font-weight: bold; font-size: 1.2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #334155;
+        }
+        #panel-header button {
+            background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;
+        }
+        #log-content {
+            flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+        }
+        .log-entry { font-size: 0.9rem; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); }
+        .log-action { color: #fbbf24; font-style: italic; }
+        .log-chat strong { color: #3b82f6; }
+        
+        #chat-input-area {
+            padding: 15px; background: #1e293b; border-top: 2px solid #334155; display: flex; gap: 10px;
+        }
+        #chat-input-area input {
+            flex-grow: 1; padding: 10px; border-radius: 5px; border: none;
+            background: #0f172a; color: white;
+        }
+        #chat-input-area button {
+            padding: 10px 15px; background: #3b82f6; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
     <div id="join-screen">
-        <h1 style="color: #3b82f6; margin-top:0;">Gidd.io-Style UNO</h1>
+        <h1 style="color: #3b82f6; margin-top:0;">UNO Multiplayer Table</h1>
         <input type="text" id="username" placeholder="Enter Your Name" maxlength="12">
         <button class="btn" onclick="joinGame()">Join Table</button>
         
@@ -181,6 +218,21 @@
             <div id="hand"></div>
         </div>
 
+        <button id="notebook-btn" onclick="toggleLog()">
+            <img src="https://gidd.io/wp-content/uploads/2022/08/notebook.svg" alt="Log">
+        </button>
+
+        <div id="side-panel">
+            <div id="panel-header">
+                Game Log <button onclick="toggleLog()">✖</button>
+            </div>
+            <div id="log-content"></div>
+            <div id="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Say something..." onkeypress="if(event.key === 'Enter') sendChat()">
+                <button onclick="sendChat()">Send</button>
+            </div>
+        </div>
+
     </div>
 
     <div id="color-picker-modal" class="hidden">
@@ -199,7 +251,6 @@
         // === SUPABASE SETUP ===
         const SUPABASE_URL = "https://pjyqmjvzgawzwpshtcrn.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_SmrBRls3lREh3UaZyZfuBQ_SwigfJ7B";
-
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let myId = Math.random().toString(36).substring(2, 9);
@@ -208,7 +259,6 @@
         let gameState = null;
         let pendingWildAction = null; 
 
-        // Room Connection
         const channel = supabaseClient.channel('uno-room', {
             config: { broadcast: { self: true } }
         });
@@ -217,7 +267,37 @@
             handleLobbyUpdate(payload.payload.players);
         }).on('broadcast', { event: 'game' }, (payload) => {
             handleGameStateUpdate(payload.payload.state, payload.payload.players);
+        }).on('broadcast', { event: 'log' }, (payload) => {
+            appendLogToPanel(payload.payload.message, payload.payload.type);
         }).subscribe();
+
+        // === LOG & CHAT LOGIC ===
+        function toggleLog() {
+            document.getElementById('side-panel').classList.toggle('open');
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if(!msg) return;
+            
+            const chatString = `<strong>${myName}:</strong> ${msg}`;
+            channel.send({ type: 'broadcast', event: 'log', payload: { message: chatString, type: 'chat' } });
+            input.value = '';
+        }
+
+        function broadcastActionLog(msg) {
+            channel.send({ type: 'broadcast', event: 'log', payload: { message: msg, type: 'action' } });
+        }
+
+        function appendLogToPanel(message, type) {
+            const logBox = document.getElementById('log-content');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = message;
+            logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight; // Auto-scroll to bottom
+        }
 
         // === GAME LOGIC ===
         function joinGame() {
@@ -272,6 +352,8 @@
             gameState = {
                 gameStarted: true, turnIndex: 0, direction: 1, topCard: topCard, deck: deck, winner: ""
             };
+            
+            broadcastActionLog(`🎲 The game has started!`);
             channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
         }
 
@@ -288,7 +370,7 @@
             }
         }
 
-        // === RENDER RADIAL UI ===
+        // === RENDER UI ===
         function renderGame() {
             const activePlayer = playersArray[gameState.turnIndex];
             const isMyTurn = (activePlayer.id === myId);
@@ -296,12 +378,10 @@
             document.getElementById('turn-status').innerText = isMyTurn ? "🟢 YOUR TURN!" : `⚪ ${activePlayer.name}'s turn...`;
             document.getElementById('direction-indicator').innerText = gameState.direction === 1 ? "🔄 Direction: Normal ➔" : "🔄 Direction: Reversed ⬅";
 
-            // Render Center Discard
             const topCardDiv = document.getElementById('top-card');
             topCardDiv.className = `card ${gameState.topCard.color}`;
             document.getElementById('top-card-text').innerText = gameState.topCard.value;
 
-            // Render My Area
             document.getElementById('my-name').innerText = myName;
             if (isMyTurn) document.getElementById('my-player-area').classList.add('active-turn');
             else document.getElementById('my-player-area').classList.remove('active-turn');
@@ -323,7 +403,6 @@
                 handDiv.appendChild(cardDiv);
             });
 
-            // Calculate and Render Radial Opponents
             renderOpponentsRadial();
         }
 
@@ -331,7 +410,6 @@
             const oppContainer = document.getElementById('opponents-container');
             oppContainer.innerHTML = '';
             
-            // Get players in order starting *after* me
             const myIndex = playersArray.findIndex(p => p.id === myId);
             let opponents = [];
             for (let i = 1; i < playersArray.length; i++) {
@@ -340,14 +418,11 @@
 
             const totalOpp = opponents.length;
             opponents.forEach((opp, i) => {
-                // Arc math: spread across the top half of the screen (Pi to 2*Pi)
-                // Fraction maps 0 to 1 across the available seats
                 const fraction = (i + 1) / (totalOpp + 1); 
                 const angle = Math.PI + (fraction * Math.PI); 
                 
-                // Radius in viewport widths/heights to keep them near edges
-                const radiusX = 40; // 40vw from center
-                const radiusY = 35; // 35vh from center
+                const radiusX = 40; 
+                const radiusY = 35; 
                 
                 const leftPercent = 50 + (Math.cos(angle) * radiusX);
                 const topPercent = 50 + (Math.sin(angle) * radiusY);
@@ -381,6 +456,7 @@
             document.getElementById('color-picker-modal').classList.add('hidden');
             if (pendingWildAction) {
                 pendingWildAction.card.color = color;
+                broadcastActionLog(`🎨 ${myName} changed the color to ${color.toUpperCase()}!`);
                 executePlayCard(pendingWildAction.index, pendingWildAction.card, pendingWildAction.hand);
                 pendingWildAction = null;
             }
@@ -390,6 +466,10 @@
             hand.splice(index, 1);
             const myData = playersArray.find(p => p.id === myId);
             myData.hand = hand;
+
+            if (card.color !== 'black') {
+                broadcastActionLog(`🃏 ${myName} played a ${card.color} ${card.value}`);
+            }
 
             if (hand.length === 0) {
                 gameState.winner = myName;
@@ -413,7 +493,6 @@
                 gameState.turnIndex = (gameState.turnIndex + (steps * gameState.direction) + (playersArray.length * 10)) % playersArray.length;
                 gameState.topCard = card;
                 
-                // Add slight random rotation to discard pile for realism
                 document.getElementById('top-card').style.transform = `rotate(${(Math.random() * 30) - 15}deg)`;
             }
 
@@ -427,6 +506,8 @@
             const newCard = gameState.deck.pop();
             const myData = playersArray.find(p => p.id === myId);
             myData.hand.push(newCard);
+
+            broadcastActionLog(`📥 ${myName} drew a card.`);
 
             gameState.turnIndex = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
             channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
