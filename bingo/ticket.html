@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Housie Ticket Generator</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-panel {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #111827;
+            margin-top: 0;
+        }
+
+        p {
+            text-align: center;
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: -5px;
+        }
+
+        .ticket-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            user-select: none;
+        }
+
+        .ticket-table td {
+            width: 11.11%;
+            height: 55px;
+            border: 2px solid #374151;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #fff;
+        }
+
+        .ticket-table td.empty {
+            background-color: #e5e7eb;
+            cursor: default;
+        }
+
+        .ticket-table td.marked {
+            background-color: #ef4444;
+            color: white;
+            position: relative;
+        }
+        
+        .ticket-table td.marked::after {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 2px;
+            background: white;
+            top: 50%;
+            left: 10%;
+            transform: rotate(-15deg);
+        }
+
+        button.main-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button.main-btn:hover {
+            background-color: var(--primary-hover);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-panel">
+        <h2>Housie Ticket</h2>
+        <p>Tap numbers to cross them off.</p>
+        
+        <table class="ticket-table" id="ticket-table"></table>
+
+        <button class="main-btn" onclick="generateNewTicket()">Get New Ticket</button>
+    </div>
+
+    <script>
+        function generateNewTicket() {
+            const table = document.getElementById('ticket-table');
+            table.innerHTML = '';
+
+            let grid = Array.from({ length: 3 }, () => Array(9).fill(0));
+            const colRanges = [
+                { min: 1, max: 9 }, { min: 10, max: 19 }, { min: 20, max: 29 },
+                { min: 30, max: 39 }, { min: 40, max: 49 }, { min: 50, max: 59 },
+                { min: 60, max: 69 }, { min: 70, max: 79 }, { min: 80, max: 90 }
+            ];
+
+            let poolPerColumn = colRanges.map(range => {
+                let list = [];
+                for(let i = range.min; i <= range.max; i++) list.push(i);
+                return list;
+            });
+
+            let rowCounts = [0, 0, 0];
+            for (let col = 0; col < 9; col++) {
+                let row = Math.floor(Math.random() * 3);
+                let randIdx = Math.floor(Math.random() * poolPerColumn[col].length);
+                grid[row][col] = poolPerColumn[col].splice(randIdx, 1)[0];
+                rowCounts[row]++;
+            }
+
+            let totalNumbersAdded = 9;
+            while (totalNumbersAdded < 15) {
+                let row = Math.floor(Math.random() * 3);
+                let col = Math.floor(Math.random() * 9);
+
+                if (rowCounts[row] < 5 && grid[row][col] === 0 && poolPerColumn[col].length > 0) {
+                    let randIdx = Math.floor(Math.random() * poolPerColumn[col].length);
+                    grid[row][col] = poolPerColumn[col].splice(randIdx, 1)[0];
+                    rowCounts[row]++;
+                    totalNumbersAdded++;
+                }
+            }
+
+            for (let col = 0; col < 9; col++) {
+                let filledRows = [];
+                for (let row = 0; row < 3; row++) {
+                    if (grid[row][col] !== 0) filledRows.push({ row: row, val: grid[row][col] });
+                }
+                filledRows.sort((a, b) => a.val - b.val);
+                
+                let idx = 0;
+                for (let row = 0; row < 3; row++) {
+                    if (grid[row][col] !== 0) {
+                        grid[row][col] = filledRows[idx++].val;
+                    }
+                }
+            }
+
+            for (let r = 0; r < 3; r++) {
+                const tr = document.createElement('tr');
+                for (let c = 0; c < 9; c++) {
+                    const td = document.createElement('td');
+                    if (grid[r][c] === 0) {
+                        td.className = 'empty';
+                    } else {
+                        td.innerText = grid[r][c];
+                        td.onclick = function() {
+                            this.classList.toggle('marked');
+                        };
+                    }
+                    tr.appendChild(td);
+                }
+                table.appendChild(tr);
+            }
+        }
+
+        generateNewTicket();
+    </script>
+</body>
+</html>
