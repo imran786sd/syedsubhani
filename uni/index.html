@@ -10,28 +10,21 @@
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background: radial-gradient(circle at center, #2c3e50 0%, #111820 100%);
-            color: white; 
-            margin: 0; 
-            padding: 0;
-            overflow: hidden; 
-            height: 100vh;
-            width: 100vw;
+            color: white; margin: 0; padding: 0; overflow: hidden; height: 100vh; width: 100vw;
         }
         .hidden { display: none !important; }
         
         /* === LOBBY MODAL === */
         #join-screen {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(30, 41, 59, 0.95);
-            border: 2px solid #334155;
-            border-radius: 15px;
-            width: 400px; padding: 40px; text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            z-index: 1000;
+            background: rgba(30, 41, 59, 0.95); border: 2px solid #334155;
+            border-radius: 15px; width: 450px; padding: 30px 40px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 1000;
         }
         input[type="text"] {
             padding: 12px; font-size: 1.1rem; border-radius: 8px; border: none;
             width: 80%; text-align: center; margin-bottom: 20px; background: #0f172a; color: white;
+            border: 1px solid #475569;
         }
         .btn {
             background: #3b82f6; color: #fff; border: none; padding: 12px 25px;
@@ -41,16 +34,25 @@
         .btn:hover { background: #2563eb; }
         .btn-green { background: #10b981; } .btn-green:hover { background: #059669; }
 
-        #waiting-list { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; }
+        #waiting-list { list-style: none; padding: 0; max-height: 120px; overflow-y: auto; }
         #waiting-list li { background: rgba(0,0,0,0.3); margin: 5px; padding: 8px; border-radius: 5px; }
+
+        /* Game Instructions */
+        .instructions {
+            background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px;
+            margin-top: 20px; text-align: left; font-size: 0.9rem; color: #cbd5e1;
+            border: 1px solid #475569;
+        }
+        .instructions h4 { margin: 0 0 10px 0; color: #fbbf24; text-align: center; font-size: 1.1rem; }
+        .instructions p { margin: 5px 0; }
+        .instructions strong { color: white; }
 
         /* === TABLE LAYOUT === */
         #game-view { position: relative; width: 100%; height: 100%; }
 
         #center-board {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            display: flex; gap: 30px; align-items: center; justify-content: center;
-            width: 300px; height: 200px;
+            display: flex; gap: 30px; align-items: center; justify-content: center; width: 300px; height: 200px;
         }
 
         #turn-status-container {
@@ -68,17 +70,24 @@
             width: 100px; transition: all 0.3s ease;
         }
         .opp-avatar {
-            background: #1e293b; border: 2px solid #475569; border-radius: 10px;
-            padding: 10px; text-align: center; font-weight: bold; width: 100%;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            background: #1e293b; border: 2px solid #475569; border-radius: 10px; position: relative;
+            padding: 10px; text-align: center; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
         .opp-cards {
             background: #dc2626; color: white; font-weight: bold; font-size: 1.2rem;
             width: 40px; height: 60px; border-radius: 6px; border: 2px solid white;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
         .active-turn .opp-avatar { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+
+        /* Kick Button */
+        .kick-btn {
+            position: absolute; top: -10px; right: -10px;
+            background: #ef4444; color: white; border: 2px solid #1e293b; border-radius: 50%;
+            width: 25px; height: 25px; font-size: 12px; cursor: pointer; font-weight: bold;
+            display: flex; justify-content: center; align-items: center; transition: 0.1s;
+        }
+        .kick-btn:hover { background: #b91c1c; transform: scale(1.1); }
 
         /* My Hand (Bottom Center) */
         #my-player-area {
@@ -154,45 +163,41 @@
         
         #panel-header {
             padding: 20px; background: #1e293b; font-weight: bold; font-size: 1.2rem;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid #334155;
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155;
         }
-        #panel-header button {
-            background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;
-        }
-        #log-content {
-            flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
-        }
+        #panel-header button { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+        #log-content { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .log-entry { font-size: 0.9rem; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); }
         .log-action { color: #fbbf24; font-style: italic; }
         .log-chat strong { color: #3b82f6; }
         
-        #chat-input-area {
-            padding: 15px; background: #1e293b; border-top: 2px solid #334155; display: flex; gap: 10px;
-        }
-        #chat-input-area input {
-            flex-grow: 1; padding: 10px; border-radius: 5px; border: none;
-            background: #0f172a; color: white;
-        }
-        #chat-input-area button {
-            padding: 10px 15px; background: #3b82f6; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer;
-        }
+        #chat-input-area { padding: 15px; background: #1e293b; border-top: 2px solid #334155; display: flex; gap: 10px; }
+        #chat-input-area input { flex-grow: 1; padding: 10px; border-radius: 5px; border: none; background: #0f172a; color: white; }
+        #chat-input-area button { padding: 10px 15px; background: #3b82f6; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="join-screen">
         <h1 style="color: #3b82f6; margin-top:0;">UNO Multiplayer Table</h1>
+        
         <input type="text" id="username" placeholder="Enter Your Name" maxlength="12">
         <button class="btn" onclick="joinGame()">Join Table</button>
         
-        <h3 style="margin-top: 20px;">Lobby:</h3>
+        <div class="instructions">
+            <h4>📖 How to Play</h4>
+            <p>• <strong>Match</strong> the top card's color or number.</p>
+            <p>• <strong>Ø</strong> Skips the next player, <strong>⇄</strong> Reverses turn order.</p>
+            <p>• <strong>+2 / +4</strong> Forces the next player to draw cards and skip.</p>
+            <p>• <strong>W</strong> (Wild) allows you to choose the new color.</p>
+        </div>
+
+        <h3 style="margin-top: 20px; font-size: 1rem; color: #cbd5e1;">Players in Lobby:</h3>
         <ul id="waiting-list"></ul>
         <button id="start-btn" class="btn btn-green hidden" onclick="startGame()" style="width: 100%;">Start Game</button>
     </div>
 
     <div id="game-view" class="hidden">
-        
         <div id="turn-status-container">
             <h2 id="turn-status">Waiting...</h2>
             <p id="direction-indicator">🔄 Direction: Normal</p>
@@ -232,7 +237,6 @@
                 <button onclick="sendChat()">Send</button>
             </div>
         </div>
-
     </div>
 
     <div id="color-picker-modal" class="hidden">
@@ -272,15 +276,12 @@
         }).subscribe();
 
         // === LOG & CHAT LOGIC ===
-        function toggleLog() {
-            document.getElementById('side-panel').classList.toggle('open');
-        }
+        function toggleLog() { document.getElementById('side-panel').classList.toggle('open'); }
 
         function sendChat() {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
             if(!msg) return;
-            
             const chatString = `<strong>${myName}:</strong> ${msg}`;
             channel.send({ type: 'broadcast', event: 'log', payload: { message: chatString, type: 'chat' } });
             input.value = '';
@@ -296,13 +297,20 @@
             entry.className = `log-entry log-${type}`;
             entry.innerHTML = message;
             logBox.appendChild(entry);
-            logBox.scrollTop = logBox.scrollHeight; // Auto-scroll to bottom
+            logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // === GAME LOGIC ===
+        // === GAME & LOBBY LOGIC ===
         function joinGame() {
             const nameInput = document.getElementById('username').value.trim();
             if(!nameInput) return alert("Please enter a name.");
+            
+            // UNIQUE NAME CHECK
+            const nameExists = playersArray.some(p => p.name.toLowerCase() === nameInput.toLowerCase());
+            if (nameExists) {
+                return alert("That name is already taken! Please choose another one.");
+            }
+
             myName = nameInput;
             document.getElementById('username').disabled = true;
 
@@ -311,11 +319,31 @@
         }
 
         function handleLobbyUpdate(incomingPlayers) {
+            let newPlayerAdded = false;
+            let newPlayersList = [];
+
             incomingPlayers.forEach(p => {
-                if (!playersArray.some(existing => existing.id === p.id)) playersArray.push(p);
+                if (!playersArray.some(existing => existing.id === p.id)) {
+                    playersArray.push(p);
+                    newPlayerAdded = true;
+                    newPlayersList.push(p);
+                }
             });
-            document.getElementById('waiting-list').innerHTML = playersArray.map(p => `<li>👤 ${p.name}</li>`).join('');
-            if (playersArray.length >= 2) document.getElementById('start-btn').classList.remove('hidden');
+
+            if (!gameState || !gameState.gameStarted) {
+                document.getElementById('waiting-list').innerHTML = playersArray.map(p => `<li>👤 ${p.name}</li>`).join('');
+                if (playersArray.length >= 2) document.getElementById('start-btn').classList.remove('hidden');
+            } else if (newPlayerAdded && gameState.gameStarted) {
+                if (playersArray[gameState.turnIndex].id === myId) {
+                    newPlayersList.forEach(newP => {
+                        for(let i=0; i<7; i++) {
+                            if(gameState.deck.length > 0) newP.hand.push(gameState.deck.pop());
+                        }
+                        broadcastActionLog(`👋 ${newP.name} joined the table mid-game!`);
+                    });
+                    channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
+                }
+            }
         }
 
         function startGame() {
@@ -349,9 +377,7 @@
                 topCard = deck.pop();
             }
 
-            gameState = {
-                gameStarted: true, turnIndex: 0, direction: 1, topCard: topCard, deck: deck, winner: ""
-            };
+            gameState = { gameStarted: true, turnIndex: 0, direction: 1, topCard: topCard, deck: deck, winner: "" };
             
             broadcastActionLog(`🎲 The game has started!`);
             channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
@@ -363,11 +389,36 @@
                 alert(`🎉 ${gameState.winner} wins!`);
                 location.reload(); return;
             }
+            
+            if (!playersArray.some(p => p.id === myId) && gameState.gameStarted) {
+                alert("You have been removed from the table.");
+                location.reload(); return;
+            }
+
             if (gameState.gameStarted) {
                 document.getElementById('join-screen').classList.add('hidden');
                 document.getElementById('game-view').classList.remove('hidden');
                 renderGame();
             }
+        }
+
+        // === REMOVE INACTIVE PLAYER LOGIC ===
+        function kickPlayer(kickedId) {
+            const index = playersArray.findIndex(p => p.id === kickedId);
+            if (index === -1) return;
+            
+            const kickedPlayer = playersArray[index];
+            gameState.deck.unshift(...kickedPlayer.hand); 
+            playersArray.splice(index, 1);
+            
+            if (gameState.turnIndex > index) {
+                gameState.turnIndex--; 
+            } else if (gameState.turnIndex === index) {
+                gameState.turnIndex = gameState.turnIndex % playersArray.length;
+            }
+
+            broadcastActionLog(`👢 ${kickedPlayer.name} was removed from the table.`);
+            channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
         }
 
         // === RENDER UI ===
@@ -435,7 +486,10 @@
                 seatDiv.style.top = `${topPercent}%`;
 
                 seatDiv.innerHTML = `
-                    <div class="opp-avatar">${opp.name}</div>
+                    <div class="opp-avatar">
+                        <button class="kick-btn" onclick="kickPlayer('${opp.id}')">✖</button>
+                        ${opp.name}
+                    </div>
                     <div class="opp-cards">${opp.hand.length}</div>
                 `;
                 oppContainer.appendChild(seatDiv);
