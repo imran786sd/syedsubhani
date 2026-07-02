@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNO Mega Party (Supabase)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* === GAME-LIKE UI & BACKGROUND === */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(to bottom, #1089ff, #00d4ff);
+            background-attachment: fixed;
+            color: white; 
+            text-align: center; 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+        .hidden { display: none !important; }
+        
+        h1, h2, h3 { 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); 
+            margin-top: 0;
+        }
+
+        /* === LOBBY SCREEN (Inspired by Mobile Game Menus) === */
+        #join-screen {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 40px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        input[type="text"] {
+            padding: 15px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            border: none;
+            width: 70%;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.2);
+            outline: none;
+        }
+        .btn {
+            background: linear-gradient(to bottom, #ffcc00, #ff9900);
+            color: #fff;
+            border: 3px solid #fff;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 6px 0 #cc7a00, 0 10px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s, box-shadow 0.1s;
+            margin: 10px;
+        }
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 #cc7a00, 0 4px 4px rgba(0,0,0,0.3);
+        }
+        .btn-green { background: linear-gradient(to bottom, #2ecc71, #27ae60); box-shadow: 0 6px 0 #1e8449, 0 10px 10px rgba(0,0,0,0.3); }
+        .btn-green:active { box-shadow: 0 0px 0 #1e8449, 0 4px 4px rgba(0,0,0,0.3); }
+
+        #waiting-list { list-style: none; padding: 0; font-size: 1.2rem; font-weight: bold; }
+        #waiting-list li { background: rgba(0,0,0,0.2); margin: 5px auto; width: 60%; padding: 10px; border-radius: 10px; }
+
+        /* === GAME LAYOUT === */
+        #game-layout { display: flex; justify-content: center; gap: 20px; max-width: 1100px; margin: 10px auto; flex-wrap: wrap; }
+        #board { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px; flex: 2; min-width: 340px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        #lobby { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 20px; flex: 1; max-height: 500px; overflow-y: auto; }
+        
+        .lobby-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: bold; }
+        .active-row { background: rgba(46, 204, 113, 0.4); border-radius: 8px; }
+
+        /* === UNO CARD STYLING === */
+        .card { 
+            width: 80px; 
+            height: 120px; /* 2:3 Ratio exactly like standard cards */
+            border-radius: 10px; 
+            border: 4px solid white;
+            display: inline-flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-weight: 900; 
+            font-size: 28px; 
+            margin: 5px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            background-color: #333;
+        }
+        /* The White Oval inside the card */
+        .card::before {
+            content: '';
+            position: absolute;
+            width: 85%;
+            height: 95%;
+            background-color: white;
+            border-radius: 50% / 60%; /* Creates the ellipse */
+            transform: rotate(-25deg);
+            z-index: 0;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+        /* Text sits on top of the oval */
+        .card-text {
+            position: relative;
+            z-index: 1;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5); /* subtle edge */
+        }
+        
+        .playable { cursor: pointer; transform: translateY(-10px); box-shadow: 0 0 15px #ffcc00; transition: transform 0.2s; }
+        .playable:hover { transform: translateY(-20px); }
+
+        /* Card Colors (Background maps to border, text maps to inner oval) */
+        .red { background: #e74c3c; } .red .card-text { color: #e74c3c; text-shadow: none;}
+        .blue { background: #3498db; } .blue .card-text { color: #3498db; text-shadow: none;}
+        .green { background: #2ecc71; } .green .card-text { color: #2ecc71; text-shadow: none;}
+        .yellow { background: #f1c40f; } .yellow .card-text { color: #d4ac0d; text-shadow: none;}
+        
+        /* Wild Cards */
+        .black { 
+            background: linear-gradient(135deg, #e74c3c 25%, #3498db 25%, #3498db 50%, #f1c40f 50%, #f1c40f 75%, #2ecc71 75%);
+        }
+        .black .card-text { color: black; font-size: 32px; text-shadow: none; }
+
+        /* === COLOR PICKER MODAL === */
+        #color-picker-modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        .color-btn {
+            width: 80px; height: 80px; border-radius: 50%; border: 4px solid white;
+            margin: 10px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        .color-btn:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+    <div id="join-screen">
+        <h1 style="font-size: 3rem; margin-bottom: 5px;">UNO</h1>
+        <h2 style="color: #ffcc00; margin-top: 0;">Multiplayer</h2>
+        
+        <input type="text" id="username" placeholder="Enter Your Name" maxlength="12"><br><br>
+        <button class="btn" onclick="joinGame()">Join Room</button>
+        
+        <h3 style="margin-top: 30px;">Waiting Room:</h3>
+        <ul id="waiting-list"></ul>
+        <br>
+        <button id="start-btn" class="btn btn-green hidden" onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="game-view" class="hidden">
+        <h1 id="turn-status" style="color: #ffcc00; font-size: 2rem;">Waiting...</h1>
+        
+        <h3 id="direction-indicator" style="margin: 0; color: #fff;">🔄 Direction: Normal</h3>
+
+        <div id="game-layout">
+            <div id="board">
+                <div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 30px; margin-top: 20px;">
+                    <div>
+                        <h3 style="margin-top: 0;">Draw Pile</h3>
+                        <div class="card" style="background:#555; cursor:pointer; border-color: #888;" onclick="drawCard()">
+                            <span class="card-text" style="color: #555;">UNO</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin-top: 0;">Discard Pile</h3>
+                        <div class="card" id="top-card">
+                            <span class="card-text" id="top-card-text"></span>
+                        </div>
+                    </div>
+                </div>
+                <h3>Your Hand</h3>
+                <div id="hand" style="display: flex; justify-content: center; flex-wrap: wrap;"></div>
+            </div>
+            
+            <div id="lobby">
+                <h3>Player Leaderboard</h3>
+                <div id="player-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="color-picker-modal" class="hidden">
+        <div>
+            <h2>Choose a Color</h2>
+            <div class="color-btn red" onclick="submitWildColor('red')"></div>
+            <div class="color-btn blue" onclick="submitWildColor('blue')"></div>
+            <div class="color-btn green" onclick="submitWildColor('green')"></div>
+            <div class="color-btn yellow" onclick="submitWildColor('yellow')"></div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Config
+        const SUPABASE_URL = "https://pjyqmjvzgawzwpshtcrn.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_SmrBRls3lREh3UaZyZfuBQ_SwigfJ7B";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let myId = Math.random().toString(36).substring(2, 9);
+        let myName = "";
+        let playersArray = [];
+        let gameState = null;
+        
+        let pendingWildAction = null; // Stores action when resolving a wild card
+
+        // Realtime Room
+        const channel = supabaseClient.channel('uno-room', {
+            config: { broadcast: { self: true } }
+        });
+
+        channel.on('broadcast', { event: 'lobby' }, (payload) => {
+            handleLobbyUpdate(payload.payload.players);
+        }).on('broadcast', { event: 'game' }, (payload) => {
+            handleGameStateUpdate(payload.payload.state, payload.payload.players);
+        }).subscribe();
+
+        function joinGame() {
+            const nameInput = document.getElementById('username').value.trim();
+            if(!nameInput) return alert("Please enter a name.");
+            
+            myName = nameInput;
+            document.getElementById('username').disabled = true;
+
+            playersArray.push({ id: myId, name: myName, hand: [] });
+            channel.send({
+                type: 'broadcast',
+                event: 'lobby',
+                payload: { players: playersArray }
+            });
+        }
+
+        function handleLobbyUpdate(incomingPlayers) {
+            incomingPlayers.forEach(p => {
+                if (!playersArray.some(existing => existing.id === p.id)) {
+                    playersArray.push(p);
+                }
+            });
+
+            document.getElementById('waiting-list').innerHTML = playersArray.map(p => `<li>👤 ${p.name}</li>`).join('');
+            if (playersArray.length >= 2) {
+                document.getElementById('start-btn').classList.remove('hidden');
+            }
+        }
+
+        function startGame() {
+            const colors = ['red', 'blue', 'green', 'yellow'];
+            // Action cards added: Ø (Skip), ⇄ (Reverse), +2 (Draw Two)
+            const values = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Ø', '⇄', '+2'];
+            
+            let deck = [];
+            // Scale deck size significantly to avoid running out during +4s
+            const decksNeeded = Math.ceil(playersArray.length / 4) + 1; 
+            
+            for (let d = 0; d < decksNeeded; d++) {
+                for (let color of colors) {
+                    for (let value of values) {
+                        deck.push({ color, value });
+                        if (value !== '0') deck.push({ color, value }); // 2 of everything except 0
+                    }
+                }
+                // Add Wilds
+                for(let i=0; i<4; i++) {
+                    deck.push({ color: 'black', value: 'W' });
+                    deck.push({ color: 'black', value: '+4' });
+                }
+            }
+            deck.sort(() => Math.random() - 0.5);
+
+            playersArray.forEach(p => {
+                p.hand = [];
+                for(let i=0; i<7; i++) p.hand.push(deck.pop());
+            });
+
+            // Ensure top card isn't a wild for initial setup
+            let topCard = deck.pop();
+            while(topCard.color === 'black') {
+                deck.unshift(topCard);
+                topCard = deck.pop();
+            }
+
+            gameState = {
+                gameStarted: true,
+                turnIndex: 0,
+                direction: 1, // 1 for normal, -1 for reversed
+                topCard: topCard,
+                deck: deck,
+                winner: ""
+            };
+
+            channel.send({
+                type: 'broadcast',
+                event: 'game',
+                payload: { state: gameState, players: playersArray }
+            });
+        }
+
+        function handleGameStateUpdate(state, players) {
+            gameState = state;
+            playersArray = players;
+
+            if (gameState.winner) {
+                alert(`🎉 ${gameState.winner} wins the game!`);
+                location.reload();
+                return;
+            }
+
+            if (gameState.gameStarted) {
+                document.getElementById('join-screen').classList.add('hidden');
+                document.getElementById('game-view').classList.remove('hidden');
+                renderGame();
+            }
+        }
+
+        function renderGame() {
+            const activePlayer = playersArray[gameState.turnIndex];
+            const isMyTurn = (activePlayer.id === myId);
+
+            document.getElementById('turn-status').innerText = isMyTurn ? "🟢 YOUR TURN!" : `⚪ Waiting for ${activePlayer.name}...`;
+            document.getElementById('direction-indicator').innerText = gameState.direction === 1 ? "🔄 Direction: Normal ➔" : "🔄 Direction: Reversed ⬅";
+
+            // Render Top Card
+            const topCardDiv = document.getElementById('top-card');
+            topCardDiv.className = `card ${gameState.topCard.color}`;
+            document.getElementById('top-card-text').innerText = gameState.topCard.value;
+
+            // Render Hand
+            const handDiv = document.getElementById('hand');
+            handDiv.innerHTML = '';
+            
+            const myData = playersArray.find(p => p.id === myId);
+            const myHand = myData ? myData.hand : [];
+
+            myHand.forEach((card, index) => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = `card ${card.color}`;
+                
+                const span = document.createElement('span');
+                span.className = 'card-text';
+                span.innerText = card.value;
+                cardDiv.appendChild(span);
+
+                // Playable Logic (Color match, Value match, or Wild)
+                if (isMyTurn && (card.color === gameState.topCard.color || card.value === gameState.topCard.value || card.color === 'black')) {
+                    cardDiv.classList.add('playable');
+                    cardDiv.onclick = () => handleCardClick(index, card, myHand);
+                }
+                handDiv.appendChild(cardDiv);
+            });
+
+            // Render Leaderboard
+            const playerList = document.getElementById('player-list');
+            playerList.innerHTML = playersArray.map((p, idx) => `
+                <div class="lobby-row ${idx === gameState.turnIndex ? 'active-row' : ''}">
+                    <span>${p.name}</span>
+                    <span>${p.hand.length} 🃏</span>
+                </div>
+            `).join('');
+        }
+
+        // --- GAME LOGIC CONTROLLER ---
+        function handleCardClick(index, card, hand) {
+            if (card.color === 'black') {
+                // Open color picker for Wilds, save the pending move
+                pendingWildAction = { index, card, hand };
+                document.getElementById('color-picker-modal').classList.remove('hidden');
+            } else {
+                executePlayCard(index, card, hand);
+            }
+        }
+
+        function submitWildColor(color) {
+            document.getElementById('color-picker-modal').classList.add('hidden');
+            if (pendingWildAction) {
+                // Change the wild card's active color to the chosen one
+                pendingWildAction.card.color = color;
+                executePlayCard(pendingWildAction.index, pendingWildAction.card, pendingWildAction.hand);
+                pendingWildAction = null;
+            }
+        }
+
+        function executePlayCard(index, card, hand) {
+            // Remove from hand
+            hand.splice(index, 1);
+            const myData = playersArray.find(p => p.id === myId);
+            myData.hand = hand;
+
+            if (hand.length === 0) {
+                gameState.winner = myName;
+            } else {
+                let steps = 1;
+
+                // SPECIAL CARDS LOGIC
+                if (card.value === '⇄') { // Reverse
+                    gameState.direction *= -1;
+                    if (playersArray.length === 2) steps = 2; // Acts as skip in 2-player
+                } 
+                else if (card.value === 'Ø') { // Skip
+                    steps = 2;
+                }
+                else if (card.value === '+2') { // Draw Two
+                    let nextIdx = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
+                    playersArray[nextIdx].hand.push(gameState.deck.pop(), gameState.deck.pop());
+                    steps = 2; // Skip their turn
+                }
+                else if (card.value === '+4') { // Wild Draw Four
+                    let nextIdx = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
+                    playersArray[nextIdx].hand.push(gameState.deck.pop(), gameState.deck.pop(), gameState.deck.pop(), gameState.deck.pop());
+                    steps = 2;
+                }
+
+                // Advance Turn Index safely with direction
+                gameState.turnIndex = (gameState.turnIndex + (steps * gameState.direction) + (playersArray.length * 10)) % playersArray.length;
+                gameState.topCard = card;
+            }
+
+            // Broadcast the new state
+            channel.send({
+                type: 'broadcast',
+                event: 'game',
+                payload: { state: gameState, players: playersArray }
+            });
+        }
+
+        function drawCard() {
+            const activePlayer = playersArray[gameState.turnIndex];
+            if (activePlayer.id !== myId) return;
+
+            const newCard = gameState.deck.pop();
+            const myData = playersArray.find(p => p.id === myId);
+            myData.hand.push(newCard);
+
+            // Move turn to next person
+            gameState.turnIndex = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
+
+            channel.send({
+                type: 'broadcast',
+                event: 'game',
+                payload: { state: gameState, players: playersArray }
+            });
+        }
+    </script>
+</body>
+</html>
