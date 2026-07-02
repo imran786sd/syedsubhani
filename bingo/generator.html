@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Housie Number Generator</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-panel {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #111827;
+            margin-top: 0;
+        }
+
+        .current-number-box {
+            font-size: 72px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--primary);
+            margin: 20px 0;
+            height: 95px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0fdf4;
+            border: 2px dashed #bbf7d0;
+            border-radius: 12px;
+        }
+
+        .recent-numbers {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 25px;
+            min-height: 40px;
+        }
+
+        .recent-ball {
+            width: 35px;
+            height: 35px;
+            background: #6b7280;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .recent-ball:first-child {
+            background: #f59e0b;
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        button.main-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 15px 0;
+            transition: background 0.2s;
+        }
+
+        button.main-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+            margin-top: 20px;
+        }
+
+        .board-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9fafb;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        .board-cell.called {
+            background-color: #22c55e;
+            color: white;
+            border-color: #16a34a;
+        }
+
+        .footer-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .secondary-btn {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-panel">
+        <h2>Housie Number Generator</h2>
+        
+        <div class="current-number-box" id="current-number">-</div>
+        
+        <div><strong>Last 5 Numbers:</strong></div>
+        <div class="recent-numbers" id="recent-numbers"></div>
+
+        <button class="main-btn" onclick="getNextNumber()">Get Next Number</button>
+
+        <div class="board-grid" id="board-grid"></div>
+
+        <div class="footer-actions">
+            <span id="numbers-left">90 numbers remaining</span>
+            <button class="secondary-btn" onclick="resetGenerator()">Reset Game</button>
+        </div>
+    </div>
+
+    <script>
+        let availableNumbers = [];
+        let calledNumbers = [];
+
+        function initGenerator() {
+            availableNumbers = Array.from({length: 90}, (_, i) => i + 1);
+            calledNumbers = [];
+            
+            const boardGrid = document.getElementById('board-grid');
+            boardGrid.innerHTML = '';
+            for(let i = 1; i <= 90; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'board-cell';
+                cell.id = `cell-${i}`;
+                cell.innerText = i;
+                boardGrid.appendChild(cell);
+            }
+            updateGeneratorUI();
+        }
+
+        function getNextNumber() {
+            if (availableNumbers.length === 0) {
+                alert("All numbers have been called!");
+                return;
+            }
+            const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+            const picked = availableNumbers.splice(randomIndex, 1)[0];
+            calledNumbers.push(picked);
+            updateGeneratorUI();
+        }
+
+        function updateGeneratorUI() {
+            const currentBox = document.getElementById('current-number');
+            const recentBox = document.getElementById('recent-numbers');
+            const leftSpan = document.getElementById('numbers-left');
+
+            if(calledNumbers.length > 0) {
+                const latest = calledNumbers[calledNumbers.length - 1];
+                currentBox.innerText = latest;
+                document.getElementById(`cell-${latest}`).classList.add('called');
+            } else {
+                currentBox.innerText = "-";
+            }
+
+            recentBox.innerHTML = '';
+            const recent5 = [...calledNumbers].reverse().slice(0, 5);
+            recent5.forEach(num => {
+                const ball = document.createElement('div');
+                ball.className = 'recent-ball';
+                ball.innerText = num;
+                recentBox.appendChild(ball);
+            });
+
+            leftSpan.innerText = `${availableNumbers.length} numbers remaining`;
+        }
+
+        function resetGenerator() {
+            if(confirm("Reset the board?")) {
+                initGenerator();
+            }
+        }
+
+        initGenerator();
+    </script>
+</body>
+</html>
