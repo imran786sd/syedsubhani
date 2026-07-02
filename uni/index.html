@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Supabase UNO</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #2c3e50; color: white; text-align: center; margin: 0; padding: 20px; }
+        .hidden { display: none !important; }
+        #game-layout { display: flex; justify-content: center; gap: 20px; max-width: 1000px; margin: 20px auto; flex-wrap: wrap; }
+        #board { background: #34495e; padding: 20px; border-radius: 10px; flex: 2; min-width: 300px; }
+        #lobby { background: #2c3e50; padding: 15px; border-radius: 10px; border: 1px solid #34495e; flex: 1; max-height: 400px; overflow-y: auto; }
+        .card { width: 75px; height: 110px; border-radius: 8px; display: inline-flex; justify-content: center; align-items: center; font-weight: bold; margin: 5px; color: white; text-shadow: 1px 1px 2px black; box-shadow: 0 4px 6px rgba(0,0,0,0.3); user-select: none; }
+        .playable { cursor: pointer; transform: translateY(-5px); box-shadow: 0 0 10px white; }
+        .red { background: #e74c3c; } .blue { background: #3498db; } .green { background: #2ecc71; } .yellow { background: #f1c40f; color: black; text-shadow: none; }
+        .active-row { background: #2980b9; font-weight: bold; }
+        .lobby-row { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #34495e; }
+    </style>
+</head>
+<body>
+
+    <div id="join-screen">
+        <h2>GitHub UNO (Supabase Edition)</h2>
+        <input type="text" id="username" placeholder="Your Name" style="padding: 10px; font-size: 1rem;"><br><br>
+        <button onclick="joinGame()" style="padding: 10px 20px;">Join Lobby</button>
+        <h3>Players in Lobby:</h3>
+        <ul id="waiting-list" style="list-style: none; padding: 0;"></ul>
+        <button id="start-btn" class="hidden" onclick="startGame()" style="padding: 10px 20px; background: #2ecc71; color: white; border: none; font-weight: bold;">Start Game</button>
+    </div>
+
+    <div id="game-view" class="hidden">
+        <h2 id="turn-status">Waiting...</h2>
+        <div id="game-layout">
+            <div id="board">
+                <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 20px;">
+                    <div><h3>Draw Pile</h3><div class="card" style="background:#7f8c8d; cursor:pointer;" onclick="drawCard()">+</div></div>
+                    <div><h3>Discard Pile</h3><div class="card" id="top-card"></div></div>
+                </div>
+                <h3>Your Hand</h3>
+                <div id="hand"></div>
+            </div>
+            <div id="lobby">
+                <h3>Players Status</h3>
+                <div id="player-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Your project credentials pre-mapped:
+        const SUPABASE_URL = "https://pjyqmjvzgawzwpshtcrn.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_SmrBRls3lREh3UaZyZfuBQ_SwigfJ7B";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let myId = Math.random().toString(36).substring(2, 9);
+        let myName = "";
+        let playersArray = [];
+        let gameState = null;
+
+        // Establish live communication room
+        const channel = supabaseClient.channel('uno-room', {
+            config: { broadcast: { self: true } }
+        });
+
+        channel.on('broadcast', { event: 'lobby' }, (payload) => {
+            handleLobbyUpdate(payload.payload.players);
+        }).on('broadcast', { event: 'game' }, (payload) => {
+            handleGameStateUpdate(payload.payload.state, payload.payload.players);
+        }).subscribe();
+
+        function joinGame() {
+            myName = document.getElementById('username').value.trim() || `Player`;
+            document.getElementById('username').disabled = true;
+
+            playersArray.push({ id: myId, name: myName, hand: [] });
+            channel.send({
+                type: 'broadcast',
+                event: 'lobby',
+                payload: { players: playersArray }
+            });
+        }
+
+        function handleLobbyUpdate(incomingPlayers) {
+            incomingPlayers.forEach(p => {
+                if (!playersArray.some(existing => existing.id === p.id)) {
+                    playersArray.push(p);
+                }
+            });
+
+            document.getElementById('waiting-list').innerHTML = playersArray.map(p => `<li>👤 ${p.name}</li>`).join('');
+            if (playersArray.length >= 2) {
+                document.getElementById('start-btn').classList.remove('hidden');
+            }
+        }
+
+        function startGame() {
+            const colors = ['red', 'blue', 'green', 'yellow'];
+            const values = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            let deck = [];
+            const decksNeeded = Math.ceil(playersArray.length / 6);
+            
+            for (let d = 0; d < decksNeeded; d++) {
+                for (let color of colors) {
+                    for (let value of values) {
+                        deck.push({ color, value });
+                        if (value !== '0') deck.push({ color, value });
+                    }
+                }
+            }
+            deck.sort(() => Math.random() - 0.5);
+
+            playersArray.forEach(p => {
+                p.hand = [];
+                for(let i=0; i<7; i++) p.hand.push(deck.pop());
+            });
+
+            const topCard = deck.pop();
+
+            gameState = {
+                gameStarted: true,
+                turnIndex: 0,
+                topCard: topCard,
+                deck: deck,
+                winner: ""
+            };
+
+            channel.send({
+                type: 'broadcast',
+                event: 'game',
+                payload: { state: gameState, players: playersArray }
+            });
+        }
+
+        function handleGameStateUpdate(state, players) {
+            gameState = state;
+            playersArray = players;
+
+            if (gameState.winner) {
+                alert(`🏆 Game Over! ${gameState.winner} wins!`);
+                location.reload();
+                return;
+            }
+
+            if (gameState.gameStarted) {
+                document.getElementById('join-screen').classList.add('hidden');
+                document.getElementById('game-view').classList.remove('hidden');
+                renderGame();
+            }
+        }
+
+        function renderGame() {
+            const activePlayer = playersArray[gameState.turnIndex];
+            const isMyTurn = (activePlayer.id === myId);
+
+            document.getElementById('turn-status').innerText = isMyTurn ? "🟢 YOUR TURN!" : `⚪ Waiting for ${activePlayer.name}...`;
+
+            const topCardDiv = document.getElementById('top-card');
+            topCardDiv.className = `card ${gameState.topCard.color}`;
+            topCardDiv.innerText = gameState.topCard.value;
+
+            const handDiv = document.getElementById('hand');
+            handDiv.innerHTML = '';
+            const myData = playersArray.find(p => p.id === myId);
+            const myHand = myData ? myData.hand : [];
+
+            myHand.forEach((card, index) => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = `card ${card.color}`;
+                cardDiv.innerText = card.value;
+
+                if (isMyTurn && (card.color === gameState.topCard.color || card.value === gameState.topCard.value)) {
+                    cardDiv.classList.add('playable');
+                    cardDiv.onclick = () => playCard(index, myHand);
+                }
+                handDiv.appendChild(cardDiv);
+            });
+
+            const playerList = document.getElementById('player-list');
+            playerList.innerHTML = playersArray.map((p, idx) => `
+                <div class="lobby-row ${idx === gameState.turnIndex ? 'active-row' : ''}">
+                    <span>${p.name}</span>
+                    <span>${p.hand.length} cards</span>
+                </div>
+            `).join('');
+        }
+
+        function playCard(index, hand) {
+            const card = hand.splice(index, 1)[0];
+            const myData = playersArray.find(p => p.id === myId);
+            myData.hand = hand;
+
+            if (hand.length === 0) {
+                gameState.winner = myName;
+            } else {
+                gameState.turnIndex = (gameState.turnIndex + 1) % playersArray.length;
+                gameState.topCard = card;
+            }
+
+            channel.send({
+                type: 'broadcast',
+                event: 'game',
+                payload: { state: gameState, players: playersArray }
+            });
+        }
+
+        function drawCard() {
+            const activePlayer = playersArray[gameState.turnIndex];
+            if (activePlayer.id !== myId) return;
+
+            const newCard = gameState.deck.pop();
+            const myData = playersArray.find(p => p.id === myId);
+            myData.hand.push(newCard);
+
+            gameState.turnIndex = (gameState.turnIndex + 1) % playersArray.length;
+
+            channel.send({
+                type: 'broadcast',
+                event: 'game',
+                payload: { state: gameState, players: playersArray }
+            });
+        }
+    </script>
+</body>
+</html>
