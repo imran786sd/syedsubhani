@@ -15,11 +15,17 @@
         <button class="btn" onclick="joinGame()">Join Table</button>
         
         <div class="instructions">
-            <h4>📖 How to Play</h4>
-            <p>• <strong>Match</strong> the top card's color or number.</p>
-            <p>• <strong>Ø</strong> Skips the next player, <strong>⇄</strong> Reverses turn order.</p>
-            <p>• <strong>+2 / +4</strong> Forces the next player to draw cards and skip.</p>
-            <p>• <strong>W</strong> (Wild) allows you to choose the new color.</p>
+            <h4>📖 Complete Game Rules</h4>
+            <p>• <strong>Matching:</strong> Match the top card's color or number value.</p>
+            <p>• <strong>Action Cards:</strong> <strong>Ø</strong> Skips the next turn, <strong>⇄</strong> Reverses direction.</p>
+            <p>• <strong>Draw Powers:</strong> <strong>+2 / +4</strong> forces the next player to draw cards and skip their turn.</p>
+            <p>• <strong>Wild Card (W):</strong> Allows you to pick any new matching color.</p>
+            <p style="border-top: 1px dashed #475569; padding-top: 8px; color: #ef4444; font-weight: bold;">
+                ⚠️ The UNO Penalty Rule:
+            </p>
+            <p style="font-size: 0.85rem; color: #cbd5e1;">
+                When you play your second-to-last card and have only <strong>1 card left</strong>, you must immediately click <strong>"Say UNO!"</strong>. If you forget, any opponent can click <strong>"Forgot to say UNO!"</strong> to catch you, forcing you to pick up a <strong>2-card penalty</strong> from the draw pile!
+            </p>
         </div>
 
         <h3>Players in Lobby:</h3>
@@ -32,10 +38,11 @@
         <div id="turn-status-container">
             <h2 id="turn-status">Waiting...</h2>
             <p id="direction-indicator">🔄 Direction: Normal</p>
+            <button id="solo-reset-btn" class="btn hidden" onclick="emergencyResetAction()" style="background: #ef4444; padding: 5px 15px; font-size: 0.85rem; margin-top: 5px;">Table Empty: Reset Game</button>
         </div>
 
         <div id="felt-table">
-            <div id="table-direction-arrow" class="arrow-normal"></div>
+            <div id="table-direction-arrow"></div>
             
             <div id="center-board">
                 <div class="card" id="draw-pile-btn" onclick="drawCardAction()">
