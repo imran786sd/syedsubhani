@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNO Multiplayer Table</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="join-screen">
+        <h1>UNO Multiplayer Table</h1>
+        
+        <input type="text" id="username" placeholder="Enter Your Name" maxlength="12">
+        <button class="btn" onclick="joinGame()">Join Table</button>
+        
+        <div class="instructions">
+            <h4>📖 How to Play</h4>
+            <p>• <strong>Match</strong> the top card's color or number.</p>
+            <p>• <strong>Ø</strong> Skips the next player, <strong>⇄</strong> Reverses turn order.</p>
+            <p>• <strong>+2 / +4</strong> Forces the next player to draw cards and skip.</p>
+            <p>• <strong>W</strong> (Wild) allows you to choose the new color.</p>
+        </div>
+
+        <h3>Players in Lobby:</h3>
+        <ul id="waiting-list"></ul>
+        <button id="start-btn" class="btn btn-green hidden" onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="game-view" class="hidden">
+        <div id="turn-status-container">
+            <h2 id="turn-status">Waiting...</h2>
+            <p id="direction-indicator">🔄 Direction: Normal</p>
+        </div>
+
+        <div id="opponents-container"></div>
+
+        <div id="center-board">
+            <div>
+                <div class="card" id="draw-pile-btn" onclick="drawCard()">
+                    <span class="card-text">+</span>
+                </div>
+            </div>
+            <div>
+                <div class="card" id="top-card">
+                    <span class="card-text" id="top-card-text"></span>
+                </div>
+            </div>
+        </div>
+
+        <div id="my-player-area">
+            <div id="my-name" class="my-name-tag">My Name</div>
+            <div id="hand"></div>
+        </div>
+
+        <button id="notebook-btn" onclick="toggleLog()">
+            <img src="https://gidd.io/wp-content/uploads/2022/08/notebook.svg" alt="Log">
+        </button>
+
+        <div id="side-panel">
+            <div id="panel-header">
+                Game Log <button onclick="toggleLog()">✖</button>
+            </div>
+            <div id="log-content"></div>
+            <div id="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Say something..." onkeypress="if(event.key === 'Enter') sendChat()">
+                <button onclick="sendChat()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="color-picker-modal" class="hidden">
+        <div class="color-picker-box">
+            <h2>Choose Color</h2>
+            <div style="display: flex;">
+                <div class="color-btn red" onclick="submitWildColor('red')"></div>
+                <div class="color-btn blue" onclick="submitWildColor('blue')"></div>
+                <div class="color-btn green" onclick="submitWildColor('green')"></div>
+                <div class="color-btn yellow" onclick="submitWildColor('yellow')"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
