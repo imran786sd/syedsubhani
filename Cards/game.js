@@ -285,23 +285,26 @@ function executePlayCard(index, card, hand) {
     const myData = playersArray.find(p => p.id === myId);
     myData.hand = hand;
 
-    if (hand.length !== 1) myData.saidUno = false;
-
     if (card.color !== 'black') {
         broadcastActionLog(`🃏 ${myName} played a ${card.color} ${card.value}`);
     }
 
+    // UPDATED WIN CHECK: Give them a chance to play their final card if they're protected
     if (hand.length === 0) {
-        if (!myData.saidUno) {
+        if (!myData.saidUno && playersArray.length > 1) {
             broadcastActionLog(`⚠️ Penalty! ${myName} tried to win but forgot to declare UNO! Drawing 2 cards.`);
             hand.push(gameState.deck.pop(), gameState.deck.pop());
             myData.hand = hand;
+            myData.saidUno = false;
         } else {
             gameState.winner = myName;
             channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
             return;
         }
     }
+
+    // Auto-reset safety declaration if they draw/get hit back above 1 card
+    if (hand.length > 1) myData.saidUno = false;
 
     let steps = 1;
     if (card.value === '⇄') {
