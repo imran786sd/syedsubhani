@@ -1,0 +1,176 @@
+/* === RADIAL TABLE & DARK THEME === */
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background: radial-gradient(circle at center, #2c3e50 0%, #111820 100%);
+    color: white; margin: 0; padding: 0; overflow: hidden; height: 100vh; width: 100vw;
+}
+.hidden { display: none !important; }
+
+/* === LOBBY MODAL === */
+#join-screen {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(30, 41, 59, 0.95); border: 2px solid #334155;
+    border-radius: 15px; width: 450px; padding: 30px 40px; text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 1000;
+}
+#join-screen h1 { color: #3b82f6; margin-top:0; }
+#join-screen h3 { margin-top: 20px; font-size: 1rem; color: #cbd5e1; }
+input[type="text"] {
+    padding: 12px; font-size: 1.1rem; border-radius: 8px; border: none;
+    width: 80%; text-align: center; margin-bottom: 20px; background: #0f172a; color: white;
+    border: 1px solid #475569;
+}
+.btn {
+    background: #3b82f6; color: #fff; border: none; padding: 12px 25px;
+    font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: background 0.2s; margin: 5px;
+}
+.btn:hover { background: #2563eb; }
+.btn-green { background: #10b981; width: 100%; } 
+.btn-green:hover { background: #059669; }
+
+#waiting-list { list-style: none; padding: 0; max-height: 120px; overflow-y: auto; }
+#waiting-list li { background: rgba(0,0,0,0.3); margin: 5px; padding: 8px; border-radius: 5px; }
+
+/* Game Instructions */
+.instructions {
+    background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px;
+    margin-top: 20px; text-align: left; font-size: 0.9rem; color: #cbd5e1;
+    border: 1px solid #475569;
+}
+.instructions h4 { margin: 0 0 10px 0; color: #fbbf24; text-align: center; font-size: 1.1rem; }
+.instructions p { margin: 5px 0; }
+.instructions strong { color: white; }
+
+/* === TABLE LAYOUT === */
+#game-view { position: relative; width: 100%; height: 100%; }
+
+#center-board {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: flex; gap: 30px; align-items: center; justify-content: center; width: 300px; height: 200px;
+}
+
+#turn-status-container {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    text-align: center; background: rgba(0,0,0,0.5); padding: 10px 30px;
+    border-radius: 20px; border: 1px solid #334;
+}
+#turn-status { margin: 0; font-size: 1.5rem; color: #fbbf24; }
+#direction-indicator { margin: 5px 0 0 0; font-size: 0.9rem; color: #cbd5e1; }
+
+/* Opponent Seating */
+.opponent-seat {
+    position: absolute; transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    width: 100px; transition: all 0.3s ease;
+}
+.opp-avatar {
+    background: #1e293b; border: 2px solid #475569; border-radius: 10px; position: relative;
+    padding: 10px; text-align: center; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+.opp-cards {
+    background: #dc2626; color: white; font-weight: bold; font-size: 1.2rem;
+    width: 40px; height: 60px; border-radius: 6px; border: 2px solid white;
+    display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+.active-turn .opp-avatar { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+
+/* Kick Button */
+.kick-btn {
+    position: absolute; top: -10px; right: -10px;
+    background: #ef4444; color: white; border: 2px solid #1e293b; border-radius: 50%;
+    width: 25px; height: 25px; font-size: 12px; cursor: pointer; font-weight: bold;
+    display: flex; justify-content: center; align-items: center; transition: 0.1s;
+}
+.kick-btn:hover { background: #b91c1c; transform: scale(1.1); }
+
+/* My Hand (Bottom Center) */
+#my-player-area {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center;
+}
+.my-name-tag {
+    background: #1e293b; padding: 5px 20px; border-radius: 20px;
+    margin-bottom: -15px; z-index: 10; border: 2px solid #475569;
+}
+.active-turn .my-name-tag { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+#hand {
+    display: flex; justify-content: center; flex-wrap: nowrap;
+    background: rgba(0,0,0,0.2); padding: 30px 20px 10px 20px; border-radius: 15px;
+}
+
+/* === CARD STYLING === */
+.card { 
+    width: 75px; height: 110px; border-radius: 8px; border: 3px solid white;
+    display: inline-flex; justify-content: center; align-items: center; 
+    font-weight: 900; font-size: 24px; margin-left: -15px; 
+    box-shadow: -4px 4px 10px rgba(0,0,0,0.4); user-select: none;
+    position: relative; overflow: hidden; background-color: #333;
+    transition: transform 0.2s, margin 0.2s; cursor: default;
+}
+.card:first-child { margin-left: 0; } 
+.card::before {
+    content: ''; position: absolute; width: 85%; height: 95%;
+    background-color: white; border-radius: 50% / 60%; 
+    transform: rotate(-25deg); z-index: 0; box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+}
+.card-text { position: relative; z-index: 1; }
+
+.playable { cursor: pointer; transform: translateY(-15px); box-shadow: 0 0 15px #fbbf24; z-index: 5; }
+.playable:hover { transform: translateY(-30px); margin-left: 5px; margin-right: 20px; }
+
+#center-board .card { margin: 0; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+#top-card { transform: rotate(5deg); }
+#draw-pile-btn { background: #475569; cursor: pointer; }
+#draw-pile-btn .card-text { color: #475569; }
+
+.red { background: #e74c3c; } .red .card-text { color: #e74c3c; }
+.blue { background: #3498db; } .blue .card-text { color: #3498db; }
+.green { background: #2ecc71; } .green .card-text { color: #2ecc71; }
+.yellow { background: #f1c40f; } .yellow .card-text { color: #d4ac0d; }
+.black { background: #111; } .black .card-text { color: black; font-size: 28px; }
+
+/* Color Picker Modal */
+#color-picker-modal {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 2000;
+}
+.color-picker-box {
+    background: #1e293b; padding: 30px; border-radius: 15px; text-align: center;
+}
+.color-btn {
+    width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; margin: 10px; cursor: pointer; transition: 0.1s;
+}
+.color-btn:hover { transform: scale(1.1); }
+
+/* === CHAT & LOG SYSTEM === */
+#notebook-btn {
+    position: absolute; bottom: 30px; right: 30px;
+    background: #1e293b; border: 2px solid #475569; border-radius: 50%;
+    width: 60px; height: 60px; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: 0.2s; z-index: 100;
+}
+#notebook-btn:hover { transform: scale(1.1); background: #334155; }
+#notebook-btn img { width: 30px; height: 30px; }
+
+#side-panel {
+    position: absolute; top: 0; right: -350px; width: 300px; height: 100%;
+    background: rgba(15, 23, 42, 0.95); border-left: 2px solid #334155;
+    display: flex; flex-direction: column; transition: right 0.3s ease; z-index: 99;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+}
+#side-panel.open { right: 0; }
+
+#panel-header {
+    padding: 20px; background: #1e293b; font-weight: bold; font-size: 1.2rem;
+    display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155;
+}
+#panel-header button { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+#log-content { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.log-entry { font-size: 0.9rem; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); }
+.log-action { color: #fbbf24; font-style: italic; }
+.log-chat strong { color: #3b82f6; }
+
+#chat-input-area { padding: 15px; background: #1e293b; border-top: 2px solid #334155; display: flex; gap: 10px; }
+#chat-input-area input { flex-grow: 1; padding: 10px; border-radius: 5px; border: none; background: #0f172a; color: white; }
+#chat-input-area button { padding: 10px 15px; background: #3b82f6; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
