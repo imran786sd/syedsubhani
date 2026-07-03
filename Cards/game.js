@@ -9,9 +9,6 @@ let playersArray = [];
 let gameState = null;
 let pendingWildAction = null; 
 
-// Track whether I have safely announced UNO for this single card event cycle
-let hasSaidUnoThisTurn = false; 
-
 const channel = supabaseClient.channel('uno-room', {
     config: { broadcast: { self: true } }
 });
@@ -143,7 +140,24 @@ function handleGameStateUpdate(state, players) {
     if (gameState.gameStarted) {
         document.getElementById('join-screen').classList.add('hidden');
         document.getElementById('game-view').classList.remove('hidden');
+        
+        // SINGLE PLAYER EVALUATOR: Show emergency reset button if you are alone
+        if (playersArray.length === 1) {
+            document.getElementById('solo-reset-btn').classList.remove('hidden');
+        } else {
+            document.getElementById('solo-reset-btn').classList.add('hidden');
+        }
+
         renderGame();
+    }
+}
+
+function emergencyResetAction() {
+    if (confirm("You are the only player left. Reset room back to the main lobby?")) {
+        gameState.gameStarted = false;
+        gameState.winner = "";
+        playersArray = [];
+        location.reload();
     }
 }
 
@@ -167,12 +181,13 @@ function kickPlayer(kickedId) {
 
 function renderGame() {
     const activePlayer = playersArray[gameState.turnIndex];
+    if (!activePlayer) return; // Guard clause for room transitions
+    
     const isMyTurn = (activePlayer.id === myId);
 
     document.getElementById('turn-status').innerText = isMyTurn ? "🟢 YOUR TURN!" : `⚪ ${activePlayer.name}'s turn...`;
     document.getElementById('direction-indicator').innerText = gameState.direction === 1 ? "🔄 Direction: Normal" : "🔄 Direction: Reversed";
 
-    // Manage Button States inside Gidd-Style Control Dock
     document.getElementById('end-turn-btn').disabled = !(isMyTurn && gameState.cardsDrawnThisTurn > 0);
     document.getElementById('take-cards-btn').disabled = !(isMyTurn && gameState.cardsDrawnThisTurn === 0);
 
@@ -184,7 +199,6 @@ function renderGame() {
     if (isMyTurn) document.getElementById('my-player-area').classList.add('active-turn');
     else document.getElementById('my-player-area').classList.remove('active-turn');
 
-    // Render my cards
     const handDiv = document.getElementById('hand');
     handDiv.innerHTML = '';
     const myData = playersArray.find(p => p.id === myId);
@@ -195,7 +209,6 @@ function renderGame() {
         cardDiv.className = `card ${card.color}`;
         cardDiv.innerHTML = `<span class="card-text">${card.value}</span>`;
 
-        // Can only drop a card if it matches and I haven't already drawn a blind pass card
         if (isMyTurn && gameState.cardsDrawnThisTurn === 0 && (card.color === gameState.topCard.color || card.value === gameState.topCard.value || card.color === 'black')) {
             cardDiv.classList.add('playable');
             cardDiv.onclick = () => handleCardClick(index, card, myHand);
@@ -227,14 +240,13 @@ function renderOpponentsRadial() {
         const leftPercent = 50 + (Math.cos(angle) * radiusX);
         const topPercent = 45 + (Math.sin(angle) * radiusY);
 
-        const isActive = playersArray[gameState.turnIndex].id === opp.id;
+        const isActive = playersArray[gameState.turnIndex]?.id === opp.id;
 
         const seatDiv = document.createElement('div');
         seatDiv.className = `opponent-seat ${isActive ? 'active-turn' : ''}`;
         seatDiv.style.left = `${leftPercent}%`;
         seatDiv.style.top = `${topPercent}%`;
 
-        // Check if they need an UNO caution border banner context
         const unoBadge = (opp.hand.length === 1 && !opp.saidUno) ? '⚡ UNPROTECTED' : `${opp.hand.length} cards`;
 
         seatDiv.innerHTML = `
@@ -273,7 +285,6 @@ function executePlayCard(index, card, hand) {
     const myData = playersArray.find(p => p.id === myId);
     myData.hand = hand;
 
-    // Reset my safety declarations if I no longer have exactly 1 card
     if (hand.length !== 1) myData.saidUno = false;
 
     if (card.color !== 'black') {
@@ -281,7 +292,6 @@ function executePlayCard(index, card, hand) {
     }
 
     if (hand.length === 0) {
-        // Enforce penalty check: If you won but forgot to declare UNO on your previous turn, get penalized!
         if (!myData.saidUno) {
             broadcastActionLog(`⚠️ Penalty! ${myName} tried to win but forgot to declare UNO! Drawing 2 cards.`);
             hand.push(gameState.deck.pop(), gameState.deck.pop());
@@ -313,12 +323,10 @@ function executePlayCard(index, card, hand) {
 
     gameState.turnIndex = (gameState.turnIndex + (steps * gameState.direction) + (playersArray.length * 10)) % playersArray.length;
     gameState.topCard = card;
-    gameState.cardsDrawnThisTurn = 0; // Clear for next person
+    gameState.cardsDrawnThisTurn = 0; 
 
     channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
 }
-
-// --- BUTTON BAR DOCK SYSTEM ACTIONS ---
 
 function drawCardAction() {
     const activePlayer = playersArray[gameState.turnIndex];
@@ -327,17 +335,16 @@ function drawCardAction() {
     const newCard = gameState.deck.pop();
     const myData = playersArray.find(p => p.id === myId);
     myData.hand.push(newCard);
-    myData.saidUno = false; // Reset safety flag on draw
+    myData.saidUno = false; 
 
     broadcastActionLog(`📥 ${myName} drew a card.`);
     gameState.cardsDrawnThisTurn = 1;
 
-    // Check if drawn card is instantly playable. If NOT, pass turn automatically.
     const canPlayDrawn = (newCard.color === gameState.topCard.color || newCard.value === gameState.topCard.value || newCard.color === 'black');
     if (!canPlayDrawn) {
         endTurnAction();
     } else {
-        renderGame(); // Let them choose to drop it or pass manually
+        renderGame(); 
     }
 }
 
@@ -363,12 +370,11 @@ function sayUnoAction() {
 }
 
 function calloutForgotUnoAction() {
-    // Find if ANY opponent has 1 card but hasn't safe-declared it
     let target = playersArray.find(p => p.id !== myId && p.hand.length === 1 && !p.saidUno);
     
     if (target) {
         broadcastActionLog(`🚨 Caught! ${myName} called out ${target.name} for forgetting UNO!`);
-        target.hand.push(gameState.deck.pop(), gameState.deck.pop()); // Penalty draw 2 cards
+        target.hand.push(gameState.deck.pop(), gameState.deck.pop()); 
         channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
     } else {
         alert("Nobody is currently vulnerable to an UNO callout!");
