@@ -1,4 +1,4 @@
-//  SUPABASE CONNECTION CREDS 
+// - SUPABASE CONNECTION CREDS 
 const SUPABASE_URL = "https://pjyqmjvzgawzwpshtcrn.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_SmrBRls3lREh3UaZyZfuBQ_SwigfJ7B";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
