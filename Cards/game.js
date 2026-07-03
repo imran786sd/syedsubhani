@@ -1,4 +1,4 @@
-// SUPABASE SETUP 
+// === SUPABASE CONNECTION CREDS ===
 const SUPABASE_URL = "https://pjyqmjvzgawzwpshtcrn.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_SmrBRls3lREh3UaZyZfuBQ_SwigfJ7B";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8,6 +8,9 @@ let myName = "";
 let playersArray = [];
 let gameState = null;
 let pendingWildAction = null; 
+
+// Track whether I have safely announced UNO for this single card event cycle
+let hasSaidUnoThisTurn = false; 
 
 const channel = supabaseClient.channel('uno-room', {
     config: { broadcast: { self: true } }
@@ -21,7 +24,6 @@ channel.on('broadcast', { event: 'lobby' }, (payload) => {
     appendLogToPanel(payload.payload.message, payload.payload.type);
 }).subscribe();
 
-// === LOG & CHAT LOGIC ===
 function toggleLog() { document.getElementById('side-panel').classList.toggle('open'); }
 
 function sendChat() {
@@ -46,21 +48,17 @@ function appendLogToPanel(message, type) {
     logBox.scrollTop = logBox.scrollHeight;
 }
 
-// === GAME & LOBBY LOGIC ===
 function joinGame() {
     const nameInput = document.getElementById('username').value.trim();
     if(!nameInput) return alert("Please enter a name.");
     
-    // UNIQUE NAME CHECK
     const nameExists = playersArray.some(p => p.name.toLowerCase() === nameInput.toLowerCase());
-    if (nameExists) {
-        return alert("That name is already taken! Please choose another one.");
-    }
+    if (nameExists) return alert("That name is already taken! Please choose another one.");
 
     myName = nameInput;
     document.getElementById('username').disabled = true;
 
-    playersArray.push({ id: myId, name: myName, hand: [] });
+    playersArray.push({ id: myId, name: myName, hand: [], saidUno: false });
     channel.send({ type: 'broadcast', event: 'lobby', payload: { players: playersArray } });
 }
 
@@ -85,6 +83,7 @@ function handleLobbyUpdate(incomingPlayers) {
                 for(let i=0; i<7; i++) {
                     if(gameState.deck.length > 0) newP.hand.push(gameState.deck.pop());
                 }
+                newP.saidUno = false;
                 broadcastActionLog(`👋 ${newP.name} joined the table mid-game!`);
             });
             channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
@@ -114,6 +113,7 @@ function startGame() {
 
     playersArray.forEach(p => {
         p.hand = [];
+        p.saidUno = false;
         for(let i=0; i<7; i++) p.hand.push(deck.pop());
     });
 
@@ -123,8 +123,7 @@ function startGame() {
         topCard = deck.pop();
     }
 
-    gameState = { gameStarted: true, turnIndex: 0, direction: 1, topCard: topCard, deck: deck, winner: "" };
-    
+    gameState = { gameStarted: true, turnIndex: 0, direction: 1, topCard: topCard, deck: deck, winner: "", cardsDrawnThisTurn: 0 };
     broadcastActionLog(`🎲 The game has started!`);
     channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
 }
@@ -132,7 +131,7 @@ function startGame() {
 function handleGameStateUpdate(state, players) {
     gameState = state; playersArray = players;
     if (gameState.winner) {
-        alert(`🎉 ${gameState.winner} wins!`);
+        alert(`🎉 ${gameState.winner} wins the game!`);
         location.reload(); return;
     }
     
@@ -148,7 +147,6 @@ function handleGameStateUpdate(state, players) {
     }
 }
 
-// === REMOVE INACTIVE PLAYER LOGIC ===
 function kickPlayer(kickedId) {
     const index = playersArray.findIndex(p => p.id === kickedId);
     if (index === -1) return;
@@ -167,13 +165,16 @@ function kickPlayer(kickedId) {
     channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
 }
 
-// === RENDER UI ===
 function renderGame() {
     const activePlayer = playersArray[gameState.turnIndex];
     const isMyTurn = (activePlayer.id === myId);
 
     document.getElementById('turn-status').innerText = isMyTurn ? "🟢 YOUR TURN!" : `⚪ ${activePlayer.name}'s turn...`;
-    document.getElementById('direction-indicator').innerText = gameState.direction === 1 ? "🔄 Direction: Normal ➔" : "🔄 Direction: Reversed ⬅";
+    document.getElementById('direction-indicator').innerText = gameState.direction === 1 ? "🔄 Direction: Normal" : "🔄 Direction: Reversed";
+
+    // Manage Button States inside Gidd-Style Control Dock
+    document.getElementById('end-turn-btn').disabled = !(isMyTurn && gameState.cardsDrawnThisTurn > 0);
+    document.getElementById('take-cards-btn').disabled = !(isMyTurn && gameState.cardsDrawnThisTurn === 0);
 
     const topCardDiv = document.getElementById('top-card');
     topCardDiv.className = `card ${gameState.topCard.color}`;
@@ -183,6 +184,7 @@ function renderGame() {
     if (isMyTurn) document.getElementById('my-player-area').classList.add('active-turn');
     else document.getElementById('my-player-area').classList.remove('active-turn');
 
+    // Render my cards
     const handDiv = document.getElementById('hand');
     handDiv.innerHTML = '';
     const myData = playersArray.find(p => p.id === myId);
@@ -193,7 +195,8 @@ function renderGame() {
         cardDiv.className = `card ${card.color}`;
         cardDiv.innerHTML = `<span class="card-text">${card.value}</span>`;
 
-        if (isMyTurn && (card.color === gameState.topCard.color || card.value === gameState.topCard.value || card.color === 'black')) {
+        // Can only drop a card if it matches and I haven't already drawn a blind pass card
+        if (isMyTurn && gameState.cardsDrawnThisTurn === 0 && (card.color === gameState.topCard.color || card.value === gameState.topCard.value || card.color === 'black')) {
             cardDiv.classList.add('playable');
             cardDiv.onclick = () => handleCardClick(index, card, myHand);
         }
@@ -218,11 +221,11 @@ function renderOpponentsRadial() {
         const fraction = (i + 1) / (totalOpp + 1); 
         const angle = Math.PI + (fraction * Math.PI); 
         
-        const radiusX = 40; 
-        const radiusY = 35; 
+        const radiusX = 32; 
+        const radiusY = 22; 
         
         const leftPercent = 50 + (Math.cos(angle) * radiusX);
-        const topPercent = 50 + (Math.sin(angle) * radiusY);
+        const topPercent = 45 + (Math.sin(angle) * radiusY);
 
         const isActive = playersArray[gameState.turnIndex].id === opp.id;
 
@@ -231,18 +234,21 @@ function renderOpponentsRadial() {
         seatDiv.style.left = `${leftPercent}%`;
         seatDiv.style.top = `${topPercent}%`;
 
+        // Check if they need an UNO caution border banner context
+        const unoBadge = (opp.hand.length === 1 && !opp.saidUno) ? '⚡ UNPROTECTED' : `${opp.hand.length} cards`;
+
         seatDiv.innerHTML = `
             <div class="opp-avatar">
                 <button class="kick-btn" onclick="kickPlayer('${opp.id}')">✖</button>
                 ${opp.name}
             </div>
-            <div class="opp-cards">${opp.hand.length}</div>
+            <div class="opp-cards" style="background: ${isActive ? '#10b981' : '#dc2626'}">${opp.hand.length}</div>
+            <div style="font-size:0.75rem; color:#94a3b8; font-weight:bold;">${unoBadge}</div>
         `;
         oppContainer.appendChild(seatDiv);
     });
 }
 
-// === CARD ACTIONS ===
 function handleCardClick(index, card, hand) {
     if (card.color === 'black') {
         pendingWildAction = { index, card, hand };
@@ -267,48 +273,104 @@ function executePlayCard(index, card, hand) {
     const myData = playersArray.find(p => p.id === myId);
     myData.hand = hand;
 
+    // Reset my safety declarations if I no longer have exactly 1 card
+    if (hand.length !== 1) myData.saidUno = false;
+
     if (card.color !== 'black') {
         broadcastActionLog(`🃏 ${myName} played a ${card.color} ${card.value}`);
     }
 
     if (hand.length === 0) {
-        gameState.winner = myName;
-    } else {
-        let steps = 1;
-        if (card.value === '⇄') {
-            gameState.direction *= -1;
-            if (playersArray.length === 2) steps = 2;
-        } else if (card.value === 'Ø') {
-            steps = 2;
-        } else if (card.value === '+2') {
-            let nextIdx = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
-            playersArray[nextIdx].hand.push(gameState.deck.pop(), gameState.deck.pop());
-            steps = 2;
-        } else if (card.value === '+4') {
-            let nextIdx = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
-            playersArray[nextIdx].hand.push(gameState.deck.pop(), gameState.deck.pop(), gameState.deck.pop(), gameState.deck.pop());
-            steps = 2;
+        // Enforce penalty check: If you won but forgot to declare UNO on your previous turn, get penalized!
+        if (!myData.saidUno) {
+            broadcastActionLog(`⚠️ Penalty! ${myName} tried to win but forgot to declare UNO! Drawing 2 cards.`);
+            hand.push(gameState.deck.pop(), gameState.deck.pop());
+            myData.hand = hand;
+        } else {
+            gameState.winner = myName;
+            channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
+            return;
         }
-
-        gameState.turnIndex = (gameState.turnIndex + (steps * gameState.direction) + (playersArray.length * 10)) % playersArray.length;
-        gameState.topCard = card;
-        
-        document.getElementById('top-card').style.transform = `rotate(${(Math.random() * 30) - 15}deg)`;
     }
+
+    let steps = 1;
+    if (card.value === '⇄') {
+        gameState.direction *= -1;
+        if (playersArray.length === 2) steps = 2;
+    } else if (card.value === 'Ø') {
+        steps = 2;
+    } else if (card.value === '+2') {
+        let nextIdx = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
+        playersArray[nextIdx].hand.push(gameState.deck.pop(), gameState.deck.pop());
+        playersArray[nextIdx].saidUno = false;
+        steps = 2;
+    } else if (card.value === '+4') {
+        let nextIdx = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
+        playersArray[nextIdx].hand.push(gameState.deck.pop(), gameState.deck.pop(), gameState.deck.pop(), gameState.deck.pop());
+        playersArray[nextIdx].saidUno = false;
+        steps = 2;
+    }
+
+    gameState.turnIndex = (gameState.turnIndex + (steps * gameState.direction) + (playersArray.length * 10)) % playersArray.length;
+    gameState.topCard = card;
+    gameState.cardsDrawnThisTurn = 0; // Clear for next person
 
     channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
 }
 
-function drawCard() {
+// --- BUTTON BAR DOCK SYSTEM ACTIONS ---
+
+function drawCardAction() {
     const activePlayer = playersArray[gameState.turnIndex];
-    if (activePlayer.id !== myId) return;
+    if (activePlayer.id !== myId || gameState.cardsDrawnThisTurn > 0) return;
 
     const newCard = gameState.deck.pop();
     const myData = playersArray.find(p => p.id === myId);
     myData.hand.push(newCard);
+    myData.saidUno = false; // Reset safety flag on draw
 
     broadcastActionLog(`📥 ${myName} drew a card.`);
+    gameState.cardsDrawnThisTurn = 1;
 
+    // Check if drawn card is instantly playable. If NOT, pass turn automatically.
+    const canPlayDrawn = (newCard.color === gameState.topCard.color || newCard.value === gameState.topCard.value || newCard.color === 'black');
+    if (!canPlayDrawn) {
+        endTurnAction();
+    } else {
+        renderGame(); // Let them choose to drop it or pass manually
+    }
+}
+
+function endTurnAction() {
+    if (playersArray[gameState.turnIndex].id !== myId || gameState.cardsDrawnThisTurn === 0) return;
+    
+    gameState.cardsDrawnThisTurn = 0;
     gameState.turnIndex = (gameState.turnIndex + gameState.direction + playersArray.length) % playersArray.length;
+    
     channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
+}
+
+function sayUnoAction() {
+    const myData = playersArray.find(p => p.id === myId);
+    if (!myData || myData.hand.length !== 1) {
+        alert("You can only say UNO when you have exactly 1 card left!");
+        return;
+    }
+    
+    myData.saidUno = true;
+    broadcastActionLog(`📣 ${myName} shouted: UNO! 🃏`);
+    channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
+}
+
+function calloutForgotUnoAction() {
+    // Find if ANY opponent has 1 card but hasn't safe-declared it
+    let target = playersArray.find(p => p.id !== myId && p.hand.length === 1 && !p.saidUno);
+    
+    if (target) {
+        broadcastActionLog(`🚨 Caught! ${myName} called out ${target.name} for forgetting UNO!`);
+        target.hand.push(gameState.deck.pop(), gameState.deck.pop()); // Penalty draw 2 cards
+        channel.send({ type: 'broadcast', event: 'game', payload: { state: gameState, players: playersArray } });
+    } else {
+        alert("Nobody is currently vulnerable to an UNO callout!");
+    }
 }
