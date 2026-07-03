@@ -11,7 +11,6 @@
 
     <div id="join-screen">
         <h1>UNO Multiplayer Table</h1>
-        
         <input type="text" id="username" placeholder="Enter Your Name" maxlength="12">
         <button class="btn" onclick="joinGame()">Join Table</button>
         
@@ -29,29 +28,39 @@
     </div>
 
     <div id="game-view" class="hidden">
+        
         <div id="turn-status-container">
             <h2 id="turn-status">Waiting...</h2>
             <p id="direction-indicator">🔄 Direction: Normal</p>
         </div>
 
-        <div id="opponents-container"></div>
-
-        <div id="center-board">
-            <div>
-                <div class="card" id="draw-pile-btn" onclick="drawCard()">
-                    <span class="card-text">+</span>
+        <div id="felt-table">
+            <div id="table-direction-arrow" class="arrow-normal"></div>
+            
+            <div id="center-board">
+                <div class="card" id="draw-pile-btn" onclick="drawCardAction()">
+                    <span class="card-text">UNO</span>
                 </div>
-            </div>
-            <div>
                 <div class="card" id="top-card">
                     <span class="card-text" id="top-card-text"></span>
                 </div>
             </div>
         </div>
 
-        <div id="my-player-area">
-            <div id="my-name" class="my-name-tag">My Name</div>
-            <div id="hand"></div>
+        <div id="opponents-container"></div>
+
+        <div id="bottom-interface-dock">
+            <div id="action-utility-bar">
+                <button class="action-bar-btn" id="end-turn-btn" onclick="endTurnAction()">End your turn</button>
+                <button class="action-bar-btn" id="take-cards-btn" onclick="drawCardAction()">Take cards</button>
+                <button class="action-bar-btn active-uno" id="say-uno-btn" onclick="sayUnoAction()">Say UNO!</button>
+                <button class="action-bar-btn callout-uno" id="callout-uno-btn" onclick="calloutForgotUnoAction()">Forgot to say UNO!</button>
+            </div>
+
+            <div id="my-player-area">
+                <div id="my-name" class="my-name-tag">My Name</div>
+                <div id="hand"></div>
+            </div>
         </div>
 
         <button id="notebook-btn" onclick="toggleLog()">
